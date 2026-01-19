@@ -45,6 +45,17 @@ static const ADExtraGuiOptionsMap optionsList[] = {
 			0
 		}
 	},
+	{
+		GAMEOPTION_ASSETS_MOD,
+		{
+			_s("Load modded assets"),
+			_s("Enable loading of external replacement assets."),
+			"enable_assets_mod",
+			false,
+			0,
+			0
+		}
+	},
 
 	AD_EXTRA_GUI_OPTIONS_TERMINATOR
 };

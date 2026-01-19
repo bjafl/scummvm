@@ -48,6 +48,7 @@ struct Myst3GameDescription {
 };
 
 #define GAMEOPTION_WIDESCREEN_MOD GUIO_GAMEOPTIONS1
+#define GAMEOPTION_ASSETS_MOD GUIO_GAMEOPTIONS2
 
 } // End of namespace Myst3
 
