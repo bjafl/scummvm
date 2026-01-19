@@ -257,7 +257,7 @@
 		// On SDL based ports, we try to use SDL_BYTEORDER to determine the
 		// endianess. We explicitly do this as the *last* thing we try, so that
 		// platform specific settings have precedence.
-		#include <SDL_endian.h>
+		#include <SDL2/SDL_endian.h>
 
 		#if SDL_BYTEORDER == SDL_LIL_ENDIAN
 		#define SCUMM_LITTLE_ENDIAN

@@ -28,7 +28,7 @@
 #include "common/system.h"
 #include "common/timer.h"
 #include "common/translation.h"
-#include <SDL_net.h>
+#include <SDL2/SDL_net.h>
 #include "common/config-manager.h"
 
 #ifdef POSIX

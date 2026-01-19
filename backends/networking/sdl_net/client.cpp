@@ -24,7 +24,7 @@
 #include "backends/networking/sdl_net/client.h"
 #include "backends/networking/sdl_net/localwebserver.h"
 #include "common/memstream.h"
-#include <SDL_net.h>
+#include <SDL2/SDL_net.h>
 
 namespace Networking {
 

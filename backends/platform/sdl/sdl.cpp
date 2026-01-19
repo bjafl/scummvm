@@ -69,13 +69,13 @@
 #endif
 
 #ifdef USE_SDL_NET
-#include <SDL_net.h>
+#include <SDL2/SDL_net.h>
 #endif
 
 #if SDL_VERSION_ATLEAST(3, 0, 0)
 #include <SDL3/SDL_clipboard.h>
 #elif SDL_VERSION_ATLEAST(2, 0, 0)
-#include <SDL_clipboard.h>
+#include <SDL2/SDL_clipboard.h>
 #endif
 
 #if (defined(USE_OPENGL_GAME) || defined(USE_OPENGL_SHADERS)) && !USE_FORCED_GLES2
