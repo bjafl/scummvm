@@ -46,7 +46,8 @@ OpenGLTexture::OpenGLTexture() :
 		sourceFormat(0),
 		internalWidth(0),
 		internalHeight(0),
-		upsideDown(false) {
+		upsideDown(false),
+		isCompressed(false) {
 	glGenTextures(1, &id);
 }
 
@@ -55,6 +56,7 @@ OpenGLTexture::OpenGLTexture(const Graphics::Surface *surface) {
 	height = surface->h;
 	format = surface->format;
 	upsideDown = false;
+	isCompressed = false;
 
 	// Pad the textures if non power of two support is unavailable
 	if (OpenGLContext.NPOTSupported) {
@@ -88,6 +90,25 @@ OpenGLTexture::OpenGLTexture(const Graphics::Surface *surface) {
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
 	update(surface);
+}
+
+OpenGLTexture::OpenGLTexture(uint w, uint h, GLuint internalFmt, const byte *data, uint dataSize) {
+	width = w;
+	height = h;
+	internalWidth = w;
+	internalHeight = h;
+	internalFormat = internalFmt;
+	sourceFormat = 0; // Not used for compressed textures
+	upsideDown = false;
+	isCompressed = true;
+
+	glGenTextures(1, &id);
+	glBindTexture(GL_TEXTURE_2D, id);
+	glCompressedTexImage2D(GL_TEXTURE_2D, 0, internalFormat, width, height, 0, dataSize, data);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 }
 
 OpenGLTexture::~OpenGLTexture() {

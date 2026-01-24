@@ -20,12 +20,15 @@
  */
 
 #include "engines/myst3/archive.h"
+#include "engines/myst3/lzo.h"
 
 #include "common/debug.h"
 #include "common/memstream.h"
 #include "common/substream.h"
 
 namespace Myst3 {
+
+static const uint32 kLZO1X = MKTAG('L', 'Z', 'O', 'X');
 
 void Archive::decryptHeader(Common::SeekableReadStream &inStream, Common::WriteStream &outStream) {
 	static const uint32 addKey = 0x3C6EF35F;
@@ -132,7 +135,28 @@ void Archive::visit(ArchiveVisitor &visitor) {
 
 Common::SeekableReadStream *Archive::dumpToMemory(uint32 offset, uint32 size) {
 	_file.seek(offset);
-	return _file.readStream(size);
+
+	byte *data = (byte *)malloc(size);
+	_file.read(data, size);
+
+	uint32 signature = READ_LE_UINT32(data);
+	if (signature == kLZO1X) {
+		uint32 uncompressedSize = READ_LE_UINT32(data + 4);
+		byte *uncompressed = (byte *)malloc(uncompressedSize);
+
+		size_t uncompressedWritten = 0;
+		LzoResult decompressResult = lzoDecompress(data + 8, size - 8, uncompressed, uncompressedSize, uncompressedWritten);
+		if (decompressResult != kLzoSuccess) {
+			error("Unable to decompress LZO data at offset %d", offset);
+		}
+
+		assert(uncompressedWritten == uncompressedSize);
+
+		free(data);
+		return new Common::MemoryReadStream(uncompressed, uncompressedSize, DisposeAfterUse::YES);
+	}
+
+	return new Common::MemoryReadStream(data, size, DisposeAfterUse::YES);
 }
 
 uint32 Archive::copyTo(uint32 offset, uint32 size, Common::WriteStream &out) {

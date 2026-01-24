@@ -15,6 +15,7 @@ MODULE_OBJS := \
 	gfx_opengl_texture.o \
 	hotspot.o \
 	inventory.o \
+	lzo.o \
 	menu.o \
 	metaengine.o \
 	movie.o \

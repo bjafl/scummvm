@@ -22,6 +22,7 @@
 #ifndef GFX_H_
 #define GFX_H_
 
+#include "engines/myst3/dds.h"
 #include "engines/myst3/resource_loader.h"
 
 #include "common/rect.h"
@@ -127,6 +128,18 @@ public:
 
 	virtual Texture *createTexture3D(const Graphics::Surface *surface) = 0;
 	virtual Texture *createTexture2D(const Graphics::Surface *surface) { return createTexture3D(surface); }
+
+	/**
+	 * Create a texture from a DDS file, using GPU compression if supported
+	 * @param dds The loaded DDS texture
+	 * @return A texture, or nullptr if the format is not supported
+	 */
+	virtual Texture *createTextureFromDDS(const DDS &dds);
+
+	/**
+	 * Check if the renderer supports GPU-native compressed textures (S3TC/DXT)
+	 */
+	virtual bool supportsCompressedTextures() const { return false; }
 
 	virtual void drawRect2D(const Common::Rect &rect, uint8 a, uint8 r, uint8 g, uint8 b) = 0;
 	virtual void drawTexturedRect2D(const Common::Rect &screenRect, const Common::Rect &textureRect, Texture *texture,

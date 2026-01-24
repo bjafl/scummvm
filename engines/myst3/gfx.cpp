@@ -99,6 +99,12 @@ void Renderer::freeFont() {
 	}
 }
 
+Texture *Renderer::createTextureFromDDS(const DDS &dds) {
+	// Default implementation: no GPU compression support
+	// Subclasses can override to provide hardware decompression
+	return nullptr;
+}
+
 Texture *Renderer::copyScreenshotToTexture() {
 	Graphics::Surface *surface = getScreenshot();
 

@@ -36,6 +36,16 @@ public:
 	OpenGLTexture();
 	virtual ~OpenGLTexture();
 
+	/**
+	 * Create a texture from compressed data (S3TC/DXT)
+	 * @param w Width of the texture
+	 * @param h Height of the texture
+	 * @param internalFmt OpenGL internal format (e.g., GL_COMPRESSED_RGBA_S3TC_DXT1_EXT)
+	 * @param data Pointer to the compressed data
+	 * @param dataSize Size of the compressed data in bytes
+	 */
+	OpenGLTexture(uint w, uint h, GLuint internalFmt, const byte *data, uint dataSize);
+
 	void update(const Graphics::Surface *surface) override;
 	void updatePartial(const Graphics::Surface *surface, const Common::Rect &rect) override;
 
@@ -47,6 +57,7 @@ public:
 	uint32 internalWidth;
 	uint32 internalHeight;
 	bool upsideDown;
+	bool isCompressed;
 
 private:
 	void updateTexture(const Graphics::Surface *surface, const Common::Rect &rect);

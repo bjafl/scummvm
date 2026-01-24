@@ -47,6 +47,7 @@
 #include "math/rect2d.h"
 #include "math/quat.h"
 
+#include "graphics/opengl/context.h"
 #include "graphics/opengl/shader.h"
 
 #include "engines/myst3/gfx.h"
@@ -116,6 +117,34 @@ ShaderRenderer::~ShaderRenderer() {
 
 Texture *ShaderRenderer::createTexture3D(const Graphics::Surface *surface) {
 	return new OpenGLTexture(surface);
+}
+
+bool ShaderRenderer::supportsCompressedTextures() const {
+	// Check for S3TC/DXT extension support
+	return GLAD_GL_EXT_texture_compression_s3tc;
+}
+
+Texture *ShaderRenderer::createTextureFromDDS(const DDS &dds) {
+	if (!supportsCompressedTextures()) {
+		return nullptr;
+	}
+
+	switch (dds.dataFormat()) {
+	case DDS::kDataFormatRawBC1Unorm:
+		return new OpenGLTexture(dds.width(), dds.height(), GL_COMPRESSED_RGBA_S3TC_DXT1_EXT, dds.rawData(), dds.rawDataSize());
+	case DDS::kDataFormatRawBC2Unorm:
+		return new OpenGLTexture(dds.width(), dds.height(), GL_COMPRESSED_RGBA_S3TC_DXT3_EXT, dds.rawData(), dds.rawDataSize());
+	case DDS::kDataFormatRawBC3Unorm:
+		return new OpenGLTexture(dds.width(), dds.height(), GL_COMPRESSED_RGBA_S3TC_DXT5_EXT, dds.rawData(), dds.rawDataSize());
+	case DDS::kDataFormatRawBC7Unorm:
+		// BC7 (BPTC) not supported in this OpenGL context - fall through to software decode
+		return nullptr;
+	case DDS::kDataFormatMipMaps:
+		// Uncompressed DDS - use standard path
+		return new OpenGLTexture(&dds.getMipMaps()[0]);
+	default:
+		return nullptr;
+	}
 }
 
 void ShaderRenderer::init() {

@@ -435,7 +435,14 @@ Graphics::Surface *TextureLoader::loadSurface(const ResourceDescription &resourc
 		if (resource.getType() == Archive::kModdedCubeFace || resource.getType() == Archive::kModdedFrame || resource.getType() == Archive::kModdedSpotItem || resource.getType() == Archive::kModdedRawData) {
 			imageFormat = kImageFormatDDS;
 		} else {
-			imageFormat = defaultImageFormat;
+			// Detect format from magic number to handle LZO-decompressed DDS data
+			uint32 magic = imageStream->readUint32BE();
+			imageStream->seek(0);
+			if (magic == MKTAG('D', 'D', 'S', ' ')) {
+				imageFormat = kImageFormatDDS;
+			} else {
+				imageFormat = defaultImageFormat;
+			}
 		}
 	}
 
@@ -552,7 +559,40 @@ Graphics::Surface *TextureLoader::loadSurface(const ResourceDescription &resourc
 }
 
 Texture *TextureLoader::load(const ResourceDescription &resource, TextureLoader::ImageFormat defaultImageFormat) {
-	auto surface = loadSurface(resource, defaultImageFormat);
+	// For DDS files, try to use GPU-native compression first
+	if (_renderer.supportsCompressedTextures()) {
+		ImageFormat imageFormat = defaultImageFormat;
+
+		// Determine if this is a DDS resource
+		if (resource.getType() == Archive::kModdedCubeFace ||
+		    resource.getType() == Archive::kModdedFrame ||
+		    resource.getType() == Archive::kModdedSpotItem ||
+		    resource.getType() == Archive::kModdedRawData) {
+			imageFormat = kImageFormatDDS;
+		}
+
+		if (imageFormat == kImageFormatDDS) {
+			Common::SeekableReadStream *stream = resource.getData();
+			Common::String name = Common::String::format("%s-%d-%d", resource.getRoom().c_str(), resource.getIndex(), resource.getFace());
+
+			DDS dds;
+			if (dds.load(*stream, name)) {
+				delete stream;
+
+				// Try GPU-native texture creation
+				Texture *texture = _renderer.createTextureFromDDS(dds);
+				if (texture) {
+					return texture;
+				}
+				// Fall through to software decompression if GPU path failed
+			} else {
+				delete stream;
+			}
+		}
+	}
+
+	// Fallback to software decompression path
+	Graphics::Surface *surface = loadSurface(resource, defaultImageFormat);
 	Texture *texture = _renderer.createTexture2D(surface);
 
 	surface->free();
