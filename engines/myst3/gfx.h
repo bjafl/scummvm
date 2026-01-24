@@ -22,6 +22,8 @@
 #ifndef GFX_H_
 #define GFX_H_
 
+#include "engines/myst3/resource_loader.h"
+
 #include "common/rect.h"
 #include "common/system.h"
 
@@ -98,6 +100,8 @@ public:
 	uint height;
 	Graphics::PixelFormat format;
 
+	// FloatSize size() const { return FloatSize(width, height); }
+
 	virtual void update(const Graphics::Surface *surface) = 0;
 	virtual void updatePartial(const Graphics::Surface *surface, const Common::Rect &rect) = 0;
 
@@ -117,7 +121,8 @@ public:
 	 */
 	virtual void flipBuffer() { }
 
-	virtual void initFont(const Graphics::Surface *surface);
+	// virtual void initFont(const Graphics::Surface *surface);
+	virtual void initFont(ResourceLoader *resourceLoader);
 	virtual void freeFont();
 
 	virtual Texture *createTexture3D(const Graphics::Surface *surface) = 0;

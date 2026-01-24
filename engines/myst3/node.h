@@ -46,7 +46,7 @@ public:
 	Face(Myst3Engine *vm, bool is3D = false);
 	~Face();
 
-	void setTextureFromJPEG(const ResourceDescription *jpegDesc);
+	void setTextureFromBitmap(const ResourceDescription *jpegDesc);
 
 	void addTextureDirtyRect(const Common::Rect &rect);
 	bool isTextureDirty() { return _textureDirty; }

@@ -30,6 +30,7 @@
 #include "common/random.h"
 
 #include "engines/myst3/archive.h"
+#include "engines/myst3/resource_loader.h"
 
 namespace Graphics {
 struct Surface;
@@ -48,6 +49,7 @@ enum {
 	kDebugSaveLoad,
 	kDebugNode,
 	kDebugScript,
+	kDebugModding
 };
 
 enum TransitionType {
@@ -118,6 +120,9 @@ public:
 	uint32 getGameLayoutType() const;
 	bool isTextLanguageEnglish() const;
 	bool isWideScreenModEnabled() const;
+	bool isAssetsModEnabled() const;
+	Common::String getCurrentRoomName() const;
+
 
 	bool canSaveGameStateCurrently(Common::U32String *msg = nullptr) override;
 	bool canLoadGameStateCurrently(Common::U32String *msg = nullptr) override;
@@ -126,12 +131,12 @@ public:
 	Common::Error saveGameState(int slot, const Common::String &desc, bool isAutosave = false) override;
 	Common::Error saveGameState(const Common::String &desc, const Graphics::Surface *thumbnail, bool isAutosave);
 
-	ResourceDescription getFileDescription(const Common::String &room, uint32 index, uint16 face,
-	                                       Archive::ResourceType type);
-	ResourceDescriptionArray listFilesMatching(const Common::String &room, uint32 index, uint16 face,
-	                                       Archive::ResourceType type);
+	// ResourceDescription getFileDescription(const Common::String &room, uint32 index, uint16 face,
+	//                                        Archive::ResourceType type);
+	// ResourceDescriptionArray listFilesMatching(const Common::String &room, uint32 index, uint16 face,
+	//                                        Archive::ResourceType type);
 
-	Graphics::Surface *loadTexture(uint16 id);
+	// Graphics::Surface *loadTexture(uint16 id);
 	static Graphics::Surface *decodeJpeg(const ResourceDescription *jpegDesc);
 
 	void goToNode(uint16 nodeID, TransitionType transition);
@@ -190,14 +195,12 @@ public:
 	void settingsLoadToVars();
 	void settingsApplyFromVars();
 
+	ResourceLoader *_resourceLoader;
 private:
 	OSystem *_system;
 	const Myst3GameDescription *_gameDescription;
 
 	Node *_node;
-
-	Common::Array<Archive *> _archivesCommon;
-	Archive *_archiveNode;
 
 	Script *_scriptEngine;
 
@@ -239,9 +242,9 @@ private:
 
 	bool checkDatafiles();
 
-	bool addArchive(const Common::String &file, bool mandatory);
-	void openArchives();
-	void closeArchives();
+	// bool addArchive(const Common::String &file, bool mandatory);
+	ResourceLoader *openArchives();
+	// void closeArchives();
 
 	bool isInventoryVisible();
 

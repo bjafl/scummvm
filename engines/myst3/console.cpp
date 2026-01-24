@@ -293,7 +293,7 @@ bool Console::Cmd_Extract(int argc, const char **argv) {
 	uint16 face = atoi(argv[3]);
 	Archive::ResourceType type = (Archive::ResourceType) atoi(argv[4]);
 
-	ResourceDescription desc = _vm->getFileDescription(room, id, face, type);
+	ResourceDescription desc = _vm->_resourceLoader->getFileDescription(room, id, face, type);
 
 	if (!desc.isValid()) {
 		debugPrintf("File with room %s, id %d, face %d and type %d does not exist\n", room.c_str(), id, face, type);
@@ -455,7 +455,8 @@ bool Console::Cmd_DumpMasks(int argc, const char **argv) {
 }
 
 bool Console::dumpFaceMask(uint16 index, int face, Archive::ResourceType type) {
-	ResourceDescription maskDesc = _vm->getFileDescription("", index, face, type);
+	auto roomName = _vm->getCurrentRoomName();
+	ResourceDescription maskDesc = _vm->_resourceLoader->getFileDescription(roomName, index, face, type);
 
 	if (!maskDesc.isValid())
 		return false;

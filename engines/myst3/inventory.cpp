@@ -51,12 +51,12 @@ Inventory::~Inventory() {
 }
 
 void Inventory::initializeTexture() {
-	Graphics::Surface *s = _vm->loadTexture(1204);
+	ResourceDescription desc = _vm->_resourceLoader->getRawData("GLOB", 1204);
+	if (!desc.isValid())
+		error("The inventory texture, GLOB-1204 was not found");
 
-	_texture = _vm->_gfx->createTexture2D(s);
-
-	s->free();
-	delete s;
+	TextureLoader textureLoader(*_vm->_gfx);
+	_texture = textureLoader.load(desc, TextureLoader::kImageFormatTEX);
 }
 
 bool Inventory::isMouseInside() {
@@ -331,7 +331,7 @@ DragItem::DragItem(Myst3Engine *vm, uint id):
 	_isConstrainedToWindow = false;
 	_scaled = !_vm->isWideScreenModEnabled();
 
-	ResourceDescription movieDesc = _vm->getFileDescription("DRAG", id, 0, Archive::kStillMovie);
+	ResourceDescription movieDesc = _vm->_resourceLoader->getStillMovie("DRAG", id);
 
 	if (!movieDesc.isValid())
 		error("Movie %d does not exist", id);

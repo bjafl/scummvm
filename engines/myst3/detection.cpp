@@ -38,6 +38,7 @@ static const DebugChannelDef debugFlagList[] = {
 	{Myst3::kDebugSaveLoad, "SaveLoad", "Track Save/Load Function"},
 	{Myst3::kDebugScript, "Script", "Track Script Execution"},
 	{Myst3::kDebugNode, "Node", "Track Node Changes"},
+	{Myst3::kDebugModding,  "Modding",  "Debug the loading of modded assets"},
 	DEBUG_CHANNEL_END
 };
 

@@ -53,7 +53,13 @@ public:
 		kLocalizedSpotItem  = 69,
 		kLocalizedFrame     = 70,
 		kMultitrackMovie    = 72,
-		kDialogMovie        = 74
+		kDialogMovie        = 74,
+		kModdedCubeFace     = 100,
+		kModdedSpotItem     = 105,
+		kModdedFrame        = 106,
+		kModdedRawData      = 107,
+		kModdedMovie        = 108
+		
 	};
 
 	struct DirectorySubEntry {
@@ -76,7 +82,8 @@ public:
 
 	ResourceDescription getDescription(const Common::String &room, uint32 index, uint16 face,
 	                                   ResourceType type);
-	ResourceDescriptionArray listFilesMatching(const Common::String &room, uint32 index, uint16 face,
+	virtual ResourceDescriptionArray listFilesMatching(const Common::String &room, uint32 index, ResourceType type);
+	virtual ResourceDescriptionArray listFilesMatching(const Common::String &room, uint32 index, uint16 face,
 	                                           ResourceType type);
 
 	Common::SeekableReadStream *dumpToMemory(uint32 offset, uint32 size);
@@ -95,6 +102,9 @@ private:
 	uint32 _directorySize;
 	Common::Array<DirectoryEntry> _directory;
 
+	
+	virtual ResourceDescriptionArray _listFilesMatching(const Common::String &room, uint32 index,
+	                                           ResourceType type, uint16 *face = nullptr);
 	void decryptHeader(Common::SeekableReadStream &inStream, Common::WriteStream &outStream);
 	void readDirectory();
 	DirectorySubEntry readSubEntry(Common::ReadStream &stream);
@@ -119,20 +129,25 @@ public:
 	};
 
 	ResourceDescription();
-	ResourceDescription(Archive *archive, const Archive::DirectorySubEntry &subentry);
+	ResourceDescription(Archive *archive, const Archive::DirectoryEntry &entry, const Archive::DirectorySubEntry &subentry);
 
 	bool isValid() const { return _archive && _subentry; }
 
 	Common::SeekableReadStream *getData() const;
 	uint16 getFace() const { return _subentry->face; }
 	Archive::ResourceType getType() const { return _subentry->type; }
+	Common::String getRoom() const { return _entry->roomName; }
+	uint32 getIndex() const { return _entry->index; }
 	SpotItemData getSpotItemData() const;
 	VideoData getVideoData() const;
 	uint32 getMiscData(uint index) const;
 	Common::String getTextData(uint index) const;
+	Archive::DirectoryEntry getDirectoryEntry() const { return *_entry; }
+	Archive::DirectorySubEntry getDirectorySubEntry() const { return *_subentry; }
 
 private:
 	Archive *_archive;
+	const Archive::DirectoryEntry *_entry;
 	const Archive::DirectorySubEntry *_subentry;
 };
 

@@ -63,19 +63,19 @@ namespace Myst3 {
 
 Myst3Engine::Myst3Engine(OSystem *syst, const Myst3GameDescription *version) :
 		Engine(syst), _system(syst), _gameDescription(version),
-		_db(nullptr), _scriptEngine(nullptr),
-		_state(nullptr), _node(nullptr), _scene(nullptr), _archiveNode(nullptr),
-		_cursor(nullptr), _inventory(nullptr), _gfx(nullptr), _menu(nullptr),
-		_rnd(nullptr), _sound(nullptr), _ambient(nullptr),
-		_inputSpacePressed(false), _inputEnterPressed(false),
-		_inputEscapePressed(false), _inputTildePressed(false),
-		_inputEscapePressedNotConsumed(false),
-		_interactive(false),
-		_menuAction(0), _projectorBackground(nullptr),
-		_shakeEffect(nullptr), _rotationEffect(nullptr),
-		_backgroundSoundScriptLastRoomId(0),
-		_backgroundSoundScriptLastAgeId(0),
-		_transition(nullptr), _frameLimiter(nullptr), _inventoryManualHide(false) {
+																			   _db(nullptr), _scriptEngine(nullptr),
+																			   _state(nullptr), _node(nullptr), _scene(nullptr),
+																			   _cursor(nullptr), _inventory(nullptr), _gfx(nullptr), _menu(nullptr),
+																			   _rnd(nullptr), _sound(nullptr), _ambient(nullptr),
+																			   _inputSpacePressed(false), _inputEnterPressed(false),
+																			   _inputEscapePressed(false), _inputTildePressed(false),
+																			   _inputEscapePressedNotConsumed(false),
+																			   _interactive(false),
+																			   _menuAction(0), _projectorBackground(nullptr),
+																			   _shakeEffect(nullptr), _rotationEffect(nullptr),
+																			   _backgroundSoundScriptLastRoomId(0),
+																			   _backgroundSoundScriptLastAgeId(0),
+																			   _transition(nullptr), _frameLimiter(nullptr), _inventoryManualHide(false) {
 
 	// Add subdirectories to the search path to allow running from a full HDD install
 	const Common::FSNode gameDataDir(ConfMan.getPath("path"));
@@ -106,13 +106,12 @@ Myst3Engine::Myst3Engine(OSystem *syst, const Myst3GameDescription *version) :
 }
 
 Myst3Engine::~Myst3Engine() {
-	closeArchives();
-
+	
 	delete _menu;
 	delete _inventory;
 	delete _cursor;
 	delete _scene;
-	delete _archiveNode;
+	delete _resourceLoader;
 	delete _db;
 	delete _scriptEngine;
 	delete _state;
@@ -129,21 +128,21 @@ bool Myst3Engine::hasFeature(EngineFeature f) const {
 	Graphics::RendererType desiredRendererType = Graphics::Renderer::parseTypeCode(rendererConfig);
 	Graphics::RendererType matchingRendererType = Graphics::Renderer::getBestMatchingAvailableType(desiredRendererType,
 #if defined(USE_OPENGL_GAME)
-	                Graphics::kRendererTypeOpenGL |
+																								   Graphics::kRendererTypeOpenGL |
 #endif
 #if defined(USE_OPENGL_SHADERS)
-	                Graphics::kRendererTypeOpenGLShaders |
+																									   Graphics::kRendererTypeOpenGLShaders |
 #endif
 #if defined(USE_TINYGL)
-	                Graphics::kRendererTypeTinyGL |
+																									   Graphics::kRendererTypeTinyGL |
 #endif
-	                0);
+																									   0);
 	bool softRenderer = matchingRendererType == Graphics::kRendererTypeTinyGL;
 
 	return (f == kSupportsReturnToLauncher) ||
-	       (f == kSupportsLoadingDuringRuntime) ||
-	       (f == kSupportsSavingDuringRuntime) ||
-	       (f == kSupportsArbitraryResolutions && !softRenderer);
+		   (f == kSupportsLoadingDuringRuntime) ||
+		   (f == kSupportsSavingDuringRuntime) ||
+		   (f == kSupportsArbitraryResolutions && !softRenderer);
 }
 
 Common::Error Myst3Engine::run() {
@@ -176,22 +175,23 @@ Common::Error Myst3Engine::run() {
 	} else {
 		_menu = new PagingMenu(this);
 	}
-	_archiveNode = new Archive();
 
 	_system->showMouse(false);
 
 	settingsInitDefaults();
 	syncSoundSettings();
-	openArchives();
+
+	_resourceLoader = openArchives();
 
 	_cursor = new Cursor(this);
 	_inventory = new Inventory(this);
 
 	// Init the font
-	Graphics::Surface *font = loadTexture(1206);
-	_gfx->initFont(font);
-	font->free();
-	delete font;
+	// Graphics::Surface *font = loadTexture(1206);
+	// _gfx->initFont(font);
+	// font->free();
+	// delete font;
+	_gfx->initFont(_resourceLoader);
 
 	if (ConfMan.hasKey("save_slot")) {
 		// Load game from specified slot, if any
@@ -224,7 +224,6 @@ Common::Error Myst3Engine::run() {
 
 	unloadNode();
 
-	_archiveNode->close();
 	_gfx->freeFont();
 
 	// Make sure the mouse is unlocked
@@ -233,22 +232,20 @@ Common::Error Myst3Engine::run() {
 	return Common::kNoError;
 }
 
-bool Myst3Engine::addArchive(const Common::String &file, bool mandatory) {
-	Archive *archive = new Archive();
-	bool opened = archive->open(file.c_str(), nullptr);
-
-	if (opened) {
-		_archivesCommon.push_back(archive);
-	} else {
-		delete archive;
-		if (mandatory)
-			error("Unable to open archive %s", file.c_str());
-	}
-
-	return opened;
+bool Myst3Engine::isAssetsModEnabled() const {
+	return ConfMan.getBool("enable_assets_mod");
+	 	//&& _gfx->supportsCompressedTextures(); //TODO
 }
 
-void Myst3Engine::openArchives() {
+Common::String Myst3Engine::getCurrentRoomName() const {
+	return _db->getRoomName(_state->getLocationRoom(), _state->getLocationAge());
+}
+
+static bool modsCompare(const Common::FSNode &a, const Common::FSNode &b) {
+	return a.getName() < b.getName();
+}
+
+ResourceLoader *Myst3Engine::openArchives() {
 	// The language of the menus is always the same as the executable
 	// The English CD version can only display English text
 	// The non English CD versions can display their localized language and English
@@ -373,20 +370,41 @@ void Myst3Engine::openArchives() {
 		textLanguage += "X";
 	}
 
+	ResourceLoader *resourceLoader = new ResourceLoader();
+
+	// Load all the mods
+	if (isAssetsModEnabled()) {
+		debugC(kDebugModding, "Mods enabled. Loading mod dirs...");
+		const Common::FSNode gameDataDir(Common::Path(ConfMan.get("path")));
+		const Common::FSNode modsDir = gameDataDir.getChild("mods");
+		if (modsDir.exists()) {
+			Common::FSList list;
+			modsDir.getChildren(list);
+
+			Common::sort(list.begin(), list.end(), modsCompare);
+
+			for (uint i = 0; i < list.size(); i++) {
+				resourceLoader->addMod(list[i].getName());
+			}
+		}
+	}
+
 	// Load all the override files in the search path
 	Common::ArchiveMemberList overrides;
 	SearchMan.listMatchingMembers(overrides, "*.m3o");
 	for (Common::ArchiveMemberList::const_iterator it = overrides.begin(); it != overrides.end(); it++) {
-		addArchive(it->get()->getName(), false);
+		resourceLoader->addArchive(it->get()->getName(), false);
 	}
 
-	addArchive(textLanguage + ".m3t", true);
+	resourceLoader->addArchive(textLanguage + ".m3t", true);
 
-	if (localizationType != kLocMonolingual || getPlatform() == Common::kPlatformXbox || getGameLanguage() == Common::HE_ISR) {
-		addArchive(menuLanguage + ".m3u", true);
+	if (getGameLocalizationType() != kLocMonolingual || getPlatform() == Common::kPlatformXbox || getGameLanguage() == Common::HE_ISR) {
+		resourceLoader->addArchive(menuLanguage + ".m3u", true);
 	}
 
-	addArchive("RSRC.m3r", true);
+	resourceLoader->addArchive("RSRC.m3r", true);
+
+	return resourceLoader;
 }
 
 bool Myst3Engine::isTextLanguageEnglish() const {
@@ -397,21 +415,14 @@ bool Myst3Engine::isTextLanguageEnglish() const {
 	return getGameLocalizationType() != kLocMonolingual && ConfMan.getInt("text_language") == kEnglish;
 }
 
-void Myst3Engine::closeArchives() {
-	for (uint i = 0; i < _archivesCommon.size(); i++)
-		delete _archivesCommon[i];
-
-	_archivesCommon.clear();
-}
-
 bool Myst3Engine::checkDatafiles() {
 	if (!SearchMan.hasFile("OVER101.m3o")) {
 		const char* urlForPatchesDownload = "https://www.scummvm.org/frs/extras/patches/";
 		warning("Unable to open the update game archive 'OVER101.m3o'");
 		Common::U32String updateMessage =
-				Common::U32String::format(_("This version of Myst III has not been updated with the latest official patch.\n"
-						  "Please install the official update corresponding to your game's language.\n"
-						  "The updates can be downloaded from:\n"
+			Common::U32String::format(_("This version of Myst III has not been updated with the latest official patch.\n"
+										"Please install the official update corresponding to your game's language.\n"
+										"The updates can be downloaded from:\n"
 						  "%s"), urlForPatchesDownload);
 		warning("%s", updateMessage.encode().c_str());
 		GUIErrorMessageWithURL(updateMessage, urlForPatchesDownload);
@@ -604,42 +615,42 @@ void Myst3Engine::processEventForKeyboardState(const Common::Event &event) {
 		}
 
 		switch (event.kbd.keycode) {
-			case Common::KEYCODE_ESCAPE:
-				_inputEscapePressed = true;
-				break;
-			case Common::KEYCODE_RETURN:
-			case Common::KEYCODE_KP_ENTER:
-				if (!event.kbd.hasFlags(Common::KBD_ALT)) {
-					_inputEnterPressed = true;
-				}
-				break;
-			case Common::KEYCODE_SPACE:
-				_inputSpacePressed = true;
-				break;
-			case Common::KEYCODE_BACKQUOTE: // tilde, used to trigger the easter eggs
-				_inputTildePressed = true;
-				break;
-			default:
-				break;
+		case Common::KEYCODE_ESCAPE:
+			_inputEscapePressed = true;
+			break;
+		case Common::KEYCODE_RETURN:
+		case Common::KEYCODE_KP_ENTER:
+			if (!event.kbd.hasFlags(Common::KBD_ALT)) {
+				_inputEnterPressed = true;
+			}
+			break;
+		case Common::KEYCODE_SPACE:
+			_inputSpacePressed = true;
+			break;
+		case Common::KEYCODE_BACKQUOTE: // tilde, used to trigger the easter eggs
+			_inputTildePressed = true;
+			break;
+		default:
+			break;
 		}
 	} else if (event.type == Common::EVENT_KEYUP) {
 		switch (event.kbd.keycode) {
-			case Common::KEYCODE_ESCAPE:
-				_inputEscapePressed = false;
-				_inputEscapePressedNotConsumed = false;
-				break;
-			case Common::KEYCODE_RETURN:
-			case Common::KEYCODE_KP_ENTER:
-				_inputEnterPressed = false;
-				break;
-			case Common::KEYCODE_SPACE:
-				_inputSpacePressed = false;
-				break;
-			case Common::KEYCODE_BACKQUOTE:
-				_inputTildePressed = false;
-				break;
-			default:
-				break;
+		case Common::KEYCODE_ESCAPE:
+			_inputEscapePressed = false;
+			_inputEscapePressedNotConsumed = false;
+			break;
+		case Common::KEYCODE_RETURN:
+		case Common::KEYCODE_KP_ENTER:
+			_inputEnterPressed = false;
+			break;
+		case Common::KEYCODE_SPACE:
+			_inputSpacePressed = false;
+			break;
+		case Common::KEYCODE_BACKQUOTE:
+			_inputTildePressed = false;
+			break;
+		default:
+			break;
 		}
 	}
 }
@@ -898,20 +909,20 @@ void Myst3Engine::loadNode(uint16 nodeID, uint32 roomID, uint32 ageID) {
 
 	_db->cacheRoom(roomID, ageID);
 
-	Common::String newRoomName = _db->getRoomName(roomID, ageID);
-	if ((!_archiveNode || _archiveNode->getRoomName() != newRoomName) && !_db->isCommonRoom(roomID, ageID)) {
+	Common::String currentRoomName = _resourceLoader->currentRoom();
+	Common::String newRoomName     = _db->getRoomName(roomID, ageID);
 
-		Common::String nodeFile = Common::String::format("%snodes.m3a", newRoomName.c_str());
-
-		_archiveNode->close();
-		if (!_archiveNode->open(nodeFile.c_str(), newRoomName.c_str())) {
-			error("Unable to open archive %s", nodeFile.c_str());
-		}
+	if (currentRoomName != newRoomName && !_db->isCommonRoom(roomID, ageID)) {
+		_resourceLoader->unloadRoomArchives();
+		_resourceLoader->loadRoomArchives(newRoomName);
 	}
 
 	runNodeInitScripts();
-	if (!_node) {
-		return; // The main init script does not load a node
+	Common::String roomNameAfterInit = getCurrentRoomName();
+	if (!_node || roomNameAfterInit != newRoomName) {
+		// The main init script did not load a node, or the init script
+		// loaded a different node.
+		return;
 	}
 
 	// The effects can only be created after running the node init scripts
@@ -952,14 +963,14 @@ void Myst3Engine::unloadNode() {
 
 void Myst3Engine::runNodeInitScripts() {
 	NodePtr nodeData = _db->getNodeData(
-			_state->getLocationNode(),
-			_state->getLocationRoom(),
-			_state->getLocationAge());
+		_state->getLocationNode(),
+		_state->getLocationRoom(),
+		_state->getLocationAge());
 
 	NodePtr nodeDataInit = _db->getNodeData(
-			32765,
-			_state->getLocationRoom(),
-			_state->getLocationAge());
+		32765,
+		_state->getLocationRoom(),
+		_state->getLocationAge());
 
 	if (nodeDataInit)
 		runScriptsFromNode(32765);
@@ -975,9 +986,9 @@ void Myst3Engine::runNodeInitScripts() {
 
 	// Mark the node as a reachable zip destination
 	_state->markNodeAsVisited(
-			_state->getLocationNode(),
-			_state->getLocationRoom(),
-			_state->getLocationAge());
+		_state->getLocationNode(),
+		_state->getLocationRoom(),
+		_state->getLocationAge());
 }
 
 void Myst3Engine::runNodeBackgroundScripts() {
@@ -1065,7 +1076,7 @@ void Myst3Engine::runBackgroundSoundScriptsFromNode(uint16 nodeID, uint32 roomID
 		if (   _backgroundSoundScriptLastRoomId != 0 && roomID != 0
 		    && _backgroundSoundScriptLastAgeId  != 0 && ageID  != 0) {
 			sameScript = _db->areRoomsScriptsEqual(_backgroundSoundScriptLastRoomId, _backgroundSoundScriptLastAgeId,
-			                                       roomID, ageID, kScriptTypeBackgroundSound);
+												   roomID, ageID, kScriptTypeBackgroundSound);
 		} else {
 			sameScript = false;
 		}
@@ -1117,6 +1128,8 @@ void Myst3Engine::runAmbientScripts(uint32 node) {
 }
 
 void Myst3Engine::loadMovie(uint16 id, uint16 condition, bool resetCond, bool loop) {
+	assert(_node);
+
 	ScriptedMovie *movie;
 
 	if (!_state->getMovieUseBackground()) {
@@ -1245,6 +1258,8 @@ void Myst3Engine::loadMovie(uint16 id, uint16 condition, bool resetCond, bool lo
 }
 
 void Myst3Engine::playSimpleMovie(uint16 id, bool fullframe, bool refreshAmbientSounds) {
+	assert(_node);
+
 	SimpleMovie movie(this, id);
 
 	if (!movie.isVideoLoaded()) {
@@ -1365,76 +1380,6 @@ void Myst3Engine::loadNodeSubtitles(uint32 id) {
 	_node->loadSubtitles(id);
 }
 
-ResourceDescription Myst3Engine::getFileDescription(const Common::String &room, uint32 index, uint16 face,
-	                                            Archive::ResourceType type) {
-	Common::String archiveRoom = room;
-	if (archiveRoom == "") {
-		archiveRoom = _db->getRoomName(_state->getLocationRoom(), _state->getLocationAge());
-	}
-
-	ResourceDescription desc;
-
-	// Search common archives
-	uint i = 0;
-	while (!desc.isValid() && i < _archivesCommon.size()) {
-		desc = _archivesCommon[i]->getDescription(archiveRoom, index, face, type);
-		i++;
-	}
-
-	// Search currently loaded node archive
-	if (!desc.isValid() && _archiveNode)
-		desc = _archiveNode->getDescription(archiveRoom, index, face, type);
-
-	return desc;
-}
-
-ResourceDescriptionArray Myst3Engine::listFilesMatching(const Common::String &room, uint32 index, uint16 face,
-	                                                Archive::ResourceType type) {
-	Common::String archiveRoom = room;
-	if (archiveRoom == "") {
-		archiveRoom = _db->getRoomName(_state->getLocationRoom(), _state->getLocationAge());
-	}
-
-	for (uint i = 0; i < _archivesCommon.size(); i++) {
-		ResourceDescriptionArray list = _archivesCommon[i]->listFilesMatching(archiveRoom, index, face, type);
-		if (!list.empty()) {
-			return list;
-		}
-	}
-
-	return _archiveNode->listFilesMatching(archiveRoom, index, face, type);
-}
-
-Graphics::Surface *Myst3Engine::loadTexture(uint16 id) {
-	ResourceDescription desc = getFileDescription("GLOB", id, 0, Archive::kRawData);
-
-	if (!desc.isValid())
-		error("Texture %d does not exist", id);
-
-	Common::SeekableReadStream *data = desc.getData();
-
-	uint32 magic = data->readUint32LE();
-	if (magic != MKTAG('.', 'T', 'E', 'X'))
-		error("Wrong texture format %d", id);
-
-	data->readUint32LE(); // unk 1
-	uint32 width = data->readUint32LE();
-	uint32 height = data->readUint32LE();
-	data->readUint32LE(); // unk 2
-	data->readUint32LE(); // unk 3
-
-	Graphics::PixelFormat onDiskFormat = Graphics::PixelFormat::createFormatARGB32();
-
-	Graphics::Surface *s = new Graphics::Surface();
-	s->create(width, height, onDiskFormat);
-
-	data->read(s->getPixels(), height * s->pitch);
-	delete data;
-
-	s->convertToInPlace(Texture::getRGBAPixelFormat());
-
-	return s;
-}
 
 Graphics::Surface *Myst3Engine::decodeJpeg(const ResourceDescription *jpegDesc) {
 	Common::SeekableReadStream *jpegStream = jpegDesc->getData();
@@ -1587,7 +1532,7 @@ Common::Error Myst3Engine::loadGameState(Common::String fileName, TransitionType
 	}
 
 	if (saveFile->err()) {
-		warning("An error occrured when reading '%s'", fileName.c_str());
+		warning("An error occured when reading '%s'", fileName.c_str());
 		return Common::kReadingFailed;
 	}
 
@@ -1742,10 +1687,14 @@ void Myst3Engine::animateDirectionChange(float targetPitch, float targetHeading,
 }
 
 void Myst3Engine::getMovieLookAt(uint16 id, bool start, float &pitch, float &heading) {
-	ResourceDescription desc = getFileDescription("", id, 0, Archive::kMovie);
+	// ResourceDescription desc = getFileDescription("", id, 0, Archive::kMovie);
+	// ResourceDescription desc = _resourceLoader->getFileDescription(_node->room(), id, 0, Archive::kMovie);
+	Common::String roomName = getCurrentRoomName();
+	ResourceDescription desc = _resourceLoader->getFileDescription(roomName, id, 0, Archive::kMovie);
 
 	if (!desc.isValid())
-		desc = getFileDescription("", id, 0, Archive::kMultitrackMovie);
+		// desc = getFileDescription("", id, 0, Archive::kMultitrackMovie);
+		desc = _resourceLoader->getFileDescription(roomName, id, 0, Archive::kMultitrackMovie);
 
 	if (!desc.isValid())
 		error("Movie %d does not exist", id);
@@ -1820,8 +1769,8 @@ void Myst3Engine::playMovieFullFrame(uint16 movie) {
 
 bool Myst3Engine::inputValidatePressed() {
 	return _inputEnterPressed ||
-	       _inputSpacePressed ||
-	       getEventManager()->getButtonState() & Common::EventManager::LBUTTON;
+		   _inputSpacePressed ||
+		   getEventManager()->getButtonState() & Common::EventManager::LBUTTON;
 }
 
 bool Myst3Engine::inputEscapePressed() {
@@ -1837,7 +1786,7 @@ bool Myst3Engine::inputTilePressed() {
 }
 
 void Myst3Engine::addSunSpot(uint16 pitch, uint16 heading, uint16 intensity,
-	                     uint16 color, uint16 var, bool varControlledIntensity, uint16 radius) {
+							 uint16 color, uint16 var, bool varControlledIntensity, uint16 radius) {
 
 	SunSpot *s = new SunSpot();
 
@@ -1945,19 +1894,19 @@ void Myst3Engine::settingsApplyFromVars() {
 		// This will allow the user to change the menu language in ScummVM and
 		// have the other settings follow the change
 		if (ConfMan.hasKey("audio_language") ||
-				ConfMan.getInt("audio_language") != _state->getLanguageAudio()) {
+			ConfMan.getInt("audio_language") != _state->getLanguageAudio()) {
 			ConfMan.setInt("audio_language", _state->getLanguageAudio());
 		}
 		if (ConfMan.hasKey("text_language") ||
-				oldTextLanguage != _state->getLanguageText()) {
+			oldTextLanguage != _state->getLanguageText()) {
 			ConfMan.setInt("text_language", _state->getLanguageText());
 		}
 		ConfMan.setBool("water_effects", _state->getWaterEffects());
 
 		// The language changed, reload the correct archives
 		if (_state->getLanguageText() != oldTextLanguage) {
-			closeArchives();
-			openArchives();
+			delete _resourceLoader;
+			_resourceLoader = openArchives();
 		}
 	} else {
 		ConfMan.setBool("vibrations", _state->getVibrationEnabled());

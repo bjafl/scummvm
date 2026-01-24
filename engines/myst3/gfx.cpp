@@ -20,6 +20,7 @@
  */
 
 #include "engines/myst3/gfx.h"
+#include "engines/myst3/resource_loader.h"
 
 #include "engines/util.h"
 
@@ -78,8 +79,17 @@ Renderer::Renderer(OSystem *system)
 Renderer::~Renderer() {
 }
 
-void Renderer::initFont(const Graphics::Surface *surface) {
-	_font = createTexture2D(surface);
+// void Renderer::initFont(const Graphics::Surface *surface) {
+// 	_font = createTexture2D(surface);
+// }
+void Renderer::initFont(ResourceLoader *resourceLoader) {
+	
+	ResourceDescription fontDesc = resourceLoader->getRawData("GLOB", 1206);
+	if (!fontDesc.isValid())
+		error("The font texture, GLOB-1206 was not found");
+	
+	TextureLoader textureLoader(*this);
+	_font = textureLoader.load(fontDesc, TextureLoader::kImageFormatTEX);
 }
 
 void Renderer::freeFont() {

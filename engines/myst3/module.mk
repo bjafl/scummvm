@@ -6,6 +6,7 @@ MODULE_OBJS := \
 	console.o \
 	cursor.o \
 	database.o \
+	dds.o \
 	effects.o \
 	gfx.o \
 	gfx_opengl.o \
@@ -21,6 +22,7 @@ MODULE_OBJS := \
 	nodecube.o \
 	nodeframe.o \
 	puzzles.o \
+	resource_loader.o \
 	scene.o \
 	script.o \
 	sound.o \

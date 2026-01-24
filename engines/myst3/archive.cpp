@@ -153,7 +153,7 @@ const Archive::DirectoryEntry *Archive::getEntry(const Common::String &room, uin
 }
 
 ResourceDescription Archive::getDescription(const Common::String &room, uint32 index, uint16 face,
-												 ResourceType type) {
+											ResourceType type) {
 	const DirectoryEntry *entry = getEntry(room, index);
 	if (!entry) {
 		return ResourceDescription();
@@ -162,7 +162,7 @@ ResourceDescription Archive::getDescription(const Common::String &room, uint32 i
 	for (uint i = 0; i < entry->subentries.size(); i++) {
 		const DirectorySubEntry &subentry = entry->subentries[i];
 		if (subentry.face == face && subentry.type == type) {
-			return ResourceDescription(this, subentry);
+			return ResourceDescription(this, *entry, subentry);
 		}
 	}
 
@@ -170,7 +170,16 @@ ResourceDescription Archive::getDescription(const Common::String &room, uint32 i
 }
 
 ResourceDescriptionArray Archive::listFilesMatching(const Common::String &room, uint32 index, uint16 face,
-												 ResourceType type) {
+													ResourceType type) {
+	return _listFilesMatching(room, index, type, &face);
+}
+ResourceDescriptionArray Archive::listFilesMatching(const Common::String &room, uint32 index,
+													ResourceType type) {
+	return _listFilesMatching(room, index, type);
+}
+ResourceDescriptionArray Archive::_listFilesMatching(const Common::String &room, uint32 index,
+													 ResourceType type, uint16 *face) {
+
 	const DirectoryEntry *entry = getEntry(room, index);
 	if (!entry) {
 		return ResourceDescriptionArray();
@@ -179,8 +188,8 @@ ResourceDescriptionArray Archive::listFilesMatching(const Common::String &room, 
 	ResourceDescriptionArray list;
 	for (uint i = 0; i < entry->subentries.size(); i++) {
 		const DirectorySubEntry &subentry = entry->subentries[i];
-		if (subentry.face == face && subentry.type == type) {
-			list.push_back(ResourceDescription(this, subentry));
+		if (subentry.type == type && (face == nullptr || subentry.face == *face)) {
+			list.push_back(ResourceDescription(this, *entry, subentry));
 		}
 	}
 
@@ -209,14 +218,13 @@ void Archive::close() {
 	_file.close();
 }
 
-ResourceDescription::ResourceDescription() :
-		_archive(nullptr),
-		_subentry(nullptr) {
+ResourceDescription::ResourceDescription() : _archive(nullptr),
+											 _entry(nullptr),
+											 _subentry(nullptr) {
 }
 
-ResourceDescription::ResourceDescription(Archive *archive, const Archive::DirectorySubEntry &subentry) :
-		_archive(archive),
-		_subentry(&subentry) {
+ResourceDescription::ResourceDescription(Archive *archive, const Archive::DirectoryEntry &entry, const Archive::DirectorySubEntry &subentry)
+	: _archive(archive), _entry(&entry), _subentry(&subentry) {
 }
 
 Common::SeekableReadStream *ResourceDescription::getData() const {
@@ -245,9 +253,9 @@ ResourceDescription::VideoData ResourceDescription::getVideoData() const {
 		videoData.v2.setValue(1, static_cast<int32>(_subentry->metadata[4]) * 0.000001f);
 		videoData.v2.setValue(2, static_cast<int32>(_subentry->metadata[5]) * 0.000001f);
 
-		videoData.u      = static_cast<int32>(_subentry->metadata[6]);
-		videoData.v      = static_cast<int32>(_subentry->metadata[7]);
-		videoData.width  = static_cast<int32>(_subentry->metadata[8]);
+		videoData.u = static_cast<int32>(_subentry->metadata[6]);
+		videoData.v = static_cast<int32>(_subentry->metadata[7]);
+		videoData.width = static_cast<int32>(_subentry->metadata[8]);
 		videoData.height = static_cast<int32>(_subentry->metadata[9]);
 	}
 

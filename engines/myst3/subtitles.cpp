@@ -105,7 +105,8 @@ void FontSubtitles::loadResources() {
 }
 
 void FontSubtitles::loadCharset(int32 id) {
-	ResourceDescription fontCharset = _vm->getFileDescription("CHAR", id, 0, Archive::kRawData);
+	//ResourceDescription fontCharset = _vm->getFileDescription("CHAR", id, 0, Archive::kRawData);
+	ResourceDescription fontCharset = _vm->_resourceLoader->getFileDescription("CHAR", id, 0, Archive::kRawData);
 
 	// Load the font charset if any
 	if (fontCharset.isValid()) {
@@ -339,9 +340,11 @@ void MovieSubtitles::readPhrases(const ResourceDescription *desc) {
 ResourceDescription MovieSubtitles::loadMovie(int32 id, bool overriden) {
 	ResourceDescription desc;
 	if (overriden) {
-		desc = _vm->getFileDescription("IMGR", 200000 + id, 0, Archive::kMovie);
+		//desc = _vm->getFileDescription("IMGR", 200000 + id, 0, Archive::kMovie);
+		desc = _vm->_resourceLoader->getFileDescription("IMGR", 200000 + id, 0, Archive::kMovie);
 	} else {
-		desc = _vm->getFileDescription("", 200000 + id, 0, Archive::kMovie);
+		auto roomName = _vm->getCurrentRoomName();
+		desc = _vm->_resourceLoader->getFileDescription(roomName, 200000 + id, 0, Archive::kMovie);
 	}
 	return desc;
 }
@@ -394,7 +397,8 @@ Subtitles::~Subtitles() {
 
 void Subtitles::loadFontSettings(int32 id) {
 	// Load font settings
-	const ResourceDescription fontNums = _vm->getFileDescription("NUMB", id, 0, Archive::kNumMetadata);
+	//const ResourceDescription fontNums = _vm->getFileDescription("NUMB", id, 0, Archive::kNumMetadata);
+	const ResourceDescription fontNums = _vm->_resourceLoader->getFileDescription("NUMB", id, 0, Archive::kNumMetadata);
 
 	if (!fontNums.isValid())
 		error("Unable to load font settings values");
@@ -421,7 +425,8 @@ void Subtitles::loadFontSettings(int32 id) {
 		_fontCharsetCode = -_fontCharsetCode; // Negative values are GDI charset codes
 	}
 
-	ResourceDescription fontText = _vm->getFileDescription("TEXT", id, 0, Archive::kTextMetadata);
+	//ResourceDescription fontText = _vm->getFileDescription("TEXT", id, 0, Archive::kTextMetadata);
+	ResourceDescription fontText = _vm->_resourceLoader->getFileDescription("TEXT", id, 0, Archive::kTextMetadata);
 
 	if (!fontText.isValid())
 		error("Unable to load font face");
@@ -441,9 +446,12 @@ int32 Subtitles::checkOverridenId(int32 id) {
 ResourceDescription Subtitles::loadText(int32 id, bool overriden) {
 	ResourceDescription desc;
 	if (overriden) {
-		desc = _vm->getFileDescription("IMGR", 100000 + id, 0, Archive::kText);
+		//desc = _vm->getFileDescription("IMGR", 100000 + id, 0, Archive::kText);
+		desc = _vm->_resourceLoader->getFileDescription("IMGR", 100000 + id, 0, Archive::kText);
 	} else {
-		desc = _vm->getFileDescription("", 100000 + id, 0, Archive::kText);
+		//desc = _vm->getFileDescription("", 100000 + id, 0, Archive::kText);
+		auto roomName = _vm->getCurrentRoomName();
+		desc = _vm->_resourceLoader->getFileDescription(roomName, 100000 + id, 0, Archive::kText);
 	}
 	return desc;
 }

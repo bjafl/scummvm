@@ -1136,16 +1136,30 @@ void Puzzles::journalSaavedro(int16 move) {
 
 		// Does the left page need to be loaded from a different node?
 		if (nodeLeft != nodeRight) {
-			ResourceDescription jpegDesc = _vm->getFileDescription("", nodeLeft, 0, Archive::kFrame);
+			// ResourceDescription jpegDesc = _vm->getFileDescription("", nodeLeft, 0, Archive::kFrame);
+			ResourceDescription resource = _vm->_resourceLoader->getFrameBitmap("JRNL", nodeLeft);
 
-			if (!jpegDesc.isValid())
+			if (!resource.isValid())
 				error("Frame %d does not exist", nodeLeft);
 
-			Graphics::Surface *bitmap = Myst3Engine::decodeJpeg(&jpegDesc);
+			// Create a spotitem covering the left half of the screen
+			// to display the left page
+			Common::Rect leftFrameHalf(Renderer::kOriginalWidth / 2, Renderer::kFrameHeight);
+			SpotItemFace *leftPage = _vm->addMenuSpotItem(999, 1, leftFrameHalf);
+
+			Graphics::Surface *bitmap;
+
+			if (resource.getType() == Archive::kModdedFrame) {
+				TextureLoader textureLoader(*_vm->_gfx);
+				bitmap = textureLoader.loadSurface(resource, TextureLoader::kImageFormatJPEG);
+				// _vm->_gfx->drawTexturedRect2D(leftFrameHalf, leftFrameHalf, leftPageTexture);
+			} else {
+				bitmap = Myst3Engine::decodeJpeg(&resource);
+			}
 
 			// Copy the left half of the node to a new surface
 			Graphics::Surface *leftBitmap = new Graphics::Surface();
-			leftBitmap->create(bitmap->w / 2, bitmap->h, Texture::getRGBAPixelFormat());
+			leftBitmap->create(leftFrameHalf.width(), leftFrameHalf.height(), Texture::getRGBAPixelFormat());
 
 			for (int i = 0; i < bitmap->h; i++) {
 				memcpy(leftBitmap->getBasePtr(0, i), bitmap->getBasePtr(0, i), leftBitmap->w * 4);
@@ -1154,14 +1168,12 @@ void Puzzles::journalSaavedro(int16 move) {
 			bitmap->free();
 			delete bitmap;
 
-			// Create a spotitem covering the left half of the screen
-			// to display the left page
-			SpotItemFace *leftPage = _vm->addMenuSpotItem(999, 1, Common::Rect(0, 0, leftBitmap->w, leftBitmap->h));
-
+			// Update menu spot item
 			leftPage->updateData(leftBitmap);
 
 			leftBitmap->free();
 			delete leftBitmap;
+			
 		}
 	}
 }
@@ -1176,7 +1188,9 @@ int16 Puzzles::_journalSaavedroLastPageLastChapterValue() {
 }
 
 uint16 Puzzles::_journalSaavedroGetNode(uint16 chapter) {
-	ResourceDescription desc = _vm->getFileDescription("", 1200, 0, Archive::kNumMetadata);
+	//ResourceDescription desc = _vm->getFileDescription("", 1200, 0, Archive::kNumMetadata);
+	auto roomName = _vm->getCurrentRoomName();
+	auto desc = _vm->_resourceLoader->getFileDescription(roomName, 1200, 0, Archive::kNumMetadata);
 
 	if (!desc.isValid())
 		error("Node 1200 does not exist");
@@ -1210,7 +1224,8 @@ uint16 Puzzles::_journalSaavedroNextChapter(uint16 chapter, bool forward) {
 void Puzzles::journalAtrus(uint16 node, uint16 var) {
 	uint numPages = 0;
 
-	while (_vm->getFileDescription("", node++, 0, Archive::kFrame).isValid())
+	Common::String roomName = _vm->getCurrentRoomName();
+	while (_vm->_resourceLoader->getFileDescription(roomName, node++, 0, Archive::kFrame).isValid())
 		numPages++;
 
 	_vm->_state->setVar(var, numPages - 1);
@@ -1519,7 +1534,8 @@ void Puzzles::projectorLoadBitmap(uint16 bitmap) {
 	_vm->_projectorBackground = new Graphics::Surface();
 	_vm->_projectorBackground->create(1024, 1024, Texture::getRGBAPixelFormat());
 
-	ResourceDescription movieDesc = _vm->getFileDescription("", bitmap, 0, Archive::kStillMovie);
+	//ResourceDescription movieDesc = _vm->getFileDescription("", bitmap, 0, Archive::kStillMovie);
+	ResourceDescription movieDesc = _vm->_resourceLoader->getFileDescription("LEOS", bitmap, 0, Archive::kStillMovie);
 
 	if (!movieDesc.isValid())
 		error("Movie %d does not exist", bitmap);
@@ -1546,7 +1562,8 @@ void Puzzles::projectorAddSpotItem(uint16 bitmap, uint16 x, uint16 y) {
 	if (!_vm->_state->getVar(26))
 		return;
 
-	ResourceDescription movieDesc = _vm->getFileDescription("", bitmap, 0, Archive::kStillMovie);
+	//ResourceDescription movieDesc = _vm->getFileDescription("", bitmap, 0, Archive::kStillMovie);
+	ResourceDescription movieDesc = _vm->_resourceLoader->getFileDescription("LEOS", bitmap, 0, Archive::kStillMovie);
 
 	if (!movieDesc.isValid())
 		error("Movie %d does not exist", bitmap);

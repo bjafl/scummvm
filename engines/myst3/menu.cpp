@@ -42,12 +42,9 @@ Dialog::Dialog(Myst3Engine *vm, uint id):
 	_isConstrainedToWindow = false;
 	_scaled = !_vm->isWideScreenModEnabled();
 
-	ResourceDescription countDesc = _vm->getFileDescription("DLGI", id, 0, Archive::kNumMetadata);
-	ResourceDescription movieDesc = _vm->getFileDescription("DLOG", id, 0, Archive::kDialogMovie);
-	if (!movieDesc.isValid()) {
-		movieDesc = _vm->getFileDescription("DLOG", id, 0, Archive::kStillMovie);
-	}
-
+	ResourceDescription countDesc = _vm->_resourceLoader->getFileDescription("DLGI", id, 0, Archive::kNumMetadata);
+	ResourceDescription movieDesc = _vm->_resourceLoader->getDialogMovie("DLOG", id);
+	
 	if (!movieDesc.isValid() || !countDesc.isValid())
 		error("Unable to load dialog %d", id);
 
@@ -102,7 +99,7 @@ ButtonsDialog::~ButtonsDialog() {
 }
 
 void ButtonsDialog::loadButtons() {
-	ResourceDescription buttonsDesc = _vm->getFileDescription("DLGB", 1000, 0, Archive::kNumMetadata);
+	ResourceDescription buttonsDesc = _vm->_resourceLoader->getFileDescription("DLGB", 1000, 0, Archive::kNumMetadata);
 
 	if (!buttonsDesc.isValid())
 		error("Unable to load dialog buttons description");
@@ -406,7 +403,7 @@ Common::String Menu::getAgeLabel(GameState *gameState) {
 		age = gameState->getLocationAge();
 
 	// Look for the age name
-	ResourceDescription desc = _vm->getFileDescription("AGES", 1000, 0, Archive::kTextMetadata);
+	ResourceDescription desc = _vm->_resourceLoader->getFileDescription("AGES", 1000, 0, Archive::kTextMetadata);
 
 	if (!desc.isValid())
 		error("Unable to load age descriptions.");
@@ -847,7 +844,7 @@ void AlbumMenu::saveLoadAction(uint16 action, uint16 item) {
 }
 
 Common::String AlbumMenu::getSaveNameTemplate() {
-	ResourceDescription saveNameDesc = _vm->getFileDescription("SAVE", 1000, 0, Archive::kTextMetadata);
+	ResourceDescription saveNameDesc = _vm->_resourceLoader->getFileDescription("SAVE", 1000, 0, Archive::kTextMetadata);
 	return saveNameDesc.getTextData(0); // "EXILE Saved Game %d"
 }
 

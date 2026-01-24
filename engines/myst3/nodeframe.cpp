@@ -29,19 +29,10 @@ namespace Myst3 {
 
 NodeFrame::NodeFrame(Myst3Engine *vm, uint16 id) :
 		Node(vm, id) {
-	ResourceDescription jpegDesc = _vm->getFileDescription("", id, 1, Archive::kLocalizedFrame);
-
-	if (!jpegDesc.isValid())
-		jpegDesc = _vm->getFileDescription("", id, 0, Archive::kFrame);
-
-	if (!jpegDesc.isValid())
-		jpegDesc = _vm->getFileDescription("", id, 1, Archive::kFrame);
-
-	if (!jpegDesc.isValid())
-		error("Frame %d does not exist", id);
-
+	Common::String roomName = _vm->getCurrentRoomName();
+	ResourceDescription bitmap = _vm->_resourceLoader->getFrameBitmap(roomName, id);
 	_faces[0] = new Face(_vm);
-	_faces[0]->setTextureFromJPEG(&jpegDesc);
+	_faces[0]->setTextureFromBitmap(&bitmap);
 }
 
 NodeFrame::~NodeFrame() {

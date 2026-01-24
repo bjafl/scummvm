@@ -32,8 +32,9 @@
 
 namespace Myst3 {
 
-void Face::setTextureFromJPEG(const ResourceDescription *jpegDesc) {
-	_bitmap = Myst3Engine::decodeJpeg(jpegDesc);
+void Face::setTextureFromBitmap(const ResourceDescription *bitmap) {
+	TextureLoader loader(*_vm->_gfx);
+	_bitmap = loader.loadSurface(*bitmap, TextureLoader::kImageFormatJPEG);
 	if (_is3D) {
 		_texture = _vm->_gfx->createTexture3D(_bitmap);
 	} else {
@@ -168,31 +169,26 @@ void Node::loadSpotItem(uint16 id, int16 condition, bool fade) {
 	spotItem->setFade(fade);
 	spotItem->setFadeVar(abs(condition));
 
-	for (int i = 0; i < 6; i++) {
-		ResourceDescriptionArray spotItemImages = _vm->listFilesMatching("", id, i + 1, Archive::kLocalizedSpotItem);
+	Common::String roomName = _vm->getCurrentRoomName();
+	ResourceDescriptionArray resources = _vm->_resourceLoader->listSpotItemImages(roomName, id);
 
-		if (spotItemImages.empty())
-			spotItemImages = _vm->listFilesMatching("", id, i + 1, Archive::kSpotItem);
+	for (uint i = 0; i < resources.size(); i++) {
+		const ResourceDescription &image = resources[i];
+		ResourceDescription::SpotItemData spotItemData = image.getSpotItemData();
 
-		for (uint j = 0; j < spotItemImages.size(); j++) {
-			const ResourceDescription &image = spotItemImages[j];
-			ResourceDescription::SpotItemData spotItemData = image.getSpotItemData();
+		SpotItemFace *spotItemFace = new SpotItemFace(_faces[i], spotItemData.u, spotItemData.v);
 
-			SpotItemFace *spotItemFace = new SpotItemFace(_faces[i], spotItemData.u, spotItemData.v);
+		spotItemFace->loadData(&image);
 
-			spotItemFace->loadData(&image);
-
-			// SpotItems with an always true conditions cannot be undrawn.
-			// Draw them now to make sure the "non drawn backups" for other, potentially
-			// overlapping SpotItems have them drawn.
-			if (condition == 1) {
-				spotItemFace->draw();
-			}
-
-			spotItem->addFace(spotItemFace);
+		// SpotItems with an always true conditions cannot be undrawn.
+		// Draw them now to make sure the "non drawn backups" for other, potentially
+		// overlapping SpotItems have them drawn.
+		if (condition == 1) {
+			spotItemFace->draw();
 		}
-	}
 
+		spotItem->addFace(spotItemFace);
+	}
 	_spotItems.push_back(spotItem);
 }
 

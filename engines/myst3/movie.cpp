@@ -45,16 +45,8 @@ Movie::Movie(Myst3Engine *vm, uint16 id) :
 		_additiveBlending(false),
 		_transparency(100) {
 
-	ResourceDescription binkDesc = _vm->getFileDescription("", id, 0, Archive::kMultitrackMovie);
-
-	if (!binkDesc.isValid())
-		binkDesc = _vm->getFileDescription("", id, 0, Archive::kDialogMovie);
-
-	if (!binkDesc.isValid())
-		binkDesc = _vm->getFileDescription("", id, 0, Archive::kStillMovie);
-
-	if (!binkDesc.isValid())
-		binkDesc = _vm->getFileDescription("", id, 0, Archive::kMovie);
+	auto roomName = _vm->getCurrentRoomName();
+	ResourceDescription binkDesc = _vm->_resourceLoader->getMovie(roomName, id);
 
 	// Check whether the video is optional
 	bool optional = false;

@@ -31,14 +31,14 @@ NodeCube::NodeCube(Myst3Engine *vm, uint16 id) :
 		Node(vm, id) {
 	_is3D = true;
 
+	Common::String roomName = _vm->getCurrentRoomName();
 	for (int i = 0; i < 6; i++) {
-		ResourceDescription jpegDesc = _vm->getFileDescription("", id, i + 1, Archive::kCubeFace);
-
-		if (!jpegDesc.isValid())
+		ResourceDescription bitmap = _vm->_resourceLoader->getCubeBitmap(roomName, id, i);
+		if (!bitmap.isValid())
 			error("Face %d does not exist", id);
 
 		_faces[i] = new Face(_vm, true);
-		_faces[i]->setTextureFromJPEG(&jpegDesc);
+		_faces[i]->setTextureFromBitmap(&bitmap);
 	}
 }
 

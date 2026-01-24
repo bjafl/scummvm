@@ -82,7 +82,7 @@ void Cursor::loadAvailableCursors() {
 		if (_textures.contains(availableCursors[i].nodeID)) continue;
 
 		// Load the cursor bitmap
-		ResourceDescription cursorDesc = _vm->getFileDescription("GLOB", availableCursors[i].nodeID, 0, Archive::kRawData);
+		ResourceDescription cursorDesc = _vm->_resourceLoader->getFileDescription("GLOB", availableCursors[i].nodeID, 0, Archive::kRawData);
 		if (!cursorDesc.isValid())
 			error("Cursor %d does not exist", availableCursors[i].nodeID);
 
