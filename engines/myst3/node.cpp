@@ -171,7 +171,7 @@ void Node::loadSpotItem(uint16 id, int16 condition, bool fade) {
 
 	Common::String roomName = _vm->getCurrentRoomName();
 	ResourceDescriptionArray resources = _vm->_resourceLoader->listSpotItemImages(roomName, id);
-
+	TextureLoader textureLoader(*_vm->_gfx);
 	for (uint i = 0; i < resources.size(); i++) {
 		const ResourceDescription &image = resources[i];
 		ResourceDescription::SpotItemData spotItemData = image.getSpotItemData();
@@ -179,7 +179,8 @@ void Node::loadSpotItem(uint16 id, int16 condition, bool fade) {
 		uint16 faceIndex = image.getFace() - 1; // Faces are 1-indexed in archive, 0-indexed in _faces array
 		SpotItemFace *spotItemFace = new SpotItemFace(_faces[faceIndex], spotItemData.u, spotItemData.v);
 
-		spotItemFace->loadData(&image);
+		Graphics::Surface *bitmapSurface = textureLoader.loadSurface(image, TextureLoader::kImageFormatJPEG);
+		spotItemFace->loadData(bitmapSurface);
 
 		// SpotItems with an always true conditions cannot be undrawn.
 		// Draw them now to make sure the "non drawn backups" for other, potentially
@@ -377,9 +378,9 @@ void SpotItemFace::initBlack(uint16 width, uint16 height) {
 	_drawn = false;
 }
 
-void SpotItemFace::loadData(const ResourceDescription *jpegDesc) {
+void SpotItemFace::loadData(Graphics::Surface *bitmap) {
 	// Convert active SpotItem image to raw data
-	_bitmap = Myst3Engine::decodeJpeg(jpegDesc);
+	_bitmap = bitmap;
 
 	initNotDrawn(_bitmap->w, _bitmap->h);
 }

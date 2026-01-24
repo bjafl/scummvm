@@ -1149,13 +1149,8 @@ void Puzzles::journalSaavedro(int16 move) {
 
 			Graphics::Surface *bitmap;
 
-			if (resource.getType() == Archive::kModdedFrame) {
-				TextureLoader textureLoader(*_vm->_gfx);
-				bitmap = textureLoader.loadSurface(resource, TextureLoader::kImageFormatJPEG);
-				// _vm->_gfx->drawTexturedRect2D(leftFrameHalf, leftFrameHalf, leftPageTexture);
-			} else {
-				bitmap = Myst3Engine::decodeJpeg(&resource);
-			}
+			TextureLoader textureLoader(*_vm->_gfx);
+			bitmap = textureLoader.loadSurface(resource, TextureLoader::kImageFormatJPEG);
 
 			// Copy the left half of the node to a new surface
 			Graphics::Surface *leftBitmap = new Graphics::Surface();

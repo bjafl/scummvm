@@ -51,6 +51,9 @@
 #include "engines/myst3/ambient.h"
 #include "engines/myst3/transition.h"
 
+#include "engines/myst3/dds.h"
+#include "engines/myst3/dds_decompress.h"
+
 #include "image/jpeg.h"
 
 #include "graphics/renderer.h"
@@ -1378,26 +1381,6 @@ void Myst3Engine::loadNodeSubtitles(uint32 id) {
 	assert(_node);
 
 	_node->loadSubtitles(id);
-}
-
-
-Graphics::Surface *Myst3Engine::decodeJpeg(const ResourceDescription *jpegDesc) {
-	Common::SeekableReadStream *jpegStream = jpegDesc->getData();
-
-	Image::JPEGDecoder jpeg;
-	jpeg.setOutputPixelFormat(Texture::getRGBAPixelFormat());
-
-	if (!jpeg.loadStream(*jpegStream))
-		error("Could not decode Myst III JPEG");
-	delete jpegStream;
-
-	const Graphics::Surface *bitmap = jpeg.getSurface();
-	assert(bitmap->format == Texture::getRGBAPixelFormat());
-
-	// JPEGDecoder owns the decoded surface, we have to make a copy...
-	Graphics::Surface *rgbaSurface = new Graphics::Surface();
-	rgbaSurface->copyFrom(*bitmap);
-	return rgbaSurface;
 }
 
 int16 Myst3Engine::openDialog(uint16 id) {

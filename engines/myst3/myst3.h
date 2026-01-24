@@ -137,7 +137,7 @@ public:
 	//                                        Archive::ResourceType type);
 
 	// Graphics::Surface *loadTexture(uint16 id);
-	static Graphics::Surface *decodeJpeg(const ResourceDescription *jpegDesc);
+	//static Graphics::Surface *decodeJpeg(const ResourceDescription *jpegDesc);
 
 	void goToNode(uint16 nodeID, TransitionType transition);
 	void loadNode(uint16 nodeID, uint32 roomID = 0, uint32 ageID = 0);
