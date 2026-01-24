@@ -23,6 +23,7 @@
 
 #include "engines/myst3/archive.h"
 #include "engines/myst3/dds.h"
+#include "engines/myst3/dds_decompress.h"
 #include "engines/myst3/gfx.h"
 #include "engines/myst3/myst3.h"
 
@@ -396,11 +397,11 @@ static Common::SeekableReadStream *openFile(const Common::String &filename) {
 }
 
 TextureLoader::TextureLoader(Renderer &renderer) : _renderer(renderer),
-												   _loadExternalFiles(ConfMan.getBool("enable_external_assets")) {
+												   _loadExternalFiles(ConfMan.getBool("enable_assets_mod")) {
 }
 
 Graphics::Surface *TextureLoader::loadSurface(const ResourceDescription &resource, TextureLoader::ImageFormat defaultImageFormat) {
-	ImageFormat *imageFormat = nullptr;
+	ImageFormat imageFormat = kImageFormatUnknown;
 	Common::SeekableReadStream *imageStream = nullptr;
 	Common::String name = Common::String::format("%s-%d-%d", resource.getRoom().c_str(), resource.getIndex(), resource.getFace());
 
@@ -409,14 +410,14 @@ Graphics::Surface *TextureLoader::loadSurface(const ResourceDescription &resourc
 		name = ResourceLoader::computeExtractedFileName(resource.getDirectoryEntry(), resource.getDirectorySubEntry(), multipleSubEntriesWithSameKey, "dds", "dds", "dds");
 		imageStream = openFile(name);
 		if (imageStream) {
-			*imageFormat = kImageFormatDDS;
+			imageFormat = kImageFormatDDS;
 		}
 
 		if (!imageStream) {
 			name = ResourceLoader::computeExtractedFileName(resource.getDirectoryEntry(), resource.getDirectorySubEntry(), multipleSubEntriesWithSameKey, "png", "png", "png");
 			imageStream = openFile(name);
 			if (imageStream) {
-				*imageFormat = kImageFormatPNG;
+				imageFormat = kImageFormatPNG;
 			}
 		}
 
@@ -424,7 +425,7 @@ Graphics::Surface *TextureLoader::loadSurface(const ResourceDescription &resourc
 			name = ResourceLoader::computeExtractedFileName(resource.getDirectoryEntry(), resource.getDirectorySubEntry(), multipleSubEntriesWithSameKey, "jpg", "jpg", "jpg");
 			imageStream = openFile(name);
 			if (imageStream) {
-				*imageFormat = kImageFormatJPEG;
+				imageFormat = kImageFormatJPEG;
 			}
 		}
 	}
@@ -432,14 +433,14 @@ Graphics::Surface *TextureLoader::loadSurface(const ResourceDescription &resourc
 	if (!imageStream) {
 		imageStream = resource.getData();
 		if (resource.getType() == Archive::kModdedCubeFace || resource.getType() == Archive::kModdedFrame || resource.getType() == Archive::kModdedSpotItem || resource.getType() == Archive::kModdedRawData) {
-			*imageFormat = kImageFormatDDS;
+			imageFormat = kImageFormatDDS;
 		} else {
-			*imageFormat = defaultImageFormat;
+			imageFormat = defaultImageFormat;
 		}
 	}
 
 	Graphics::Surface *surface = new Graphics::Surface();
-	switch (*imageFormat) {
+	switch (imageFormat) {
 	case kImageFormatJPEG: {
 		Image::JPEGDecoder jpeg;
 		jpeg.setOutputPixelFormat(Texture::getRGBAPixelFormat());
@@ -468,7 +469,38 @@ Graphics::Surface *TextureLoader::loadSurface(const ResourceDescription &resourc
 		if (!decoder.load(*imageStream, name)) {
 			error("Failed to decode DDS %s", name.c_str());
 		}
-		surface->copyFrom(decoder.getMipMaps()[0]);
+
+		switch (decoder.dataFormat()) {
+		case DDS::kDataFormatMipMaps:
+			surface->copyFrom(decoder.getMipMaps()[0]);
+			break;
+		case DDS::kDataFormatRawBC1Unorm: {
+			Graphics::Surface *decompressed = decompressDXT1(decoder.rawData(), decoder.rawDataSize(), decoder.width(), decoder.height());
+			surface->copyFrom(*decompressed);
+			decompressed->free();
+			delete decompressed;
+			break;
+		}
+		case DDS::kDataFormatRawBC2Unorm: {
+			Graphics::Surface *decompressed = decompressDXT3(decoder.rawData(), decoder.rawDataSize(), decoder.width(), decoder.height());
+			surface->copyFrom(*decompressed);
+			decompressed->free();
+			delete decompressed;
+			break;
+		}
+		case DDS::kDataFormatRawBC3Unorm: {
+			Graphics::Surface *decompressed = decompressDXT5(decoder.rawData(), decoder.rawDataSize(), decoder.width(), decoder.height());
+			surface->copyFrom(*decompressed);
+			decompressed->free();
+			delete decompressed;
+			break;
+		}
+		case DDS::kDataFormatRawBC7Unorm:
+			error("BC7 decompression not implemented for %s", name.c_str());
+			break;
+		default:
+			error("Unknown DDS data format for %s", name.c_str());
+		}
 		break;
 	}
 	case kImageFormatTEX: {
@@ -515,7 +547,6 @@ Graphics::Surface *TextureLoader::loadSurface(const ResourceDescription &resourc
 	default:
 		error("Unknown image format %d", imageFormat);
 	}
-	delete imageFormat;
 	delete imageStream;
 	return surface;
 }
@@ -529,7 +560,7 @@ Texture *TextureLoader::load(const ResourceDescription &resource, TextureLoader:
 	return texture;
 }
 
-VideoLoader::VideoLoader() : _loadExternalFiles(ConfMan.getBool("enable_external_assets")) {
+VideoLoader::VideoLoader() : _loadExternalFiles(ConfMan.getBool("enable_assets_mod")) {
 }
 
 Common::SeekableReadStream *VideoLoader::load(const ResourceDescription &resource) {

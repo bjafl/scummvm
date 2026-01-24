@@ -28,25 +28,37 @@
 
 namespace Myst3 {
 
-// From engines/stark/formats/dds.h
-
 // Based on xoreos' DDS code
 
 /**
  * DDS texture
  *
- * Only a very small subset of DDS features are supported. Especially,
- * compressed formats are not supported. This class is meant to
- * load a single DDS file per instance.
+ * Supports uncompressed RGB/RGBA and compressed DXT1/DXT3/DXT5 formats.
+ * This class is meant to load a single DDS file per instance.
  */
 class DDS {
 public:
+	DDS();
 	~DDS();
+
+	enum DataFormat {
+		kDataFormatInvalid,
+		kDataFormatMipMaps,
+		kDataFormatRawBC1Unorm,
+		kDataFormatRawBC2Unorm,
+		kDataFormatRawBC3Unorm,
+		kDataFormatRawBC7Unorm
+	};
 
 	typedef Common::Array<Graphics::Surface> MipMaps;
 
 	/** Load a DDS texture from a stream */
 	bool load(Common::SeekableReadStream &dds, const Common::String &name);
+
+	uint32 width() const  { return _width; }
+	uint32 height() const { return _height; }
+	DataFormat dataFormat() const { return _dataFormat; }
+	const Common::String &name() const { return _name; }
 
 	/**
 	 * Retrieve the mip map levels for a loaded texture
@@ -56,6 +68,8 @@ public:
 	 * previous one.
 	 */
 	const MipMaps &getMipMaps() const;
+	const byte *rawData() const;
+	uint rawDataSize() const;
 
 private:
 	/** The specific pixel format of the included image data. */
@@ -85,10 +99,44 @@ private:
 		uint32 aBitMask;
 	};
 
-	bool readHeader(Common::SeekableReadStream &dds);
-	bool readData(Common::SeekableReadStream &dds);
+	enum DXGIFormat {
+		kDXGIFormatUnknown  = 0x00,
+		kDXGIFormatBC1Unorm = 0x47,
+		kDXGIFormatBC2Unorm = 0x4a,
+		kDXGIFormatBC3Unorm = 0x4d,
+		kDXGIFormatBC7Unorm = 0x62
+	};
 
-	bool detectFormat(const DDSPixelFormat &format);
+	enum DDSResourceDimension {
+		kDDSDimensionTexture1D = 2,
+		kDDSDimensionTexture2D = 3,
+		kDDSDimensionTexture3D = 4
+	};
+
+	struct DDSHeaderDXT10 {
+		DXGIFormat dxgiFormat;
+		DDSResourceDimension resourceDimension;
+		uint32 miscFlag;
+		uint32 arraySize;
+		uint32 miscFlags2;
+
+		DDSHeaderDXT10() : dxgiFormat(kDXGIFormatUnknown), resourceDimension(kDDSDimensionTexture2D), miscFlag(0), arraySize(1), miscFlags2(0) {}
+	};
+
+	bool readHeader(Common::SeekableReadStream &dds);
+	bool readMipMaps(Common::SeekableReadStream &dds);
+	bool readRaw(Common::SeekableReadStream &dds);
+
+	bool detectFormat(const DDSPixelFormat &format, const DDSHeaderDXT10 &dxt10Header);
+
+	uint32 _width;
+	uint32 _height;
+	uint32 _mipMapCount;
+
+	DataFormat _dataFormat;
+
+	byte *_rawData;
+	uint _rawDataSize;
 
 	MipMaps _mipmaps;
 	Graphics::PixelFormat _format;

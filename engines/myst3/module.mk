@@ -7,6 +7,7 @@ MODULE_OBJS := \
 	cursor.o \
 	database.o \
 	dds.o \
+	dds_decompress.o \
 	effects.o \
 	gfx.o \
 	gfx_opengl.o \

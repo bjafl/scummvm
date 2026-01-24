@@ -176,7 +176,8 @@ void Node::loadSpotItem(uint16 id, int16 condition, bool fade) {
 		const ResourceDescription &image = resources[i];
 		ResourceDescription::SpotItemData spotItemData = image.getSpotItemData();
 
-		SpotItemFace *spotItemFace = new SpotItemFace(_faces[i], spotItemData.u, spotItemData.v);
+		uint16 faceIndex = image.getFace() - 1; // Faces are 1-indexed in archive, 0-indexed in _faces array
+		SpotItemFace *spotItemFace = new SpotItemFace(_faces[faceIndex], spotItemData.u, spotItemData.v);
 
 		spotItemFace->loadData(&image);
 

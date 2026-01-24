@@ -95,6 +95,7 @@ private:
 class TextureLoader {
 public:
 	enum ImageFormat {
+		kImageFormatUnknown = 0,
 		kImageFormatJPEG,
 		kImageFormatPNG,
 		kImageFormatBMP,
