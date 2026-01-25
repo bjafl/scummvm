@@ -39,23 +39,37 @@ NodeFrame::~NodeFrame() {
 }
 
 void NodeFrame::draw() {
-	Common::Rect screenRect;
+	// Common::Rect screenRect;
 
-	// Size and position of the frame
+	// // Size and position of the frame
+	// if (_vm->_state->getViewType() == kMenu) {
+	// 	screenRect = Common::Rect(Renderer::kOriginalWidth, Renderer::kOriginalHeight);
+	// } else {
+	// 	screenRect = Common::Rect(Renderer::kOriginalWidth, Renderer::kFrameHeight);
+	// }
+
+	// // Used fragment of texture
+	// Common::Rect textureRect = Common::Rect(screenRect.width(), screenRect.height());
+
+	// // Update the OpenGL texture if needed
+	// _faces[0]->uploadTexture();
+
+	// // Draw
+	// _vm->_gfx->drawTexturedRect2D(screenRect, textureRect, _faces[0]->_texture);
+
+
+	
+	Texture *texture = _faces[0]->_texture;
+
+	FloatRect sceneViewport;
 	if (_vm->_state->getViewType() == kMenu) {
-		screenRect = Common::Rect(Renderer::kOriginalWidth, Renderer::kOriginalHeight);
+		sceneViewport = _vm->_layout->menuViewport();
 	} else {
-		screenRect = Common::Rect(Renderer::kOriginalWidth, Renderer::kFrameHeight);
+		sceneViewport = _vm->_layout->frameViewport();
 	}
 
-	// Used fragment of texture
-	Common::Rect textureRect = Common::Rect(screenRect.width(), screenRect.height());
-
-	// Update the OpenGL texture if needed
-	_faces[0]->uploadTexture();
-
-	// Draw
-	_vm->_gfx->drawTexturedRect2D(screenRect, textureRect, _faces[0]->_texture);
+	// _gfx.setViewport(sceneViewport, false);
+	_vm->_gfx->drawTexturedRect2D(FloatRect::unit(), FloatRect::unit(), texture);
 }
 
 } // End of namespace Myst3

@@ -39,6 +39,7 @@ public:
 	virtual ~TinyGLRenderer();
 
 	void init() override;
+	// void setViewport(const FloatRect &viewport, bool is3d) override;
 
 	void clear() override;
 	void selectTargetWindow(Window *window, bool is3D, bool scaled) override;
@@ -46,9 +47,11 @@ public:
 	Texture *createTexture2D(const Graphics::Surface *surface) override;
 	Texture *createTexture3D(const Graphics::Surface *surface) override;
 
-	void drawRect2D(const Common::Rect &rect, uint8 a, uint8 r, uint8 g, uint8 b) override;
-	virtual void drawTexturedRect2D(const Common::Rect &screenRect, const Common::Rect &textureRect, Texture *texture,
-	                                float transparency = -1.0, bool additiveBlending = false) override;
+	// void drawRect2D(const Common::Rect &rect, uint8 a, uint8 r, uint8 g, uint8 b) override;
+	void drawRect2D(const FloatRect &screenRect, uint8 a, uint8 r, uint8 g, uint8 b) override;
+	
+	virtual void TinyGLRenderer::drawTexturedRect2D(const FloatRect &screenRect, const FloatRect &textureRect,
+                                        Texture *texture, float transparency, bool additiveBlending) override;
 	virtual void drawTexturedRect3D(const Math::Vector3d &topLeft, const Math::Vector3d &bottomLeft,
 	                                const Math::Vector3d &topRight, const Math::Vector3d &bottomRight,
 	                                Texture *texture) override;

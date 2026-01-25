@@ -19,6 +19,7 @@
  *
  */
 
+#include "engines/myst3/archive.h"
 #include "engines/myst3/cursor.h"
 #include "engines/myst3/database.h"
 #include "engines/myst3/inventory.h"
@@ -38,13 +39,10 @@ namespace Myst3 {
 Dialog::Dialog(Myst3Engine *vm, uint id):
 	_vm(vm),
 	_texture(nullptr) {
-	// Draw on the whole screen
-	_isConstrainedToWindow = false;
-	_scaled = !_vm->isWideScreenModEnabled();
 
 	ResourceDescription countDesc = _vm->_resourceLoader->getFileDescription("DLGI", id, 0, Archive::kNumMetadata);
 	ResourceDescription movieDesc = _vm->_resourceLoader->getDialogMovie("DLOG", id);
-	
+
 	if (!movieDesc.isValid() || !countDesc.isValid())
 		error("Unable to load dialog %d", id);
 
@@ -52,14 +50,27 @@ Dialog::Dialog(Myst3Engine *vm, uint id):
 	_buttonCount = countDesc.getMiscData(0);
 	assert(_buttonCount <= 3);
 
-	// Load the movie
-	Common::SeekableReadStream *movieStream = movieDesc.getData();
-	_bink.loadStream(movieStream);
-	_bink.setOutputPixelFormat(Texture::getRGBAPixelFormat());
-	_bink.start();
 
+	// Load the video
+	VideoLoader videoLoader;
+	Common::SeekableReadStream *movieStream = videoLoader.load(movieDesc);
+	assert(movieStream);
+	_bink.setOutputPixelFormat(Texture::getRGBAPixelFormat());
+	if (!_bink.loadStream(movieStream)) {
+		error("Invalid Bink video file '%s-%d'", "DLOG", id);
+	}
+	_bink.start();
 	const Graphics::Surface *frame = _bink.decodeNextFrame();
 	_texture = _vm->_gfx->createTexture2D(frame);
+
+
+	// For modded resources, the screen size is that from the original file
+	if (movieDesc.getType() == Archive::kModdedMovie) {
+		 ResourceDescription::VideoData videoData = movieDesc.getVideoData();
+		_screenSize = FloatSize(videoData.width, videoData.height);
+	} else {
+		_screenSize = _texture->size();
+	}
 
 	_vm->_sound->playEffect(699, 10);
 }
@@ -69,22 +80,22 @@ Dialog::~Dialog() {
 }
 
 void Dialog::draw() {
-	Common::Rect textureRect = Common::Rect(_texture->width, _texture->height);
-	_vm->_gfx->drawTexturedRect2D(getPosition(), textureRect, _texture);
+	FloatRect screenRect = _vm->_layout->unconstrainedViewport();
+
+	FloatRect position = getPosition()
+	        .normalize(screenRect.size());
+
+	// _vm->_gfx->setViewport(screenRect, false);
+	_vm->_gfx->drawTexturedRect2D(position, FloatRect::unit(), _texture);
 }
 
-Common::Rect Dialog::getPosition() const {
-	Common::Rect viewport;
-	if (_scaled) {
-		viewport = Common::Rect(Renderer::kOriginalWidth, Renderer::kOriginalHeight);
-	} else {
-		viewport = _vm->_gfx->viewport();
-	}
+FloatRect Dialog::getPosition() const {
+	FloatRect screenRect = _vm->_layout->unconstrainedViewport();
+	float scale = _vm->_layout->scale();
 
-	Common::Rect screenRect = Common::Rect(_texture->width, _texture->height);
-	screenRect.translate((viewport.width() - _texture->width) / 2,
-			(viewport.height() - _texture->height) / 2);
-	return screenRect;
+	return _screenSize
+	        .scale(scale)
+	        .centerIn(screenRect);
 }
 
 ButtonsDialog::ButtonsDialog(Myst3Engine *vm, uint id):
@@ -137,13 +148,18 @@ int16 ButtonsDialog::update() {
 			// Compute local mouse coordinates
 			_vm->_cursor->updatePosition(event.mouse);
 			Common::Point localMouse = getRelativeMousePosition();
+			float scale = _vm->_layout->scale();
 
 			// No hovered button
 			_frameToDisplay = 0;
 
 			// Display the frame corresponding to the hovered button
 			for (uint i = 0; i < _buttonCount; i++) {
-				if (_buttons[i].contains(localMouse)) {
+				Common::Rect button = _buttons[i];
+				FloatRect buttonRect = FloatRect(button.left, button.top, button.right, button.bottom)
+				        .scale(scale);
+
+				if (buttonRect.contains(FloatPoint(localMouse.x, localMouse.y))) {
 					_frameToDisplay = i + 1;
 					break;
 				}
@@ -168,10 +184,10 @@ int16 ButtonsDialog::update() {
 }
 
 Common::Point ButtonsDialog::getRelativeMousePosition() const {
-	Common::Rect position = getPosition();
-	Common::Point localMouse =_vm->_cursor->getPosition(_scaled);
-	localMouse.x -= position.left;
-	localMouse.y -= position.top;
+	FloatRect position = getPosition();
+	Common::Point localMouse =_vm->_cursor->getPosition();
+	localMouse.x -= position.left();
+	localMouse.y -= position.top();
 	return localMouse;
 }
 

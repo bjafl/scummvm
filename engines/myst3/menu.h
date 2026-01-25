@@ -177,11 +177,12 @@ public:
 	virtual int16 update() = 0;
 
 protected:
-	Common::Rect getPosition() const;
+	FloatRect getPosition() const;
 
 	Myst3Engine *_vm;
 	Video::BinkDecoder _bink;
 	Texture *_texture;
+	FloatSize _screenSize;
 
 	uint _buttonCount;
 };

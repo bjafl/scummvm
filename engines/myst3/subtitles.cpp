@@ -78,7 +78,7 @@ void FontSubtitles::loadResources() {
 	// We draw the subtitles in the adequate resolution so that they are not
 	// scaled up. This is the scale factor of the current resolution
 	// compared to the original
-	_scale = getPosition().width() / (float) getOriginalPosition().width();
+	_scale = _vm->_layout->scale();
 
 #ifdef USE_FREETYPE2
 	const char *ttfFile;
@@ -353,10 +353,14 @@ bool MovieSubtitles::loadSubtitles(const Common::String &room, int32 id) {
 
 	readPhrases(&phrases);
 
-	// Load the movie
-	Common::SeekableReadStream *movieStream = movie.getData();
-	_bink.loadStream(movieStream);
+	// Load the video
+	VideoLoader videoLoader;
+	Common::SeekableReadStream *movieStream = videoLoader.load(movie);
+	assert(movieStream);
 	_bink.setOutputPixelFormat(Texture::getRGBAPixelFormat());
+	if (!_bink.loadStream(movieStream)) {
+		error("Invalid Bink video file '%s-%d'", overriddenRoom.c_str(), id);
+	}
 	_bink.start();
 
 	return true;
@@ -465,24 +469,34 @@ void Subtitles::setFrame(int32 frame) {
 }
 
 void Subtitles::drawOverlay() {
-	if (!_texture)
-		return;
+	if (!_texture) return;
 
-	Common::Rect screen = _vm->_gfx->viewport();
-	Common::Rect bottomBorder = Common::Rect(Renderer::kOriginalWidth, _surfaceHeight);
-	bottomBorder.translate(0, _surfaceTop);
+	FloatRect bottomBorder   = _vm->_layout->bottomBorderViewport();
+	FloatRect screenViewport = _vm->_layout->unconstrainedViewport();
+
+	// _vm->_gfx->setViewport(screenViewport, false);
 
 	if (_vm->isWideScreenModEnabled()) {
+
+		FloatRect blackRect = FloatRect(bottomBorder.left(), bottomBorder.bottom() - _texture->height, bottomBorder.right(), bottomBorder.bottom());
+		FloatRect blackRectNormalized = blackRect.normalize(screenViewport.size());
+
 		// Draw a black background to cover the main game frame
-		_vm->_gfx->drawRect2D(Common::Rect(screen.width(), Renderer::kBottomBorderHeight), 0xFF, 0x00, 0x00, 0x00);
+		_vm->_gfx->drawRect2D(blackRectNormalized, 0xFF, 0x00, 0x00, 0x00);
 
 		// Center the subtitles in the screen
-		bottomBorder.translate((screen.width() - Renderer::kOriginalWidth) / 2, 0);
+		FloatRect subtitlesRect = FloatSize(_texture->width, _texture->height)
+		        .centerIn(blackRect)
+		        .normalize(screenViewport.size());
+
+		_vm->_gfx->drawTexturedRect2D(subtitlesRect, FloatRect::unit(), _texture);
+	} else {
+		FloatRect subtitlesRect = FloatSize(_texture->width, _texture->height)
+		        .positionIn(bottomBorder, .5f, _surfaceTop / (float)(bottomBorder.height() - _texture->height))
+		        .normalize(screenViewport.size());
+
+		_vm->_gfx->drawTexturedRect2D(subtitlesRect, FloatRect::unit(), _texture);
 	}
-
-	Common::Rect textureRect = Common::Rect(_texture->width, _texture->height);
-
-	_vm->_gfx->drawTexturedRect2D(bottomBorder, textureRect, _texture);
 }
 
 Subtitles *Subtitles::create(Myst3Engine *vm, const Common::String &room, uint32 id) {
@@ -514,7 +528,7 @@ void Subtitles::freeTexture() {
 }
 
 Common::Rect Subtitles::getPosition() const {
-	Common::Rect screen = _vm->_gfx->viewport();
+	FloatRect screen = _vm->_gfx->viewport();
 
 	Common::Rect frame;
 
@@ -527,7 +541,7 @@ Common::Rect Subtitles::getPosition() const {
 		frame.translate(0, top);
 	} else {
 		frame = Common::Rect(screen.width(), screen.height() * Renderer::kBottomBorderHeight / Renderer::kOriginalHeight);
-		frame.translate(screen.left, screen.top + screen.height() * (Renderer::kTopBorderHeight + Renderer::kFrameHeight) / Renderer::kOriginalHeight);
+		frame.translate(screen.left(), screen.top() + screen.height() * (Renderer::kTopBorderHeight + Renderer::kFrameHeight) / Renderer::kOriginalHeight);
 	}
 
 	return frame;

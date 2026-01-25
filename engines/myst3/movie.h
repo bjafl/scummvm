@@ -22,6 +22,7 @@
 #ifndef MOVIE_H_
 #define MOVIE_H_
 
+#include "engines/myst3/archive.h"
 #include "engines/myst3/gfx.h"
 #include "engines/myst3/node.h"
 
@@ -68,8 +69,12 @@ protected:
 
 	bool _force2d;
 	bool _forceOpaque;
+	bool _is3D;
 	int32 _posU;
 	int32 _posV;
+	int32 _posWidth;
+	int32 _posHeight;
+	Archive::ResourceType _resourceType;
 
 	Video::BinkDecoder _bink;
 	Texture *_texture;

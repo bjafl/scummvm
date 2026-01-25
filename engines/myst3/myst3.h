@@ -49,6 +49,7 @@ enum {
 	kDebugSaveLoad,
 	kDebugNode,
 	kDebugScript,
+	kDebugVideo,
 	kDebugModding
 };
 
@@ -67,6 +68,7 @@ class GameState;
 class HotSpot;
 class Cursor;
 class Inventory;
+class Layout;
 class Database;
 class Scene;
 class Script;
@@ -104,6 +106,7 @@ public:
 	Database *_db;
 	Sound *_sound;
 	Ambient *_ambient;
+	Layout *_layout;
 
 	Common::RandomSource *_rnd;
 

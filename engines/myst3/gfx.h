@@ -24,6 +24,7 @@
 
 #include "engines/myst3/dds.h"
 #include "engines/myst3/resource_loader.h"
+#include "engines/myst3/rect.h"
 
 #include "common/rect.h"
 #include "common/system.h"
@@ -35,6 +36,25 @@
 namespace Myst3 {
 
 class Renderer;
+
+class Layout {
+public:
+	Layout(OSystem *system, bool widescreenMod);
+
+	FloatRect menuViewport() const;
+	FloatRect frameViewport() const;
+	FloatRect screenViewport() const;
+	Common::Rect screenViewportInt() const;
+	FloatRect unconstrainedViewport() const;
+	FloatRect bottomBorderViewport() const;
+	float scale() const;
+
+private:
+	FloatRect sceneViewport(FloatSize viewportSize, float verticalPositionRatio) const;
+
+	OSystem *_system;
+	bool _widescreenMod;
+};
 
 class Drawable {
 public:
@@ -90,7 +110,7 @@ public:
 	/**
 	 * Transform a point from screen coordinates to scaled window coordinates
 	 */
-	Common::Point scalePoint(const Common::Point &screen) const;
+	virtual Common::Point scalePoint(const Common::Point &screen) const;
 };
 
 class Texture {
@@ -101,7 +121,7 @@ public:
 	uint height;
 	Graphics::PixelFormat format;
 
-	// FloatSize size() const { return FloatSize(width, height); }
+	FloatSize size() const { return FloatSize(width, height); }
 
 	virtual void update(const Graphics::Surface *surface) = 0;
 	virtual void updatePartial(const Graphics::Surface *surface, const Common::Rect &rect) = 0;
@@ -115,7 +135,9 @@ public:
 	virtual ~Renderer();
 
 	virtual void init() = 0;
+	// virtual void setViewport(const FloatRect &viewport, bool is3d) = 0;
 	virtual void clear() = 0;
+	void toggleFullscreen();
 
 	/**
 	 *  Swap the buffers, making the drawn screen visible
@@ -141,12 +163,14 @@ public:
 	 */
 	virtual bool supportsCompressedTextures() const { return false; }
 
-	virtual void drawRect2D(const Common::Rect &rect, uint8 a, uint8 r, uint8 g, uint8 b) = 0;
-	virtual void drawTexturedRect2D(const Common::Rect &screenRect, const Common::Rect &textureRect, Texture *texture,
-	                                float transparency = -1.0, bool additiveBlending = false) = 0;
+	virtual void drawRect2D(const FloatRect &screenRect, uint8 a, uint8 r, uint8 g, uint8 b) = 0;
+
+	virtual void drawTexturedRect2D(const FloatRect &screenRect, const FloatRect &textureRect, Texture *texture,
+									float transparency = -1.0, bool additiveBlending = false) = 0;
+
 	virtual void drawTexturedRect3D(const Math::Vector3d &topLeft, const Math::Vector3d &bottomLeft,
-	                                const Math::Vector3d &topRight, const Math::Vector3d &bottomRight,
-	                                Texture *texture) = 0;
+									const Math::Vector3d &topRight, const Math::Vector3d &bottomRight,
+									Texture *texture) = 0;
 
 	virtual void drawCube(Texture **textures) = 0;
 	virtual void draw2DText(const Common::String &text, const Common::Point &position) = 0;
@@ -166,7 +190,8 @@ public:
 	/** Render the main Drawable overlay of a Window */
 	void renderWindowOverlay(Window *window);
 
-	Common::Rect viewport() const;
+	// Common::Rect viewport() const;
+	FloatRect viewport() const { return _screenViewport; };
 
 	/**
 	 * Select the window where to render
@@ -195,7 +220,8 @@ protected:
 	OSystem *_system;
 	Texture *_font;
 
-	Common::Rect _screenViewport;
+	// Common::Rect _screenViewport;
+	FloatRect _screenViewport;
 
 	Math::Matrix4 _projectionMatrix;
 	Math::Matrix4 _modelViewMatrix;
@@ -209,6 +235,8 @@ protected:
 	Common::Rect getFontCharacterRect(uint8 character);
 
 	Math::Matrix4 makeProjectionMatrix(float fov) const;
+
+	Layout *_layout;
 };
 
 Renderer *CreateGfxOpenGL(OSystem *system);

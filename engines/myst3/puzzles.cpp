@@ -21,9 +21,11 @@
 
 #include "engines/myst3/puzzles.h"
 #include "engines/myst3/ambient.h"
+#include "engines/myst3/database.h"
 #include "engines/myst3/menu.h"
 #include "engines/myst3/myst3.h"
 #include "engines/myst3/node.h"
+#include "engines/myst3/resource_loader.h"
 #include "engines/myst3/state.h"
 #include "engines/myst3/sound.h"
 
@@ -968,7 +970,7 @@ void Puzzles::pinball(int16 var) {
 
 			if (!moviePlaying) {
 				_vm->_state->setVar(26, jumpType);
-				_vm->_state->setVar(93, 1);
+				_vm->_state->setVar(93, 1); // todo - same as this? _vm->_state->setWaterEffectRunning(true);
 				_vm->_sound->stopEffect(1025, 7);
 				return;
 			}
@@ -1134,6 +1136,7 @@ void Puzzles::journalSaavedro(int16 move) {
 
 		_vm->loadNodeFrame(nodeRight);
 
+		//TODO: Validate and test logic below.
 		// Does the left page need to be loaded from a different node?
 		if (nodeLeft != nodeRight) {
 			// ResourceDescription jpegDesc = _vm->getFileDescription("", nodeLeft, 0, Archive::kFrame);
@@ -1537,8 +1540,10 @@ void Puzzles::projectorLoadBitmap(uint16 bitmap) {
 	// Rebuild the complete background image from the frames of the bink movie
 	Common::SeekableReadStream *movieStream = movieDesc.getData();
 	Video::BinkDecoder bink;
-	bink.loadStream(movieStream);
 	bink.setOutputPixelFormat(Texture::getRGBAPixelFormat());
+	if (!bink.loadStream(movieStream)) {
+		error("Invalid Bink video file '%s-%d'", "LEOS", bitmap);
+	}
 	bink.start();
 
 	for (uint i = 0; i < 1024; i += 256) {
@@ -1565,8 +1570,11 @@ void Puzzles::projectorAddSpotItem(uint16 bitmap, uint16 x, uint16 y) {
 	// Rebuild the complete background image from the frames of the bink movie
 	Common::SeekableReadStream *movieStream = movieDesc.getData();
 	Video::BinkDecoder bink;
-	bink.loadStream(movieStream);
 	bink.setOutputPixelFormat(Texture::getRGBAPixelFormat());
+	if (!bink.loadStream(movieStream)) {
+		error("Invalid Bink video file '%s-%d'", "LEOS", bitmap);
+	}
+
 	bink.start();
 
 	const Graphics::Surface *frame = bink.decodeNextFrame();

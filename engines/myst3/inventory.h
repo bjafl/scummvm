@@ -69,7 +69,7 @@ public:
 private:
 	struct InventoryItem {
 		uint16 var;
-		Common::Rect rect;
+		FloatRect rect;
 	};
 
 	typedef Common::List<InventoryItem> ItemList;
@@ -112,8 +112,9 @@ private:
 
 	uint16 _frame;
 	Texture *_texture;
+	FloatSize _screenSize;
 
-	Common::Rect getPosition();
+	FloatRect getPosition();
 };
 
 } // End of namespace Myst3

@@ -44,6 +44,26 @@ OpenGLRenderer::OpenGLRenderer(OSystem *system) :
 OpenGLRenderer::~OpenGLRenderer() {
 }
 
+// void OpenGLRenderer::setViewport(const FloatRect &viewport, bool is3d) {
+// 	int32 screenHeight = _system->getHeight();
+// 	glViewport(viewport.left(), screenHeight - viewport.bottom(), viewport.width(), viewport.height());
+
+// 	if (is3d) {
+// 		glMatrixMode(GL_PROJECTION);
+// 		glLoadMatrixf(_projectionMatrix.getData());
+
+// 		glMatrixMode(GL_MODELVIEW);
+// 		glLoadMatrixf(_modelViewMatrix.getData());
+// 	} else {
+// 		glMatrixMode(GL_PROJECTION);
+// 		glLoadIdentity();
+// 		glOrtho(0., 1., 1., 0., -1., 1.);
+
+// 		glMatrixMode(GL_MODELVIEW);
+// 		glLoadIdentity();
+// 	}
+// }
+
 Texture *OpenGLRenderer::createTexture3D(const Graphics::Surface *surface) {
 	return new OpenGLTexture(surface);
 }
@@ -80,8 +100,8 @@ void OpenGLRenderer::selectTargetWindow(Window *window, bool is3D, bool scaled) 
 		// No window found ...
 		if (scaled) {
 			// ... in scaled mode draw in the original game screen area
-			Common::Rect vp = viewport();
-			glViewport(vp.left, _system->getHeight() - vp.top - vp.height(), vp.width(), vp.height());
+			FloatRect vp = viewport();
+			glViewport(vp.left(), _system->getHeight() - vp.top() - vp.height(), vp.width(), vp.height());
 		} else {
 			// ... otherwise, draw on the whole screen
 			glViewport(0, 0, _system->getWidth(), _system->getHeight());
@@ -123,7 +143,7 @@ void OpenGLRenderer::selectTargetWindow(Window *window, bool is3D, bool scaled) 
 	}
 }
 
-void OpenGLRenderer::drawRect2D(const Common::Rect &rect, uint8 a, uint8 r, uint8 g, uint8 b) {
+void OpenGLRenderer::drawRect2D(const FloatRect &screenRect, uint8 a, uint8 r, uint8 g, uint8 b) {
 	glDisable(GL_TEXTURE_2D);
 	glColor4ub(r, g, b, a);
 
@@ -133,28 +153,28 @@ void OpenGLRenderer::drawRect2D(const Common::Rect &rect, uint8 a, uint8 r, uint
 	}
 
 	glBegin(GL_TRIANGLE_STRIP);
-		glVertex3f(rect.left, rect.bottom, 0.0f);
-		glVertex3f(rect.right, rect.bottom, 0.0f);
-		glVertex3f(rect.left, rect.top, 0.0f);
-		glVertex3f(rect.right, rect.top, 0.0f);
+		glVertex3f(screenRect.left(), screenRect.bottom(), 0.0f);
+		glVertex3f(screenRect.right(), screenRect.bottom(), 0.0f);
+		glVertex3f(screenRect.left(), screenRect.top(), 0.0f);
+		glVertex3f(screenRect.right(), screenRect.top(), 0.0f);
 	glEnd();
 
 	glDisable(GL_BLEND);
 }
 
-void OpenGLRenderer::drawTexturedRect2D(const Common::Rect &screenRect, const Common::Rect &textureRect,
-	                                Texture *texture, float transparency, bool additiveBlending) {
+void OpenGLRenderer::drawTexturedRect2D(const FloatRect &screenRect, const FloatRect &textureRect, Texture *texture,
+	                        			float transparency, bool additiveBlending) {
 	OpenGLTexture *glTexture = static_cast<OpenGLTexture *>(texture);
 
-	const float tLeft = textureRect.left / (float)glTexture->internalWidth;
-	const float tWidth = textureRect.width() / (float)glTexture->internalWidth;
-	const float tTop = textureRect.top / (float)glTexture->internalHeight;
-	const float tHeight = textureRect.height() / (float)glTexture->internalHeight;
+	const float tLeft   = textureRect.left()   * glTexture->width  / (float)glTexture->internalWidth;
+	const float tWidth  = textureRect.width()  * glTexture->width  / (float)glTexture->internalWidth;
+	const float tTop    = textureRect.top()    * glTexture->height / (float)glTexture->internalHeight;
+	const float tHeight = textureRect.height() * glTexture->height / (float)glTexture->internalHeight;
 
-	float sLeft = screenRect.left;
-	float sTop = screenRect.top;
-	float sRight = sLeft + screenRect.width();
-	float sBottom = sTop + screenRect.height();
+	float sLeft   = screenRect.left();
+	float sTop    = screenRect.top();
+	float sRight  = sLeft + screenRect.width();
+	float sBottom = sTop  + screenRect.height();
 
 	if (glTexture->upsideDown) {
 		SWAP(sTop, sBottom);
@@ -303,7 +323,7 @@ void OpenGLRenderer::drawTexturedRect3D(const Math::Vector3d &topLeft, const Mat
 }
 
 Graphics::Surface *OpenGLRenderer::getScreenshot() {
-	Common::Rect screen = viewport();
+	Common::Rect screen = viewport().toRect();
 
 	Graphics::Surface *s = new Graphics::Surface();
 	s->create(screen.width(), screen.height(), Texture::getRGBAPixelFormat());
@@ -319,7 +339,7 @@ Graphics::Surface *OpenGLRenderer::getScreenshot() {
 Texture *OpenGLRenderer::copyScreenshotToTexture() {
 	OpenGLTexture *texture = new OpenGLTexture();
 
-	Common::Rect screen = viewport();
+	Common::Rect screen = viewport().toRect();
 	texture->copyFromFramebuffer(screen);
 
 	return texture;

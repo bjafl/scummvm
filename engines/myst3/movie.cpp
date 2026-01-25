@@ -25,6 +25,7 @@
 #include "engines/myst3/sound.h"
 #include "engines/myst3/state.h"
 #include "engines/myst3/subtitles.h"
+#include "engines/myst3/rect.h"
 
 #include "common/config-manager.h"
 
@@ -35,11 +36,15 @@ Movie::Movie(Myst3Engine *vm, const Common::String &room, uint16 id) :
 		_id(id),
 		_posU(0),
 		_posV(0),
-		_startFrame(0),
+		_posWidth(0),
+		_posHeight(0),
+		_startFrame(1),
 		_endFrame(0),
 		_texture(nullptr),
+		_is3D(false),
 		_force2d(false),
 		_forceOpaque(false),
+		_resourceType(Archive::kMovie),
 		_subtitles(nullptr),
 		_volume(0),
 		_additiveBlending(false),
@@ -61,20 +66,32 @@ Movie::Movie(Myst3Engine *vm, const Common::String &room, uint16 id) :
 			return;
 	}
 
+	debugC(kDebugVideo, "Initializing video '%s-%d'", room.c_str(), id);
+
+	_resourceType = binkDesc.getType();
 	loadPosition(binkDesc.getVideoData());
 
-	Common::SeekableReadStream *binkStream = binkDesc.getData();
-	_bink.setSoundType(Audio::Mixer::kSFXSoundType);
-	_bink.loadStream(binkStream);
-	_bink.setOutputPixelFormat(Texture::getRGBAPixelFormat());
+	VideoLoader videoLoader;
+	Common::SeekableReadStream *binkStream = videoLoader.load(binkDesc);
+	assert(binkStream);
 
-	if (binkDesc.getType() == Archive::kMultitrackMovie || binkDesc.getType() == Archive::kDialogMovie) {
-		uint language = ConfMan.getInt("audio_language");
-		_bink.setAudioTrack(language);
+	_bink.setOutputPixelFormat(Texture::getRGBAPixelFormat());
+	_bink.setSoundType(Audio::Mixer::kSFXSoundType);
+
+	if (!_bink.loadStream(binkStream)) {
+		error("Invalid Bink video file '%s-%d'", room.c_str(), id);
 	}
 
-	if (ConfMan.getBool("subtitles"))
+	if (_bink.getAudioTrackCount() > 1) {
+		uint language = ConfMan.getInt("audio_language");
+		if (!_bink.setAudioTrack(language)) {
+			warning("Unable to set the language audio track for Bink video '%s-%d'", room.c_str(), id);
+		}
+	}
+
+	if (ConfMan.getBool("subtitles")) {
 		_subtitles = Subtitles::create(_vm, room, id);
+	}
 
 	// Clear the subtitles override anyway, so that it does not end up
 	// being used by the another movie at some point.
@@ -116,18 +133,38 @@ void Movie::loadPosition(const ResourceDescription::VideoData &videoData) {
 
 	_posU = videoData.u;
 	_posV = videoData.v;
+	_posWidth = videoData.width;
+	_posHeight = videoData.height;
 }
 
 void Movie::draw2d() {
-	Common::Rect screenRect = Common::Rect(_bink.getWidth(), _bink.getHeight());
-	screenRect.translate(_posU, _posV);
+	FloatRect sceneViewport;
+	if (_vm->_state->getViewType() == kMenu) {
+		sceneViewport = _vm->_layout->menuViewport();
+	} else {
+		sceneViewport = _vm->_layout->frameViewport();
+	}
+	// _vm->_gfx->setViewport(sceneViewport, false);
 
-	Common::Rect textureRect = Common::Rect(_bink.getWidth(), _bink.getHeight());
+	uint sceneHeight = _vm->_state->getViewType() == kMenu ? Renderer::kOriginalHeight : Renderer::kFrameHeight;
+
+	// Upscaling ratio
+	float scaleRatio;
+	if (_resourceType == Archive::kModdedMovie) {
+		scaleRatio = _bink.getWidth() / (float)_posWidth;
+	} else {
+		scaleRatio = 1.f;
+	}
+
+	FloatRect screenRect = FloatSize(_bink.getWidth(), _bink.getHeight())
+	        .scale(1 / scaleRatio)
+	        .translate(FloatPoint(_posU, _posV))
+	        .normalize(FloatSize(Renderer::kOriginalWidth, sceneHeight));
 
 	if (_forceOpaque)
-		_vm->_gfx->drawTexturedRect2D(screenRect, textureRect, _texture);
+		_vm->_gfx->drawTexturedRect2D(screenRect, FloatRect::unit(), _texture);
 	else
-		_vm->_gfx->drawTexturedRect2D(screenRect, textureRect, _texture, (float) _transparency / 100, _additiveBlending);
+		_vm->_gfx->drawTexturedRect2D(screenRect, FloatRect::unit(), _texture, (float) _transparency / 100, _additiveBlending);
 }
 
 void Movie::draw3d() {
@@ -285,10 +322,11 @@ void ScriptedMovie::update() {
 
 		if (newEnabled) {
 			if (_disableWhenComplete
-					|| _bink.getCurFrame() < _startFrame
+					|| _bink.getCurFrame() < (_startFrame - 1)
 					|| _bink.getCurFrame() >= _endFrame
 					|| _bink.endOfVideo()) {
-				_bink.seekToFrame(_startFrame);
+				debugC(kDebugVideo, "Starting newly enabled video %d at frame %d", _id, _startFrame);
+				_bink.seekToFrame(_startFrame - 1);
 				_isLastFrame = false;
 			}
 
@@ -316,6 +354,8 @@ void ScriptedMovie::update() {
 				if (_bink.getCurFrame() != nextFrame - 1) {
 					// Don't seek if we just want to display the next frame
 					if (_bink.getCurFrame() + 1 != nextFrame - 1) {
+						debugC(kDebugVideo, "Seeking video %d to frame %d", _id, nextFrame);
+
 						_bink.seekToFrame(nextFrame - 1);
 					}
 					drawNextFrameToTexture();
@@ -333,7 +373,9 @@ void ScriptedMovie::update() {
 				_isLastFrame = false;
 
 				if (_loop) {
-					_bink.seekToFrame(_startFrame);
+					debugC(kDebugVideo, "Looping video %d to frame %d", _id, _startFrame);
+
+					_bink.seekToFrame(_startFrame - 1);
 					drawNextFrameToTexture();
 				} else {
 					complete = true;
@@ -392,7 +434,7 @@ void SimpleMovie::play() {
 	_bink.setEndFrame(_endFrame - 1);
 	_bink.setVolume(_volume * Audio::Mixer::kMaxChannelVolume / 100);
 
-	if (_bink.getCurFrame() < _startFrame - 1) {
+	if (_bink.getCurFrame() < (_startFrame - 1)) {
 		_bink.seekToFrame(_startFrame - 1);
 	}
 

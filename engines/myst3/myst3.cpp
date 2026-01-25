@@ -65,20 +65,20 @@
 namespace Myst3 {
 
 Myst3Engine::Myst3Engine(OSystem *syst, const Myst3GameDescription *version) :
-		Engine(syst), _system(syst), _gameDescription(version),
-																			   _db(nullptr), _scriptEngine(nullptr),
-																			   _state(nullptr), _node(nullptr), _scene(nullptr),
-																			   _cursor(nullptr), _inventory(nullptr), _gfx(nullptr), _menu(nullptr),
-																			   _rnd(nullptr), _sound(nullptr), _ambient(nullptr),
-																			   _inputSpacePressed(false), _inputEnterPressed(false),
-																			   _inputEscapePressed(false), _inputTildePressed(false),
-																			   _inputEscapePressedNotConsumed(false),
-																			   _interactive(false),
-																			   _menuAction(0), _projectorBackground(nullptr),
-																			   _shakeEffect(nullptr), _rotationEffect(nullptr),
-																			   _backgroundSoundScriptLastRoomId(0),
-																			   _backgroundSoundScriptLastAgeId(0),
-																			   _transition(nullptr), _frameLimiter(nullptr), _inventoryManualHide(false) {
+		Engine(syst), _system(syst), _gameDescription(version), _layout(nullptr), 
+		_db(nullptr), _scriptEngine(nullptr),
+		_state(nullptr), _node(nullptr), _scene(nullptr),
+		_cursor(nullptr), _inventory(nullptr), _gfx(nullptr), _menu(nullptr),
+		_rnd(nullptr), _sound(nullptr), _ambient(nullptr),
+		_inputSpacePressed(false), _inputEnterPressed(false),
+		_inputEscapePressed(false), _inputTildePressed(false),
+		_inputEscapePressedNotConsumed(false),
+		_interactive(false),
+		_menuAction(0), _projectorBackground(nullptr),
+		_shakeEffect(nullptr), _rotationEffect(nullptr),
+		_backgroundSoundScriptLastRoomId(0),
+		_backgroundSoundScriptLastAgeId(0),
+		_transition(nullptr), _frameLimiter(nullptr), _inventoryManualHide(false) {
 
 	// Add subdirectories to the search path to allow running from a full HDD install
 	const Common::FSNode gameDataDir(ConfMan.getPath("path"));
@@ -121,6 +121,7 @@ Myst3Engine::~Myst3Engine() {
 	delete _rnd;
 	delete _sound;
 	delete _ambient;
+	delete _layout;
 	delete _frameLimiter;
 	delete _gfx;
 }
@@ -159,6 +160,7 @@ Common::Error Myst3Engine::run() {
 	_gfx->clear();
 
 	_frameLimiter = new Graphics::FrameLimiter(_system, ConfMan.getInt("engine_speed"));
+	_layout = new Layout(_system, isWideScreenModEnabled());
 	_sound = new Sound(this);
 	_ambient = new Ambient(this);
 	_rnd = new Common::RandomSource("sprint");
@@ -459,7 +461,7 @@ HotSpot *Myst3Engine::getHoveredHotspot(NodePtr nodeData, uint16 var) {
 		}
 	} else {
 		// get the mouse position in original game window coordinates
-		Common::Point mouse = _cursor->getPosition(false);
+		Common::Point mouse = _cursor->getPosition();
 		mouse = _scene->scalePoint(mouse);
 
 		for (uint j = 0; j < nodeData->hotspots.size(); j++) {
@@ -1389,7 +1391,7 @@ SpotItemFace *Myst3Engine::addMenuSpotItem(uint16 id, int16 condition, const Com
 
 void Myst3Engine::loadNodeSubtitles(uint32 id) {
 	assert(_node);
-	
+
 	auto room = getCurrentRoomName();
 	_node->loadSubtitles(room, id);
 }

@@ -40,6 +40,11 @@ private:
 public:
 	Scene(Myst3Engine *vm);
 
+	/**
+	 * Transform a point from screen coordinates to scaled window coordinates
+	 */
+	Common::Point scalePoint(const Common::Point &screen) const override;
+
 	// Window API
 	Common::Rect getPosition() const override;
 	Common::Rect getOriginalPosition() const override;

@@ -47,6 +47,25 @@ TinyGLRenderer::~TinyGLRenderer() {
 	TinyGL::destroyContext();
 }
 
+// void TinyGLRenderer::setViewport(const FloatRect &viewport, bool is3d) {
+// 	tglViewport(viewport.left(), viewport.top(), viewport.width(), viewport.height());
+
+// 	if (is3d) {
+// 		tglMatrixMode(TGL_PROJECTION);
+// 		tglLoadMatrixf(_projectionMatrix.getData());
+
+// 		tglMatrixMode(TGL_MODELVIEW);
+// 		tglLoadMatrixf(_modelViewMatrix.getData());
+// 	} else {
+// 		tglMatrixMode(TGL_PROJECTION);
+// 		tglLoadIdentity();
+// 		tglOrtho(0., 1., 1., 0., -1., 1.);
+
+// 		tglMatrixMode(TGL_MODELVIEW);
+// 		tglLoadIdentity();
+// 	}
+// }
+
 Texture *TinyGLRenderer::createTexture2D(const Graphics::Surface *surface) {
 	return new TinyGLTexture2D(surface);
 }
@@ -84,7 +103,7 @@ void TinyGLRenderer::selectTargetWindow(Window *window, bool is3D, bool scaled) 
 		// No window found ...
 		if (scaled) {
 			// ... in scaled mode draw in the original game screen area
-			_viewport = viewport();
+			_viewport = viewport().toRect();
 		} else {
 			// ... otherwise, draw on the whole screen
 			_viewport = Common::Rect(_system->getWidth(), _system->getHeight());
@@ -126,7 +145,7 @@ void TinyGLRenderer::selectTargetWindow(Window *window, bool is3D, bool scaled) 
 	}
 }
 
-void TinyGLRenderer::drawRect2D(const Common::Rect &rect, uint8 a, uint8 r, uint8 g, uint8 b) {
+void TinyGLRenderer::drawRect2D(const FloatRect &screenRect, uint8 a, uint8 r, uint8 g, uint8 b) {
 	tglDisable(TGL_TEXTURE_2D);
 	tglColor4ub(r, g, b, a);
 
@@ -136,23 +155,26 @@ void TinyGLRenderer::drawRect2D(const Common::Rect &rect, uint8 a, uint8 r, uint
 	}
 
 	tglBegin(TGL_TRIANGLE_STRIP);
-		tglVertex3f(rect.left, rect.bottom, 0.0f);
-		tglVertex3f(rect.right, rect.bottom, 0.0f);
-		tglVertex3f(rect.left, rect.top, 0.0f);
-		tglVertex3f(rect.right, rect.top, 0.0f);
+		tglVertex3f(screenRect.left(), screenRect.bottom(), 0.0f);
+		tglVertex3f(screenRect.right(), screenRect.bottom(), 0.0f);
+		tglVertex3f(screenRect.left(), screenRect.top(), 0.0f);
+		tglVertex3f(screenRect.right(), screenRect.top(), 0.0f);
 	tglEnd();
 
 	tglDisable(TGL_BLEND);
 }
 
-void TinyGLRenderer::drawTexturedRect2D(const Common::Rect &screenRect, const Common::Rect &textureRect,
-	                                Texture *texture, float transparency, bool additiveBlending) {
+// void TinyGLRenderer::drawTexturedRect2D(const Common::Rect &screenRect, const Common::Rect &textureRect,
+// 	                                Texture *texture, float transparency, bool additiveBlending) {
+
+void TinyGLRenderer::drawTexturedRect2D(const FloatRect &screenRect, const FloatRect &textureRect,
+                                        Texture *texture, float transparency, bool additiveBlending) {
 	TinyGLTexture2D *glTexture = static_cast<TinyGLTexture2D *>(texture);
 
-	const float sLeft = screenRect.left;
-	const float sTop = screenRect.top;
-	const float sWidth = screenRect.width();
-	const float sHeight = screenRect.height();
+	// const float sLeft = screenRect.left;
+	// const float sTop = screenRect.top;
+	// const float sWidth = screenRect.width();
+	// const float sHeight = screenRect.height();
 
 	if (transparency >= 0.0) {
 		if (additiveBlending) {
@@ -165,12 +187,20 @@ void TinyGLRenderer::drawTexturedRect2D(const Common::Rect &screenRect, const Co
 		transparency = 1.0;
 	}
 
+	// HACK: tglBlit is not affected by the viewport, so we offset the draw coordinates here
+	int viewPort[4];
+	tglGetIntegerv(TGL_VIEWPORT, viewPort);
+	const float sLeft   = viewPort[2] * screenRect.left()  + viewPort[0];
+	const float sTop    = viewPort[3] * screenRect.top()   + viewPort[1];
+	const float sWidth  = viewPort[2] * screenRect.width();
+	const float sHeight = viewPort[3] * screenRect.height();
+
 	tglEnable(TGL_TEXTURE_2D);
 	tglDepthMask(TGL_FALSE);
 
-	// HACK: tglBlit is not affected by the viewport, so we offset the draw coordinates here
-	TinyGL::BlitTransform transform(sLeft + _viewport.left, sTop + _viewport.top);
-	transform.sourceRectangle(textureRect.left, textureRect.top, sWidth, sHeight);
+
+	TinyGL::BlitTransform transform(sLeft, sTop);
+	transform.sourceRectangle(textureRect.left() * texture->width, textureRect.top() * texture->height, sWidth, sHeight);
 	transform.tint(transparency);
 	tglBlit(glTexture->getBlitTexture(), transform);
 

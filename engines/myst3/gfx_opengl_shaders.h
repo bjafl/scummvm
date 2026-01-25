@@ -38,6 +38,7 @@ public:
 	virtual ~ShaderRenderer();
 
 	void init() override;
+	// void setViewport(const FloatRect &viewport, bool is3d) override;
 
 	void clear() override;
 	void selectTargetWindow(Window *window, bool is3D, bool scaled) override;
@@ -46,9 +47,9 @@ public:
 	Texture *createTextureFromDDS(const DDS &dds) override;
 	bool supportsCompressedTextures() const override;
 
-	void drawRect2D(const Common::Rect &rect, uint8 a, uint8 r, uint8 g, uint8 b) override;
-	virtual void drawTexturedRect2D(const Common::Rect &screenRect, const Common::Rect &textureRect, Texture *texture,
-	                                float transparency = -1.0, bool additiveBlending = false) override;
+	void drawRect2D(const FloatRect &screenRect, uint8 a, uint8 r, uint8 g, uint8 b) override;
+	virtual void drawTexturedRect2D(const FloatRect &screenRect, const FloatRect &textureRect, Texture *texture,
+	                        		float transparency = -1.0, bool additiveBlending = false) override;
 	virtual void drawTexturedRect3D(const Math::Vector3d &topLeft, const Math::Vector3d &bottomLeft,
 	                                const Math::Vector3d &topRight, const Math::Vector3d &bottomRight,
 	                                Texture *texture) override;
@@ -61,7 +62,7 @@ public:
 
 private:
 	void setupQuadEBO();
-	Math::Vector2d scaled(float x, float y) const;
+	// Math::Vector2d scaled(float x, float y) const;
 
 	OpenGL::Shader *_boxShader;
 	OpenGL::Shader *_cubeShader;
