@@ -26,8 +26,8 @@
 
 #include "common/array.h"
 #include "common/ptr.h"
-#include "common/system.h"
 #include "common/random.h"
+#include "common/system.h"
 
 #include "engines/myst3/archive.h"
 #include "engines/myst3/resource_loader.h"
@@ -35,7 +35,7 @@
 namespace Graphics {
 struct Surface;
 class FrameLimiter;
-}
+} // namespace Graphics
 
 namespace Common {
 struct Event;
@@ -123,7 +123,6 @@ public:
 	bool isAssetsModEnabled() const;
 	Common::String getCurrentRoomName() const;
 
-
 	bool canSaveGameStateCurrently(Common::U32String *msg = nullptr) override;
 	bool canLoadGameStateCurrently(Common::U32String *msg = nullptr) override;
 	Common::Error loadGameState(int slot) override;
@@ -137,7 +136,7 @@ public:
 	//                                        Archive::ResourceType type);
 
 	// Graphics::Surface *loadTexture(uint16 id);
-	//static Graphics::Surface *decodeJpeg(const ResourceDescription *jpegDesc);
+	// static Graphics::Surface *decodeJpeg(const ResourceDescription *jpegDesc);
 
 	void goToNode(uint16 nodeID, TransitionType transition);
 	void loadNode(uint16 nodeID, uint32 roomID = 0, uint32 ageID = 0);
@@ -171,7 +170,7 @@ public:
 	void loadNodeSubtitles(uint32 id);
 
 	void addSunSpot(uint16 pitch, uint16 heading, uint16 intensity,
-			uint16 color, uint16 var, bool varControlledIntensity, uint16 radius);
+					uint16 color, uint16 var, bool varControlledIntensity, uint16 radius);
 	SunSpot computeSunspotsIntensity(float pitch, float heading);
 
 	void setMenuAction(uint16 action) { _menuAction = action; }
@@ -196,6 +195,7 @@ public:
 	void settingsApplyFromVars();
 
 	ResourceLoader *_resourceLoader;
+
 private:
 	OSystem *_system;
 	const Myst3GameDescription *_gameDescription;

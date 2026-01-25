@@ -28,7 +28,7 @@ namespace Myst3 {
 
 class NodeCube: public Node {
 public:
-	NodeCube(Myst3Engine *vm, uint16 id);
+	NodeCube(Myst3Engine *vm, Common::String &room, uint16 id);
 	virtual ~NodeCube();
 
 	void draw() override;

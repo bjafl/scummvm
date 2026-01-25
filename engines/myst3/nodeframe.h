@@ -28,7 +28,7 @@ namespace Myst3 {
 
 class NodeFrame : public Node {
 public:
-	NodeFrame(Myst3Engine *vm, uint16 id);
+	NodeFrame(Myst3Engine *vm, Common::String &room, uint16 id);
 	virtual ~NodeFrame();
 
 	void draw() override;

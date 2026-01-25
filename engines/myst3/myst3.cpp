@@ -1022,7 +1022,8 @@ void Myst3Engine::loadNodeCubeFaces(uint16 nodeID) {
 	_cursor->lockPosition(true);
 	updateCursor();
 
-	_node = new NodeCube(this, nodeID);
+	Common::String room = getCurrentRoomName();
+	_node = new NodeCube(this, room, nodeID);
 }
 
 void Myst3Engine::loadNodeFrame(uint16 nodeID) {
@@ -1031,7 +1032,8 @@ void Myst3Engine::loadNodeFrame(uint16 nodeID) {
 	_cursor->lockPosition(false);
 	updateCursor();
 
-	_node = new NodeFrame(this, nodeID);
+	Common::String room = getCurrentRoomName();
+	_node = new NodeFrame(this, room, nodeID);
 }
 
 void Myst3Engine::loadNodeMenu(uint16 nodeID) {
@@ -1040,7 +1042,8 @@ void Myst3Engine::loadNodeMenu(uint16 nodeID) {
 	_cursor->lockPosition(false);
 	updateCursor();
 
-	_node = new NodeFrame(this, nodeID);
+	Common::String room = getCurrentRoomName();
+	_node = new NodeFrame(this, room, nodeID);
 }
 
 void Myst3Engine::runScriptsFromNode(uint16 nodeID, uint32 roomID, uint32 ageID) {

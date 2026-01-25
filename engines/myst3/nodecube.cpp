@@ -27,13 +27,13 @@
 
 namespace Myst3 {
 
-NodeCube::NodeCube(Myst3Engine *vm, uint16 id) :
+NodeCube::NodeCube(Myst3Engine *vm, Common::String &room, uint16 id) :
 		Node(vm, id) {
 	_is3D = true;
 
-	Common::String roomName = _vm->getCurrentRoomName();
+	// Common::String roomName = _vm->getCurrentRoomName();
 	for (int i = 0; i < 6; i++) {
-		ResourceDescription bitmap = _vm->_resourceLoader->getCubeBitmap(roomName, id, i);
+		ResourceDescription bitmap = _vm->_resourceLoader->getCubeBitmap(room, id, i);
 		if (!bitmap.isValid())
 			error("Face %d does not exist", id);
 

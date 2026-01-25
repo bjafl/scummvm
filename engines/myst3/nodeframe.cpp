@@ -27,10 +27,10 @@
 
 namespace Myst3 {
 
-NodeFrame::NodeFrame(Myst3Engine *vm, uint16 id) :
+NodeFrame::NodeFrame(Myst3Engine *vm, Common::String &room, uint16 id) :
 		Node(vm, id) {
-	Common::String roomName = _vm->getCurrentRoomName();
-	ResourceDescription bitmap = _vm->_resourceLoader->getFrameBitmap(roomName, id);
+	// Common::String roomName = _vm->getCurrentRoomName();
+	ResourceDescription bitmap = _vm->_resourceLoader->getFrameBitmap(room, id);
 	_faces[0] = new Face(_vm);
 	_faces[0]->setTextureFromBitmap(&bitmap);
 }
