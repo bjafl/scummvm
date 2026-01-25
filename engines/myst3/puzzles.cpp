@@ -1184,8 +1184,7 @@ int16 Puzzles::_journalSaavedroLastPageLastChapterValue() {
 
 uint16 Puzzles::_journalSaavedroGetNode(uint16 chapter) {
 	//ResourceDescription desc = _vm->getFileDescription("", 1200, 0, Archive::kNumMetadata);
-	auto roomName = _vm->getCurrentRoomName();
-	auto desc = _vm->_resourceLoader->getFileDescription(roomName, 1200, 0, Archive::kNumMetadata);
+	ResourceDescription desc = _vm->_resourceLoader->getFileDescription("JRNL", 1200, 0, Archive::kNumMetadata);
 
 	if (!desc.isValid())
 		error("Node 1200 does not exist");

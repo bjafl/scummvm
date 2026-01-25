@@ -169,8 +169,8 @@ WaterEffect::~WaterEffect() {
 
 WaterEffect *WaterEffect::create(Myst3Engine *vm, uint32 id) {
 	WaterEffect *s = new WaterEffect(vm);
-
-	if (!s->loadMasks("", id, Archive::kWaterEffectMask)) {
+	auto roomName = vm->getCurrentRoomName();
+	if (!s->loadMasks(roomName, id, Archive::kWaterEffectMask)) {
 		delete s;
 		return nullptr;
 	}
@@ -345,7 +345,8 @@ LavaEffect::~LavaEffect() {
 LavaEffect *LavaEffect::create(Myst3Engine *vm, uint32 id) {
 	LavaEffect *s = new LavaEffect(vm);
 
-	if (!s->loadMasks("", id, Archive::kLavaEffectMask)) {
+	auto roomName = vm->getCurrentRoomName();
+	if (!s->loadMasks(roomName, id, Archive::kLavaEffectMask)) {
 		delete s;
 		return nullptr;
 	}
@@ -443,8 +444,9 @@ MagnetEffect *MagnetEffect::create(Myst3Engine *vm, uint32 id) {
 		return nullptr;
 	}
 
+	auto roomName = vm->getCurrentRoomName();
 	MagnetEffect *s = new MagnetEffect(vm);
-	s->loadMasks("", id, Archive::kMagneticEffectMask);
+	s->loadMasks(roomName, id, Archive::kMagneticEffectMask);
 	return s;
 }
 

@@ -139,10 +139,10 @@ public:
 	void update();
 	void drawOverlay() override;
 
-	void loadSpotItem(uint16 id, int16 condition, bool fade);
+	void loadSpotItem(const Common::String &room, uint16 id, int16 condition, bool fade);
 	SpotItemFace *loadMenuSpotItem(int16 condition, const Common::Rect &rect);
 
-	void loadSubtitles(uint32 id);
+	void loadSubtitles(const Common::String &room, uint32 id);
 	bool hasSubtitlesToDraw();
 
 protected:

@@ -41,7 +41,7 @@ public:
 
 protected:
 	void loadResources() override;
-	bool loadSubtitles(int32 id) override;
+	bool loadSubtitles(const Common::String &room, int32 id) override;
 	void drawToTexture(const Phrase *phrase) override;
 
 private:
@@ -120,15 +120,15 @@ void FontSubtitles::loadCharset(int32 id) {
 	}
 }
 
-bool FontSubtitles::loadSubtitles(int32 id) {
+bool FontSubtitles::loadSubtitles(const Common::String &room, int32 id) {
 	// No game-provided charset for the Japanese version
 	if (_fontCharsetCode == 0) {
 		loadCharset(1100);
 	}
 
-	int32 overridenId = checkOverridenId(id);
+	int32 overriddenId = checkOverriddenId(id);
 
-	ResourceDescription desc = loadText(overridenId, overridenId != id);
+	ResourceDescription desc = loadText(overriddenId != id ? "IMGR" : room, overriddenId);
 
 	if (!desc.isValid())
 		return false;
@@ -300,11 +300,11 @@ public:
 
 protected:
 	void loadResources() override;
-	bool loadSubtitles(int32 id) override;
+	bool loadSubtitles(const Common::String &room, int32 id) override;
 	void drawToTexture(const Phrase *phrase) override;
 
 private:
-	ResourceDescription loadMovie(int32 id, bool overriden);
+	ResourceDescription loadMovie(const Common::String &room, int32 id);
 	void readPhrases(const ResourceDescription *desc);
 
 	Video::BinkDecoder _bink;
@@ -337,23 +337,16 @@ void MovieSubtitles::readPhrases(const ResourceDescription *desc) {
 	delete frames;
 }
 
-ResourceDescription MovieSubtitles::loadMovie(int32 id, bool overriden) {
-	ResourceDescription desc;
-	if (overriden) {
-		//desc = _vm->getFileDescription("IMGR", 200000 + id, 0, Archive::kMovie);
-		desc = _vm->_resourceLoader->getFileDescription("IMGR", 200000 + id, 0, Archive::kMovie);
-	} else {
-		auto roomName = _vm->getCurrentRoomName();
-		desc = _vm->_resourceLoader->getFileDescription(roomName, 200000 + id, 0, Archive::kMovie);
-	}
-	return desc;
+ResourceDescription MovieSubtitles::loadMovie(const Common::String &room, int32 id) {
+	return _vm->_resourceLoader->getFileDescription(room, 200000 + id, 0, Archive::kMovie);
 }
 
-bool MovieSubtitles::loadSubtitles(int32 id) {
-	int32 overridenId = checkOverridenId(id);
+bool MovieSubtitles::loadSubtitles(const Common::String &room, int32 id) {
+	int32 overriddenId = checkOverriddenId(id);
+	Common::String overriddenRoom = overriddenId != id ? "IMGR" : room;
 
-	ResourceDescription phrases = loadText(overridenId, overridenId != id);
-	ResourceDescription movie = loadMovie(overridenId, overridenId != id);
+	ResourceDescription phrases = loadText(overriddenRoom, overriddenId);
+	ResourceDescription movie = loadMovie(overriddenRoom, overriddenId);
 
 	if (!phrases.isValid() || !movie.isValid())
 		return false;
@@ -434,7 +427,7 @@ void Subtitles::loadFontSettings(int32 id) {
 	_fontFace = fontText.getTextData(0);
 }
 
-int32 Subtitles::checkOverridenId(int32 id) {
+int32 Subtitles::checkOverriddenId(int32 id) {
 	// Subtitles may be overridden using a variable
 	if (_vm->_state->getMovieOverrideSubtitles()) {
 		id = _vm->_state->getMovieOverrideSubtitles();
@@ -443,17 +436,8 @@ int32 Subtitles::checkOverridenId(int32 id) {
 	return id;
 }
 
-ResourceDescription Subtitles::loadText(int32 id, bool overriden) {
-	ResourceDescription desc;
-	if (overriden) {
-		//desc = _vm->getFileDescription("IMGR", 100000 + id, 0, Archive::kText);
-		desc = _vm->_resourceLoader->getFileDescription("IMGR", 100000 + id, 0, Archive::kText);
-	} else {
-		//desc = _vm->getFileDescription("", 100000 + id, 0, Archive::kText);
-		auto roomName = _vm->getCurrentRoomName();
-		desc = _vm->_resourceLoader->getFileDescription(roomName, 100000 + id, 0, Archive::kText);
-	}
-	return desc;
+ResourceDescription Subtitles::loadText(const Common::String &room, int32 id) {
+	return _vm->_resourceLoader->getFileDescription(room, 100000 + id, 0, Archive::kText);
 }
 
 void Subtitles::setFrame(int32 frame) {
@@ -501,7 +485,7 @@ void Subtitles::drawOverlay() {
 	_vm->_gfx->drawTexturedRect2D(bottomBorder, textureRect, _texture);
 }
 
-Subtitles *Subtitles::create(Myst3Engine *vm, uint32 id) {
+Subtitles *Subtitles::create(Myst3Engine *vm, const Common::String &room, uint32 id) {
 	Subtitles *s;
 
 	if (vm->getPlatform() == Common::kPlatformXbox) {
@@ -512,7 +496,7 @@ Subtitles *Subtitles::create(Myst3Engine *vm, uint32 id) {
 
 	s->loadFontSettings(1100);
 
-	if (!s->loadSubtitles(id)) {
+	if (!s->loadSubtitles(room, id)) {
 		delete s;
 		return nullptr;
 	}

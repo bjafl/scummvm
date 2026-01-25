@@ -162,22 +162,22 @@ Node::~Node() {
 	delete _subtitles;
 }
 
-void Node::loadSpotItem(uint16 id, int16 condition, bool fade) {
+void Node::loadSpotItem(const Common::String &room, uint16 id, int16 condition, bool fade) {
 	SpotItem *spotItem = new SpotItem(_vm);
 
 	spotItem->setCondition(condition);
 	spotItem->setFade(fade);
 	spotItem->setFadeVar(abs(condition));
 
-	Common::String roomName = _vm->getCurrentRoomName();
-	ResourceDescriptionArray resources = _vm->_resourceLoader->listSpotItemImages(roomName, id);
+	// Common::String roomName = _vm->getCurrentRoomName();
+	ResourceDescriptionArray resources = _vm->_resourceLoader->listSpotItemImages(room, id);
 	TextureLoader textureLoader(*_vm->_gfx);
 	for (uint i = 0; i < resources.size(); i++) {
 		const ResourceDescription &image = resources[i];
 		ResourceDescription::SpotItemData spotItemData = image.getSpotItemData();
 
-		uint16 faceIndex = image.getFace() - 1; // Faces are 1-indexed in archive, 0-indexed in _faces array
-		SpotItemFace *spotItemFace = new SpotItemFace(_faces[faceIndex], spotItemData.u, spotItemData.v);
+		// uint16 faceIndex = image.getFace() - 1; // Faces are 1-indexed in archive, 0-indexed in _faces array
+		SpotItemFace *spotItemFace = new SpotItemFace(_faces[i], spotItemData.u, spotItemData.v);
 
 		Graphics::Surface *bitmapSurface = textureLoader.loadSurface(image, TextureLoader::kImageFormatJPEG);
 		spotItemFace->loadData(bitmapSurface);
@@ -211,8 +211,8 @@ SpotItemFace *Node::loadMenuSpotItem(int16 condition, const Common::Rect &rect) 
 	return spotItemFace;
 }
 
-void Node::loadSubtitles(uint32 id) {
-	_subtitles = Subtitles::create(_vm, id);
+void Node::loadSubtitles(const Common::String &room, uint32 id) {
+	_subtitles = Subtitles::create(_vm, room, id);
 }
 
 bool Node::hasSubtitlesToDraw() {

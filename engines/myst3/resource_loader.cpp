@@ -85,6 +85,7 @@ void ResourceLoader::unloadRoomArchives() {
 void ResourceLoader::loadRoomArchives(const Common::String &room) {
 	unloadRoomArchives();
 
+	// Check 'mods' subdirs for matching archive patches and load results
 	for (uint i = 0; i < _mods.size(); i++) {
 		Common::String modNodeFile = Common::String::format("mods/%s/%snodes.m3a.patch", _mods[i].c_str(), room.c_str());
 		Archive *modNodeArchive = new Archive();
@@ -96,6 +97,7 @@ void ResourceLoader::loadRoomArchives(const Common::String &room) {
 		}
 	}
 
+	// Load original room archive
 	Common::String roomFile = Common::String::format("%snodes.m3a", room.c_str());
 	Archive *roomArchive = new Archive();
 	if (!roomArchive->open(roomFile.c_str(), room.c_str())) {
@@ -109,6 +111,7 @@ void ResourceLoader::loadRoomArchives(const Common::String &room) {
 
 ResourceDescription ResourceLoader::getFileDescription(const Common::String &room, uint32 index, uint16 face,
 													   Archive::ResourceType type) const {
+	debugC(kDebugNode, "Getting file description for: room=%s, index=%d, face=%d, type=%d", room.c_str(), index, face, type);
 	if (room.empty()) {
 		error("No archive room name found when looking up resource %d-%d.%d", index, face, type);
 	}
@@ -134,6 +137,7 @@ ResourceDescription ResourceLoader::getFileDescription(const Common::String &roo
 
 ResourceDescriptionArray ResourceLoader::listFilesMatching(const Common::String &room, uint32 index,
 														   Archive::ResourceType type) const {
+	debugC(kDebugNode, "Listing files matching: room=%s, index=%d, type=%d", room.c_str(), index, type);
 	if (room.empty()) {
 		error("No archive room name found when looking up resource %d.%d", index, type);
 	}
@@ -156,6 +160,7 @@ ResourceDescriptionArray ResourceLoader::listFilesMatching(const Common::String 
 }
 
 ResourceDescription ResourceLoader::getFrameBitmap(const Common::String &room, uint16 nodeId) const {
+	debugC(kDebugNode, "Getting frame bitmap for: room=%s, nodeId=%d, faceId=%d", room.c_str(), nodeId);
 	ResourceDescription resource = getFileDescription(room, nodeId, 0, Archive::kModdedFrame);
 
 	if (!resource.isValid()) {
@@ -182,6 +187,7 @@ ResourceDescription ResourceLoader::getFrameBitmap(const Common::String &room, u
 }
 
 ResourceDescription ResourceLoader::getCubeBitmap(const Common::String &room, uint16 nodeId, uint16 faceId) const {
+	debugC(kDebugNode, "Getting cube bitmap for: room=%s, nodeId=%d, faceId=%d", room.c_str(), nodeId, faceId);
 	ResourceDescription resource = getFileDescription(room, nodeId, faceId + 1, Archive::kModdedCubeFace);
 
 	if (!resource.isValid()) {
@@ -195,6 +201,7 @@ ResourceDescription ResourceLoader::getCubeBitmap(const Common::String &room, ui
 }
 
 ResourceDescription ResourceLoader::getMovie(const Common::String &room, uint16 movieId) const {
+	debugC(kDebugNode, "Getting movie for: room=%s, movieId=%d", room.c_str(), movieId);
 	ResourceDescription resource = getFileDescription(room, movieId, 0, Archive::kModdedMovie);
 
 	if (!resource.isValid())
@@ -213,6 +220,7 @@ ResourceDescription ResourceLoader::getMovie(const Common::String &room, uint16 
 }
 
 ResourceDescription ResourceLoader::getStillMovie(const Common::String &room, uint16 movieId) const {
+	debugC(kDebugNode, "Getting still movie for: room=%s, movieId=%d", room.c_str(), movieId);
 	ResourceDescription resource = getFileDescription(room, movieId, 0, Archive::kModdedMovie);
 
 	if (!resource.isValid())
@@ -222,6 +230,7 @@ ResourceDescription ResourceLoader::getStillMovie(const Common::String &room, ui
 }
 
 ResourceDescription ResourceLoader::getDialogMovie(const Common::String &room, uint16 movieId) const {
+	debugC(kDebugNode, "Getting dialog movie for: room=%s, movieId=%d", room.c_str(), movieId);
 	ResourceDescription resource = getFileDescription(room, movieId, 0, Archive::kModdedMovie);
 
 	if (!resource.isValid())
@@ -234,6 +243,7 @@ ResourceDescription ResourceLoader::getDialogMovie(const Common::String &room, u
 }
 
 ResourceDescription ResourceLoader::getRawData(const Common::String &room, uint16 id) const {
+	debugC(kDebugNode, "Getting raw data for: room=%s, id=%d", room.c_str(), id);
 	ResourceDescription resource = getFileDescription(room, id, 0, Archive::kModdedRawData);
 
 	if (!resource.isValid())
@@ -243,6 +253,7 @@ ResourceDescription ResourceLoader::getRawData(const Common::String &room, uint1
 }
 
 ResourceDescriptionArray ResourceLoader::listSpotItemImages(const Common::String &room, uint16 spotItemId) const {
+	debugC(kDebugNode, "Listing spot item images for: room=%s, spotItemId=%d", room.c_str(), spotItemId);
 	ResourceDescriptionArray resources;
 	resources.push_back(listFilesMatching(room, spotItemId, Archive::kModdedSpotItem));
 

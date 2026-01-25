@@ -241,7 +241,11 @@ bool Myst3Engine::isAssetsModEnabled() const {
 }
 
 Common::String Myst3Engine::getCurrentRoomName() const {
-	return _db->getRoomName(_state->getLocationRoom(), _state->getLocationAge());
+	auto roomId = _state->getLocationRoom();
+	auto locationAge = _state->getLocationAge();
+	auto room = _db->getRoomName(roomId, locationAge);
+	debugC(kDebugNode, "getCurrentRoomName: id=%d, age=%d, name=%s", roomId, locationAge, room.c_str());
+	return room;
 }
 
 static bool modsCompare(const Common::FSNode &a, const Common::FSNode &b) {
@@ -1136,12 +1140,13 @@ void Myst3Engine::runAmbientScripts(uint32 node) {
 void Myst3Engine::loadMovie(uint16 id, uint16 condition, bool resetCond, bool loop) {
 	assert(_node);
 
+	auto room = getCurrentRoomName();
 	ScriptedMovie *movie;
 
 	if (!_state->getMovieUseBackground()) {
-		movie = new ScriptedMovie(this, id);
+		movie = new ScriptedMovie(this, room, id);
 	} else {
-		movie = new ProjectorMovie(this, id, _projectorBackground);
+		movie = new ProjectorMovie(this, room, id, _projectorBackground);
 		_projectorBackground = nullptr;
 		_state->setMovieUseBackground(0);
 	}
@@ -1266,7 +1271,8 @@ void Myst3Engine::loadMovie(uint16 id, uint16 condition, bool resetCond, bool lo
 void Myst3Engine::playSimpleMovie(uint16 id, bool fullframe, bool refreshAmbientSounds) {
 	assert(_node);
 
-	SimpleMovie movie(this, id);
+	auto room = getCurrentRoomName();
+	SimpleMovie movie(this, room, id);
 
 	if (!movie.isVideoLoaded()) {
 		// The video was not loaded and it was optional, just do nothing
@@ -1367,7 +1373,8 @@ void Myst3Engine::setMovieLooping(uint16 id, bool loop) {
 void Myst3Engine::addSpotItem(uint16 id, int16 condition, bool fade) {
 	assert(_node);
 
-	_node->loadSpotItem(id, condition, fade);
+	auto room = getCurrentRoomName();
+	_node->loadSpotItem(room, id, condition, fade);
 }
 
 SpotItemFace *Myst3Engine::addMenuSpotItem(uint16 id, int16 condition, const Common::Rect &rect) {
@@ -1382,8 +1389,9 @@ SpotItemFace *Myst3Engine::addMenuSpotItem(uint16 id, int16 condition, const Com
 
 void Myst3Engine::loadNodeSubtitles(uint32 id) {
 	assert(_node);
-
-	_node->loadSubtitles(id);
+	
+	auto room = getCurrentRoomName();
+	_node->loadSubtitles(room, id);
 }
 
 int16 Myst3Engine::openDialog(uint16 id) {
