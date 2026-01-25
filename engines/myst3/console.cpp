@@ -25,8 +25,14 @@
 #include "engines/myst3/database.h"
 #include "engines/myst3/effects.h"
 #include "engines/myst3/inventory.h"
+#include "engines/myst3/resource_loader.h"
 #include "engines/myst3/script.h"
 #include "engines/myst3/state.h"
+
+#include "common/file.h"
+#include "common/fs.h"
+#include "common/md5.h"
+#include "common/util.h"
 
 namespace Myst3 {
 
@@ -42,7 +48,9 @@ Console::Console(Myst3Engine *vm) : GUI::Debugger(), _vm(vm) {
 	registerCmd("extract",				WRAP_METHOD(Console, Cmd_Extract));
 	registerCmd("fillInventory",			WRAP_METHOD(Console, Cmd_FillInventory));
 	registerCmd("dumpArchive",			WRAP_METHOD(Console, Cmd_DumpArchive));
+	registerCmd("modArchive",			WRAP_METHOD(Console, Cmd_ModArchive));
 	registerCmd("dumpMasks",			WRAP_METHOD(Console, Cmd_DumpMasks));
+	registerCmd("listArchive",			WRAP_METHOD(Console, Cmd_ListArchive));
 }
 
 Console::~Console() {
@@ -329,59 +337,34 @@ bool Console::Cmd_FillInventory(int argc, const char **argv) {
 class DumpingArchiveVisitor : public ArchiveVisitor {
 public:
 	DumpingArchiveVisitor() :
-			_archive(nullptr),
-			_currentDirectoryEntry(nullptr) {
+			_archive(nullptr) {
 	}
 
 	void visitArchive(Archive &archive) override {
 		_archive = &archive;
 	}
 
-	void visitDirectoryEntry(Archive::DirectoryEntry &directoryEntry) override {
-		_currentDirectoryEntry = &directoryEntry;
-	}
+	void visitDirectorySubEntry(Archive::DirectoryEntry &directoryEntry, Archive::DirectorySubEntry &directorySubEntry) override {
+		bool multipleSubEntriesWithSameKey = ResourceLoader::checkForSubentriesSharingSameKey(directoryEntry, directorySubEntry);
+		Common::String fileName = ResourceLoader::computeExtractedFileName(directoryEntry, directorySubEntry, multipleSubEntriesWithSameKey);
+		if (fileName.empty()) return;
 
-	void visitDirectorySubEntry(Archive::DirectorySubEntry &directorySubEntry) override {
-		assert(_currentDirectoryEntry);
-
-		Common::Path fileName;
-		switch (directorySubEntry.type) {
-		case Archive::kNumMetadata:
-		case Archive::kTextMetadata:
-			return; // These types are pure metadata and can't be extracted
-		case Archive::kCubeFace:
-		case Archive::kSpotItem:
-		case Archive::kLocalizedSpotItem:
-		case Archive::kFrame:
-			fileName = Common::Path(Common::String::format("dump/%s-%d-%d.jpg", _currentDirectoryEntry->roomName.c_str(), _currentDirectoryEntry->index, directorySubEntry.face));
-			break;
-		case Archive::kWaterEffectMask:
-			fileName = Common::Path(Common::String::format("dump/%s-%d-%d.mask", _currentDirectoryEntry->roomName.c_str(), _currentDirectoryEntry->index, directorySubEntry.face));
-			break;
-		case Archive::kMovie:
-		case Archive::kStillMovie:
-		case Archive::kDialogMovie:
-		case Archive::kMultitrackMovie:
-			fileName = Common::Path(Common::String::format("dump/%s-%d.bik", _currentDirectoryEntry->roomName.c_str(), _currentDirectoryEntry->index));
-			break;
-		default:
-			fileName = Common::Path(Common::String::format("dump/%s-%d-%d.%d", _currentDirectoryEntry->roomName.c_str(), _currentDirectoryEntry->index, directorySubEntry.face, directorySubEntry.type));
-			break;
-		}
-
-		debug("Extracted %s", fileName.toString(Common::Path::kNativeSeparator).c_str());
+		debug("Extracted %s", fileName.c_str());
 
 		Common::DumpFile outFile;
-		if (!outFile.open(fileName, true))
-			error("Unable to open file '%s' for writing", fileName.toString(Common::Path::kNativeSeparator).c_str());
+		if (!outFile.open(Common::Path(fileName), true))
+			error("Unable to open file '%s' for writing", fileName.c_str());
 
-		_archive->copyTo(directorySubEntry.offset, directorySubEntry.size, outFile);
+		// Use dumpToMemory to handle LZO decompression
+		Common::SeekableReadStream *memoryStream = _archive->dumpToMemory(directorySubEntry.offset, directorySubEntry.size);
+		outFile.writeStream(memoryStream);
+		delete memoryStream;
+
 		outFile.close();
 	}
 
 private:
 	Archive *_archive;
-	const Archive::DirectoryEntry *_currentDirectoryEntry;
 };
 
 bool Console::Cmd_DumpArchive(int argc, const char **argv) {
@@ -427,36 +410,39 @@ bool Console::Cmd_DumpMasks(int argc, const char **argv) {
 	}
 
 	uint16 nodeId = _vm->_state->getLocationNode();
+	uint32 roomId = _vm->_state->getLocationRoom();
+	uint32 ageID  = _vm->_state->getLocationAge();
 
 	if (argc >= 2) {
 		nodeId = atoi(argv[1]);
 	}
 
-	debugPrintf("Extracting masks for node %d:\n", nodeId);
+	Common::String roomName = _vm->_db->getRoomName(roomId, ageID);
+
+	debugPrintf("Extracting masks for node %s %d:\n", roomName.c_str(), nodeId);
 
 	for (uint i = 0; i < 6; i++) {
-		bool water = dumpFaceMask(nodeId, i, Archive::kWaterEffectMask);
+		bool water = dumpFaceMask(roomName, nodeId, i, Archive::kWaterEffectMask);
 		if (water)
 			debugPrintf("Face %d: water OK\n", i);
 
-		bool effect2 = dumpFaceMask(nodeId, i, Archive::kLavaEffectMask);
-		if (effect2)
-			debugPrintf("Face %d: effect 2 OK\n", i);
+		bool lava = dumpFaceMask(roomName, nodeId, i, Archive::kLavaEffectMask);
+		if (lava)
+			debugPrintf("Face %d: lava OK\n", i);
 
-		bool magnet = dumpFaceMask(nodeId, i, Archive::kMagneticEffectMask);
+		bool magnet = dumpFaceMask(roomName, nodeId, i, Archive::kMagneticEffectMask);
 		if (magnet)
 			debugPrintf("Face %d: magnet OK\n", i);
 
-		if (!water && !effect2 && !magnet)
+		if (!water && !lava && !magnet)
 			debugPrintf("Face %d: No mask found\n", i);
 	}
 
 	return true;
 }
 
-bool Console::dumpFaceMask(uint16 index, int face, Archive::ResourceType type) {
-	auto roomName = _vm->getCurrentRoomName();
-	ResourceDescription maskDesc = _vm->_resourceLoader->getFileDescription(roomName, index, face, type);
+bool Console::dumpFaceMask(const Common::String &room, uint16 index, int face, Archive::ResourceType type) {
+	ResourceDescription maskDesc = _vm->_resourceLoader->getFileDescription(room, index, face, type);
 
 	if (!maskDesc.isValid())
 		return false;
@@ -468,12 +454,222 @@ bool Console::dumpFaceMask(uint16 index, int face, Archive::ResourceType type) {
 	delete maskStream;
 
 	Common::DumpFile outFile;
-	Common::Path fileName(Common::String::format("dump/%d-%d.masku_%d", index, face, type));
-	outFile.open(fileName);
+	outFile.open(Common::Path(Common::String::format("dump/%s-%d-%d.masku_%d", room.c_str(), index, face, type)), true);
 	outFile.write(mask->surface->getPixels(), mask->surface->pitch * mask->surface->h);
 	outFile.close();
 
 	delete mask;
+
+	return true;
+}
+
+class ModdingArchiveVisitor : public ArchiveVisitor {
+public:
+	ModdingArchiveVisitor(ArchiveWriter &archiveWriter, bool compress, GUI::Debugger &debugger) :
+			_archive(nullptr),
+			_archiveWriter(archiveWriter),
+			_compress(compress),
+			_debugger(debugger) {
+	}
+
+	void visitArchive(Archive &archive) override {
+		_archive = &archive;
+	}
+
+	void visitDirectorySubEntry(Archive::DirectoryEntry &directoryEntry, Archive::DirectorySubEntry &directorySubEntry) override {
+		Archive::ResourceType moddedType = directorySubEntry.type;
+		bool compress = false;
+		switch (directorySubEntry.type) {
+		case Archive::kCubeFace:
+			moddedType = Archive::kModdedCubeFace;
+			compress = true;
+			break;
+		case Archive::kSpotItem:
+		case Archive::kLocalizedSpotItem:
+			moddedType = Archive::kModdedSpotItem;
+			compress = true;
+			break;
+		case Archive::kFrame:
+		case Archive::kLocalizedFrame:
+			moddedType = Archive::kModdedFrame;
+			compress = true;
+			break;
+		case Archive::kRawData:
+			moddedType = Archive::kModdedRawData;
+			compress = true;
+			break;
+		case Archive::kMovie:
+		case Archive::kStillMovie:
+		case Archive::kDialogMovie:
+		case Archive::kMultitrackMovie:
+			moddedType = Archive::kModdedMovie;
+			break;
+		default:
+			break;
+		}
+
+		Archive::DirectorySubEntry moddedDirectorySubEntry = directorySubEntry;
+		moddedDirectorySubEntry.type = moddedType;
+
+		bool multipleSubEntriesWithSameKey = ResourceLoader::checkForSubentriesSharingSameKey(directoryEntry, directorySubEntry);
+		Common::String fileName = ResourceLoader::computeExtractedFileName(directoryEntry, moddedDirectorySubEntry, multipleSubEntriesWithSameKey);
+		if (fileName.empty()) return;
+
+		Common::FSNode extractedFile = Common::FSNode(Common::Path(fileName));
+		if (!extractedFile.exists()) return;
+
+		// Checksum the original and modded files
+		Common::SeekableReadStream *originalStream = _archive->dumpToMemory(directorySubEntry.offset, directorySubEntry.size);
+		Common::String originalMd5 = Common::computeStreamMD5AsString(*originalStream);
+		delete originalStream;
+
+		Common::SeekableReadStream *moddedStream = extractedFile.createReadStream();
+		Common::String moddedMd5 = Common::computeStreamMD5AsString(*moddedStream);
+		delete moddedStream;
+
+		// Ignore files that have not changed
+		if (moddedMd5 == originalMd5) return;
+
+		MetadataArray moddedMetadata;
+		for (uint i = 0; i < directorySubEntry.metadata.size(); i++) {
+			moddedMetadata.push_back(directorySubEntry.metadata[i]);
+		}
+
+		_debugger.debugPrintf("Adding '%s' to the modded archive (md5sum %s)\n", fileName.c_str(), moddedMd5.c_str());
+
+		_archiveWriter.addFile(
+		            directoryEntry.roomName,
+		            directoryEntry.index,
+		            directorySubEntry.face,
+		            moddedType,
+		            moddedMetadata,
+		            fileName,
+		            _compress && compress
+		);
+	}
+
+private:
+	Archive *_archive;
+	ArchiveWriter &_archiveWriter;
+	bool _compress;
+	GUI::Debugger &_debugger;
+};
+
+bool Console::Cmd_ModArchive(int argc, const char **argv) {
+	if (argc != 2 && argc != 3) {
+		debugPrintf("Build a new game archive from a folder of modded files.\n");
+		debugPrintf("The source folder must be named 'dump' and be in the current directory.\n");
+		debugPrintf("Usage :\n");
+		debugPrintf("modArchive [file name] [compress]\n");
+		debugPrintf("  compress: true/false (default: true)\n");
+		return true;
+	}
+
+	// Is the archive multi-room
+	Common::String temp = Common::String(argv[1]);
+	if (temp.size() < 4) {
+		debugPrintf("Invalid file name '%s'\n", argv[1]);
+		return true;
+	}
+
+	Common::String room;
+	if (temp.hasSuffixIgnoreCase(".m3a")) {
+		room = Common::String(argv[1], 4);
+		room.toUppercase();
+	}
+
+	bool compress = true;
+	if (argc >= 3) {
+		if (!Common::parseBool(argv[2], compress)) {
+			debugPrintf("Invalid boolean value '%s'\n", argv[2]);
+			return true;
+		}
+	}
+
+	Archive archive;
+	if (!archive.open(argv[1], room.empty() ? nullptr : room.c_str())) {
+		debugPrintf("Can't open archive with name '%s'\n", argv[1]);
+		return true;
+	}
+
+	ArchiveWriter archiveWriter(room);
+	ModdingArchiveVisitor moddingVisitor(archiveWriter, compress, *this);
+	archive.visit(moddingVisitor);
+	archive.close();
+
+	if (archiveWriter.empty()) {
+		debugPrintf("No modded files were found to put in the archive\n");
+		return true;
+	}
+
+	Common::String outFileName = Common::String::format("%s.patch", argv[1]);
+
+	Common::DumpFile outFile;
+	if (!outFile.open(Common::Path(outFileName), true))
+		error("Unable to open file '%s' for writing", outFileName.c_str());
+
+	archiveWriter.write(outFile);
+
+	debugPrintf("The mod archive '%s' has been written\n", outFileName.c_str());
+
+	return true;
+}
+
+class ListingArchiveVisitor : public ArchiveVisitor {
+public:
+	ListingArchiveVisitor(GUI::Debugger &debugger) :
+			_debugger(debugger) {
+	}
+
+	void visitDirectorySubEntry(Archive::DirectoryEntry &directoryEntry, Archive::DirectorySubEntry &directorySubEntry) override {
+		bool multipleSubEntriesWithSameKey = ResourceLoader::checkForSubentriesSharingSameKey(directoryEntry, directorySubEntry);
+		Common::String fileName = ResourceLoader::computeExtractedFileName(directoryEntry, directorySubEntry, multipleSubEntriesWithSameKey);
+		if (fileName.empty()) {
+			_debugger.debugPrintf("%s-%d-%d (type %d) - metadata only\n",
+			                      directoryEntry.roomName.c_str(),
+			                      directoryEntry.index,
+			                      directorySubEntry.face,
+			                      directorySubEntry.type);
+		} else {
+			_debugger.debugPrintf("%s (size: %d, offset: %d)\n",
+			                      fileName.c_str(),
+			                      directorySubEntry.size,
+			                      directorySubEntry.offset);
+		}
+	}
+
+private:
+	GUI::Debugger &_debugger;
+};
+
+bool Console::Cmd_ListArchive(int argc, const char **argv) {
+	if (argc != 2) {
+		debugPrintf("List all the files in a game archive.\n");
+		debugPrintf("Usage :\n");
+		debugPrintf("listArchive [file name]\n");
+		return true;
+	}
+
+	// Is the archive multi-room
+	Common::String temp = Common::String(argv[1]);
+	temp.toUppercase();
+
+	bool multiRoom = !temp.hasSuffix(".M3A");
+	if (!multiRoom) {
+		temp = Common::String(argv[1], 4);
+		temp.toUppercase();
+	}
+
+	Archive archive;
+	if (!archive.open(argv[1], multiRoom ? nullptr : temp.c_str())) {
+		debugPrintf("Can't open archive with name '%s'\n", argv[1]);
+		return true;
+	}
+
+	ListingArchiveVisitor lister(*this);
+	archive.visit(lister);
+
+	archive.close();
 
 	return true;
 }

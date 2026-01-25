@@ -157,7 +157,69 @@ public:
 
 	virtual void visitArchive(Archive &archive) {}
 	virtual void visitDirectoryEntry(Archive::DirectoryEntry &directoryEntry) {}
-	virtual void visitDirectorySubEntry(Archive::DirectorySubEntry &directorySubEntry) {}
+	virtual void visitDirectorySubEntry(Archive::DirectoryEntry &directoryEntry, Archive::DirectorySubEntry &directorySubEntry) {}
+};
+
+typedef Common::Array<uint32> MetadataArray;
+
+/**
+ * Archive writer for creating mod patch archives
+ */
+class ArchiveWriter {
+public:
+	ArchiveWriter(const Common::String &room);
+
+	/**
+	 * Add a file to the archive
+	 * @param room Room name
+	 * @param index Resource index
+	 * @param face Face number
+	 * @param type Resource type
+	 * @param metadata Resource metadata
+	 * @param filename Path to the file to include
+	 * @param compress Whether to LZO compress this file
+	 */
+	void addFile(const Common::String &room, uint32 index, byte face, Archive::ResourceType type,
+	             const MetadataArray &metadata, const Common::String &filename, bool compress);
+
+	/**
+	 * Write the archive to an output stream
+	 */
+	void write(Common::SeekableWriteStream &outStream);
+
+	/**
+	 * Check if the archive has any files
+	 */
+	bool empty() const { return _directory.empty(); }
+
+private:
+	struct DirectorySubEntry {
+		uint32 offset;
+		uint32 size;
+		byte face;
+		Archive::ResourceType type;
+		MetadataArray metadata;
+		Common::String filename;
+		bool compress;
+
+		DirectorySubEntry() : offset(0), size(0), face(0), type(Archive::kCubeFace), compress(false) {}
+	};
+
+	struct DirectoryEntry {
+		Common::String roomName;
+		uint32 index;
+		Common::Array<DirectorySubEntry> subentries;
+
+		DirectoryEntry() : index(0) {}
+	};
+
+	DirectoryEntry *getEntry(const Common::String &room, uint32 index);
+	void writeDirectory(Common::SeekableWriteStream &outStream);
+	void writeFiles(Common::SeekableWriteStream &outStream);
+	void encryptHeader(uint32 *header, uint32 length);
+
+	Common::String _room;
+	Common::Array<DirectoryEntry> _directory;
 };
 
 } // End of namespace Myst3
