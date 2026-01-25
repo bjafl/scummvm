@@ -18,6 +18,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
+#include <utility>
 
 #include "engines/myst3/database.h"
 #include "engines/myst3/effects.h"
@@ -101,12 +102,12 @@ Node::Node(Myst3Engine *vm, uint16 id) :
 void Node::initEffects() {
 	resetEffects();
 
-	debugC(kDebugModding, "Node::initEffects: node=%d, viewType=%d", _id, _vm->_state->getViewType());
+	debugC(kDebugNode, "Node::initEffects: node=%d, viewType=%d", _id, _vm->_state->getViewType());
 
 	// Log face dimensions for debugging modded textures
 	for (uint i = 0; i < 6; i++) {
 		if (_faces[i] && _faces[i]->_bitmap) {
-			debugC(kDebugModding, "  Face %d: bitmap=%dx%d", i, _faces[i]->_bitmap->w, _faces[i]->_bitmap->h);
+			debugC(kDebugNode, "  Face %d: bitmap=%dx%d", i, _faces[i]->_bitmap->w, _faces[i]->_bitmap->h);
 		}
 	}
 
@@ -114,41 +115,42 @@ void Node::initEffects() {
 		// The node init script does not clear the magnet effect state.
 		// Here we ignore effects on menu nodes so we don't try to
 		// to load the magnet effect when opening the main menu on Amateria.
-		debugC(kDebugModding, "  Skipping effects for menu node");
+		debugC(kDebugNode, "  Skipping effects for menu node");
 		return;
 	}
 
+	Common::String room = _vm->getCurrentRoomName();
 	if (_vm->_state->getWaterEffects()) {
-		Effect *effect = WaterEffect::create(_vm, _id);
+		Effect *effect = WaterEffect::create(_vm, room, _id);
 		if (effect) {
 			_effects.push_back(effect);
 			_vm->_state->setWaterEffectActive(true);
-			debugC(kDebugModding, "  Created WaterEffect");
+			debugC(kDebugNode, "  Created WaterEffect");
 		}
 	}
 
-	Effect *effect = MagnetEffect::create(_vm, _id);
+	Effect *effect = MagnetEffect::create(_vm, room, _id);
 	if (effect) {
 		_effects.push_back(effect);
 		_vm->_state->setMagnetEffectActive(true);
-		debugC(kDebugModding, "  Created MagnetEffect");
+		debugC(kDebugNode, "  Created MagnetEffect");
 	}
 
-	effect = LavaEffect::create(_vm, _id);
+	effect = LavaEffect::create(_vm, room, _id);
 	if (effect) {
 		_effects.push_back(effect);
 		_vm->_state->setLavaEffectActive(true);
-		debugC(kDebugModding, "  Created LavaEffect");
+		debugC(kDebugNode, "  Created LavaEffect");
 	}
 
 	effect = ShieldEffect::create(_vm, _id);
 	if (effect) {
 		_effects.push_back(effect);
 		_vm->_state->setShieldEffectActive(true);
-		debugC(kDebugModding, "  Created ShieldEffect");
+		debugC(kDebugNode, "  Created ShieldEffect");
 	}
 
-	debugC(kDebugModding, "  Total effects: %d", _effects.size());
+	debugC(kDebugNode, "  Total effects: %d", _effects.size());
 }
 
 void Node::resetEffects() {
@@ -185,7 +187,7 @@ void Node::loadSpotItem(const Common::String &room, uint16 id, int16 condition, 
 	spotItem->setFade(fade);
 	spotItem->setFadeVar(abs(condition));
 
-	debugC(kDebugModding, "Node::loadSpotItem: room=%s, id=%d, condition=%d, fade=%d",
+	debugC(kDebugNode, "Node::loadSpotItem: room=%s, id=%d, condition=%d, fade=%d",
 	       room.c_str(), id, condition, fade);
 
 	// Common::String roomName = _vm->getCurrentRoomName();
@@ -195,7 +197,7 @@ void Node::loadSpotItem(const Common::String &room, uint16 id, int16 condition, 
 		const ResourceDescription &image = resources[i];
 		ResourceDescription::SpotItemData spotItemData = image.getSpotItemData();
 
-		debugC(kDebugModding, "  SpotItem face %d: type=%d, u=%d, v=%d",
+		debugC(kDebugNode, "  SpotItem face %d: type=%d, u=%d, v=%d",
 		       i, image.getType(), spotItemData.u, spotItemData.v);
 
 		assert(i < 6 && "Node::loadSpotItem: face index out of bounds");
@@ -209,14 +211,14 @@ void Node::loadSpotItem(const Common::String &room, uint16 id, int16 condition, 
 		assert(bitmapSurface && "Node::loadSpotItem: failed to load bitmap surface");
 		spotItemFace->loadData(bitmapSurface);
 
-		debugC(kDebugModding, "    Loaded bitmap: %dx%d, face bitmap: %dx%d",
+		debugC(kDebugNode, "    Loaded bitmap: %dx%d, face bitmap: %dx%d",
 		       bitmapSurface->w, bitmapSurface->h,
 		       _faces[i]->_bitmap->w, _faces[i]->_bitmap->h);
 
 		// Verify spot item fits within face
-		assert(spotItemData.u + bitmapSurface->w <= _faces[i]->_bitmap->w &&
+		assert(std::_Cmp_less_equal(spotItemData.u + bitmapSurface->w, _faces[i]->_bitmap->w) &&
 		       "Node::loadSpotItem: spot item exceeds face width");
-		assert(spotItemData.v + bitmapSurface->h <= _faces[i]->_bitmap->h &&
+		assert(std::_Cmp_less_equal(spotItemData.v + bitmapSurface->h, _faces[i]->_bitmap->h) &&
 		       "Node::loadSpotItem: spot item exceeds face height");
 
 		// SpotItems with an always true conditions cannot be undrawn.
@@ -241,7 +243,7 @@ SpotItemFace *Node::loadMenuSpotItem(int16 condition, const Common::Rect &rect) 
 	assert(_faces[0] && "Node::loadMenuSpotItem: face 0 is null");
 	assert(_faces[0]->_bitmap && "Node::loadMenuSpotItem: face 0 bitmap is null");
 
-	debugC(kDebugModding, "Node::loadMenuSpotItem: condition=%d, rect=[%d,%d,%d,%d], face0 bitmap=%dx%d",
+	debugC(kDebugNode, "Node::loadMenuSpotItem: condition=%d, rect=[%d,%d,%d,%d], face0 bitmap=%dx%d",
 	       condition, rect.left, rect.top, rect.right, rect.bottom,
 	       _faces[0]->_bitmap->w, _faces[0]->_bitmap->h);
 

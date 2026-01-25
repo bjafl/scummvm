@@ -54,13 +54,14 @@ Common::Rect Effect::FaceMask::getBlockRect(uint x, uint y) {
 	return rect;
 }
 
-Effect::Effect(Myst3Engine *vm) :
-		_vm(vm) {
+Effect::Effect(Myst3Engine *vm, EffectType effectType) :
+		_vm(vm),
+		_type(effectType) {
 }
 
 Effect::~Effect() {
-	for (FaceMaskMap::iterator it = _facesMasks.begin(); it != _facesMasks.end(); it++) {
-		delete it->_value;
+	for (uint i = 0; i < _facesMasks.size(); i++) {
+		delete _facesMasks[i];
 	}
 }
 
@@ -71,7 +72,9 @@ bool Effect::loadMasks(const Common::String &room, uint32 id, Archive::ResourceT
 	       room.c_str(), id, type, isFrame);
 
 	// Load the mask of each face
-	for (uint i = 0; i < 6; i++) {
+	bool loadedMasks = false;
+	_facesMasks.resize(isFrame ? 1 : 6);
+	for (uint i = 0; i < _facesMasks.size(); i++) {
 		ResourceDescription desc = _vm->_resourceLoader->getFileDescription(room, id, i + 1, type);
 
 		if (desc.isValid()) {
@@ -90,10 +93,12 @@ bool Effect::loadMasks(const Common::String &room, uint32 id, Archive::ResourceT
 			}
 
 			delete data;
+
+			loadedMasks = true;
 		}
 	}
 
-	if (_facesMasks.empty()) {
+	if (!loadedMasks) {
 		debugC(kDebugModding, "  No masks loaded");
 		return false;
 	}
@@ -145,7 +150,7 @@ Effect::FaceMask *Effect::loadMask(Common::SeekableReadStream *maskStream) {
 }
 
 Common::Rect Effect::getUpdateRectForFace(uint face) {
-	FaceMask *mask = _facesMasks.getVal(face);
+	FaceMask *mask = _facesMasks[face];
 	if (!mask)
 		error("No mask for face %d", face);
 
@@ -173,18 +178,24 @@ Common::Rect Effect::getUpdateRectForFace(uint face) {
 }
 
 WaterEffect::WaterEffect(Myst3Engine *vm) :
-		Effect(vm),
+		Effect(vm, kEffectWater),
 		_lastUpdate(0),
 		_step(0) {
+	_vm->_state->setWaterEffectActive(true);
 }
 
 WaterEffect::~WaterEffect() {
+	_vm->_state->setWaterEffectActive(false);
 }
 
-WaterEffect *WaterEffect::create(Myst3Engine *vm, uint32 id) {
+WaterEffect *WaterEffect::create(Myst3Engine *vm, const Common::String &room, uint32 id) {
+	if (!vm->_state->getWaterEffects()) {
+		return nullptr;
+	}
+
 	WaterEffect *s = new WaterEffect(vm);
-	auto roomName = vm->getCurrentRoomName();
-	if (!s->loadMasks(roomName, id, Archive::kWaterEffectMask)) {
+
+	if (!s->loadMasks(room, id, Archive::kWaterEffectMask)) {
 		delete s;
 		return nullptr;
 	}
@@ -272,7 +283,7 @@ void WaterEffect::applyForFace(uint face, Graphics::Surface *src, Graphics::Surf
 	assert(src && "WaterEffect::applyForFace: src surface is null");
 	assert(dst && "WaterEffect::applyForFace: dst surface is null");
 
-	FaceMask *mask = _facesMasks.getVal(face);
+	FaceMask *mask = _facesMasks[face];
 
 	if (!mask)
 		error("No mask for face %d", face);
@@ -304,19 +315,11 @@ void WaterEffect::apply(Graphics::Surface *src, Graphics::Surface *dst, Graphics
 		vDisplacement = _verticalDisplacement;
 	}
 
-	/*if (scaleRatioX != 1.0f || scaleRatioY != 1.0f) {
-		debugC(kDebugModding, "WaterEffect::apply: scaling mask %dx%d to dst %dx%d, ratio=%.3fx%.3f",
-		       mask->w, mask->h, dst->w, dst->h, scaleRatioX, scaleRatioY);
-	}*/
-
 	uint32 *dstPtr = (uint32 *)dst->getPixels();
 	byte *maskPtr = (byte *)mask->getPixels();
 	assert(dstPtr && "WaterEffect::apply: dst pixels are null");
 
-	for (int y = 0; y < dst->h; y++) {
-		//int maskY = (int)(y * scaleRatioY);
-		//assert(maskY >= 0 && maskY < mask->h && "WaterEffect::apply: maskY out of bounds");
-
+	for (uint y = 0; y < dst->h; y++) {
 		if (!bottomFace) {
 			uint32 strength = (320 * (9 - y / 64)) / waterEffectAttenuation;
 			if (strength > 4)
@@ -324,12 +327,8 @@ void WaterEffect::apply(Graphics::Surface *src, Graphics::Surface *dst, Graphics
 			hDisplacement = _horizontalDisplacements[strength];
 		}
 
-		for (int x = 0; x < dst->w; x++) {
+		for (uint x = 0; x < dst->w; x++) {
 			int8 maskValue = *maskPtr;
-			//int maskX = (int)(x * scaleRatioX);
-			//assert(maskX >= 0 && maskX < mask->w && "WaterEffect::apply: maskX out of bounds");
-
-			//int8 maskValue = *((byte *)mask->getBasePtr(maskX, maskY));
 
 			if (maskValue != 0) {
 				int8 xOffset = hDisplacement[x];
@@ -374,19 +373,20 @@ void WaterEffect::apply(Graphics::Surface *src, Graphics::Surface *dst, Graphics
 }
 
 LavaEffect::LavaEffect(Myst3Engine *vm) :
-		Effect(vm),
+		Effect(vm, kEffectLava),
 		_lastUpdate(0),
 		_step(0) {
+	_vm->_state->setLavaEffectActive(true);
 }
 
 LavaEffect::~LavaEffect() {
+	_vm->_state->setLavaEffectActive(false);
 }
 
-LavaEffect *LavaEffect::create(Myst3Engine *vm, uint32 id) {
+LavaEffect *LavaEffect::create(Myst3Engine *vm, const Common::String &room, uint32 id) {
 	LavaEffect *s = new LavaEffect(vm);
 
-	auto roomName = vm->getCurrentRoomName();
-	if (!s->loadMasks(roomName, id, Archive::kLavaEffectMask)) {
+	if (!s->loadMasks(room, id, Archive::kLavaEffectMask)) {
 		delete s;
 		return nullptr;
 	}
@@ -404,7 +404,7 @@ bool LavaEffect::update() {
 
 		_step += _vm->_state->getLavaEffectStepSize();
 
-		doStep(_step, _vm->_state->getLavaEffectAmpl() / 10);
+		doStep(_step, _vm->_state->getLavaEffectAmpl() / 10.f);
 
 		if (_step > 256)
 			_step -= 256;
@@ -429,7 +429,7 @@ void LavaEffect::applyForFace(uint face, Graphics::Surface *src, Graphics::Surfa
 	assert(src && "LavaEffect::applyForFace: src surface is null");
 	assert(dst && "LavaEffect::applyForFace: dst surface is null");
 
-	FaceMask *mask = _facesMasks.getVal(face);
+	FaceMask *mask = _facesMasks[face];
 
 	if (!mask)
 		error("No mask for face %d", face);
@@ -439,24 +439,15 @@ void LavaEffect::applyForFace(uint face, Graphics::Surface *src, Graphics::Surfa
 	assert(mask->surface->w > 0 && mask->surface->h > 0 && "LavaEffect::applyForFace: mask has zero dimensions");
 	assert(dst->w > 0 && dst->h > 0 && "LavaEffect::applyForFace: dst has zero dimensions");
 
-	// Calculate scale ratio for high-resolution modded textures
-	float scaleRatioX = (float)mask->surface->w / dst->w;
-	float scaleRatioY = (float)mask->surface->h / dst->h;
-
-	if (scaleRatioX != 1.0f || scaleRatioY != 1.0f) {
-		debugC(kDebugModding, "LavaEffect::applyForFace: face=%d, mask=%dx%d, dst=%dx%d, ratio=%.3fx%.3f",
-		       face, mask->surface->w, mask->surface->h, dst->w, dst->h, scaleRatioX, scaleRatioY);
-	}
-
 	uint32 *dstPtr = (uint32 *)dst->getPixels();
 	byte *maskPtr = (byte *)mask->surface->getPixels();
 
-	for (int y = 0; y < dst->h; y++) {
-		for (int x = 0; x < dst->w; x++) {
+	for (uint y = 0; y < dst->h; y++) {
+		for (uint x = 0; x < dst->w; x++) {
 			uint8 maskValue = *maskPtr;
 
 			if (maskValue != 0) {
-				int32 xOffset= _displacement[(maskValue + y) % 256];
+				int32 xOffset = _displacement[(maskValue + y) % 256];
 				int32 yOffset = _displacement[maskValue % 256];
 				int32 maxOffset = (maskValue >> 6) & 0x3;
 
@@ -484,26 +475,27 @@ void LavaEffect::applyForFace(uint face, Graphics::Surface *src, Graphics::Surfa
 }
 
 MagnetEffect::MagnetEffect(Myst3Engine *vm) :
-		Effect(vm),
+		Effect(vm, kEffectMagnet),
 		_lastSoundId(0),
 		_lastTime(0),
 		_position(0),
 		_lastAmpl(0),
 		_shakeStrength(nullptr) {
+	_vm->_state->setMagnetEffectActive(true);
 }
 
 MagnetEffect::~MagnetEffect() {
 	delete _shakeStrength;
+	_vm->_state->setMagnetEffectActive(false);
 }
 
-MagnetEffect *MagnetEffect::create(Myst3Engine *vm, uint32 id) {
+MagnetEffect *MagnetEffect::create(Myst3Engine *vm, const Common::String &room, uint32 id) {
 	if (!vm->_state->getMagnetEffectSound()) {
 		return nullptr;
 	}
 
-	auto roomName = vm->getCurrentRoomName();
 	MagnetEffect *s = new MagnetEffect(vm);
-	s->loadMasks(roomName, id, Archive::kMagneticEffectMask);
+	s->loadMasks(room, id, Archive::kMagneticEffectMask);
 	return s;
 }
 
@@ -572,7 +564,7 @@ void MagnetEffect::applyForFace(uint face, Graphics::Surface *src, Graphics::Sur
 	assert(src && "MagnetEffect::applyForFace: src surface is null");
 	assert(dst && "MagnetEffect::applyForFace: dst surface is null");
 
-	FaceMask *mask = _facesMasks.getVal(face);
+	FaceMask *mask = _facesMasks[face];
 
 	if (!mask)
 		error("No mask for face %d", face);
@@ -591,29 +583,15 @@ void MagnetEffect::apply(Graphics::Surface *src, Graphics::Surface *dst, Graphic
 	assert(mask->w > 0 && mask->h > 0 && "MagnetEffect::apply: mask has zero dimensions");
 	assert(dst->w > 0 && dst->h > 0 && "MagnetEffect::apply: dst has zero dimensions");
 
-	// Calculate scale ratio for high-resolution modded textures
-	float scaleRatioX = (float)mask->w / dst->w;
-	float scaleRatioY = (float)mask->h / dst->h;
-
-	if (scaleRatioX != 1.0f || scaleRatioY != 1.0f) {
-		debugC(kDebugModding, "MagnetEffect::apply: scaling mask %dx%d to dst %dx%d, ratio=%.3fx%.3f",
-		       mask->w, mask->h, dst->w, dst->h, scaleRatioX, scaleRatioY);
-	}
+	
 
 	uint32 *dstPtr = (uint32 *)dst->getPixels();
 	byte *maskPtr = (byte *)mask->getPixels();
 	assert(dstPtr && "MagnetEffect::apply: dst pixels are null");
 
-	for (int y = 0; y < dst->h; y++) {
-		//int maskY = (int)(y * scaleRatioY);
-		//assert(maskY >= 0 && maskY < mask->h && "MagnetEffect::apply: maskY out of bounds");
-
-		for (int x = 0; x < dst->w; x++) {
+	for (uint y = 0; y < dst->h; y++) {
+		for (uint x = 0; x < dst->w; x++) {
 			uint8 maskValue = *maskPtr;
-			// int maskX = (int)(x * scaleRatioX);
-			// assert(maskX >= 0 && maskX < mask->w && "MagnetEffect::apply: maskX out of bounds");
-
-			// uint8 maskValue = *((byte *)mask->getBasePtr(maskX, maskY));
 
 			if (maskValue != 0) {
 				int32 displacement = _verticalDisplacement[(maskValue + position) % 256];
@@ -636,7 +614,7 @@ void MagnetEffect::apply(Graphics::Surface *src, Graphics::Surface *dst, Graphic
 }
 
 ShakeEffect::ShakeEffect(Myst3Engine *vm) :
-		Effect(vm),
+		Effect(vm, kEffectShake),
 		_lastTick(0),
 		_magnetEffectShakeStep(0),
 		_pitchOffset(0),
@@ -708,7 +686,7 @@ void ShakeEffect::applyForFace(uint face, Graphics::Surface* src, Graphics::Surf
 }
 
 RotationEffect::RotationEffect(Myst3Engine *vm) :
-		Effect(vm),
+		Effect(vm, kEffectRotation),
 		_lastUpdate(0),
 		_headingOffset(0) {
 }
@@ -743,34 +721,41 @@ bool RotationEffect::update() {
 void RotationEffect::applyForFace(uint face, Graphics::Surface* src, Graphics::Surface* dst) {
 }
 
-bool ShieldEffect::loadPattern() {
+
+Graphics::Surface ShieldEffect::loadPattern(Myst3Engine *vm) {
 	// Read the shield effect support data
 	// ResourceDescription desc = _vm->getFileDescription("NARA", 10000, 0, Archive::kRawData);
-	ResourceDescription desc = _vm->_resourceLoader->getFileDescription("NARA", 10000, 0, Archive::kRawData);
+	ResourceDescription desc = vm->_resourceLoader->getFileDescription("NARA", 10000, 0, Archive::kRawData);
 	if (!desc.isValid()) {
-		return false;
+		return Graphics::Surface();
 	}
 
 	Common::SeekableReadStream *stream = desc.getData();
 	if (stream->size() != 4096) {
-		error("Incorrect shield effect support file size %d", (int)stream->size());
+		error("Incorrect shield effect support file size %d", stream->size());
 	}
 
-	stream->read(_pattern, 4096);
+	Graphics::Surface pattern;
+	pattern.create(64, 64, Graphics::PixelFormat::createFormatCLUT8());
 
+	stream->read(pattern.getPixels(), 4096);
 	delete stream;
 
-	return true;
+	return pattern;
 }
 
-ShieldEffect::ShieldEffect(Myst3Engine *vm):
-	Effect(vm),
+ShieldEffect::ShieldEffect(Myst3Engine *vm, Graphics::Surface &pattern):
+	Effect(vm, kEffectShield),
 	_lastTick(0),
 	_amplitude(1.0),
-	_amplitudeIncrement(1.0 / 64.0) {
+	_amplitudeIncrement(1.0 / 64.0),
+	_pattern(pattern) {
+	_vm->_state->setShieldEffectActive(true);
 }
 
 ShieldEffect::~ShieldEffect() {
+	_vm->_state->setShieldEffectActive(false);
+	_pattern.free();
 }
 
 ShieldEffect *ShieldEffect::create(Myst3Engine *vm, uint32 id) {
@@ -781,12 +766,12 @@ ShieldEffect *ShieldEffect::create(Myst3Engine *vm, uint32 id) {
 	if (room != kRoomNarayan || node >= 100)
 		return nullptr;
 
-	ShieldEffect *s = new ShieldEffect(vm);
-
-	if (!s->loadPattern()) {
-		delete s;
+	Graphics::Surface pattern = loadPattern(vm);
+	if (!pattern.getPixels()) {
 		return nullptr; // We don't have the effect file
 	}
+
+	ShieldEffect *s = new ShieldEffect(vm, pattern);
 
 	bool outerShieldUp = vm->_state->getOuterShieldUp();
 	bool innerShieldUp = vm->_state->getInnerShieldUp();
@@ -839,9 +824,10 @@ bool ShieldEffect::update() {
 		_amplitudeIncrement = 1.0 / 64.0;
 	}
 
-	// Update the support data
-	for (uint i = 0; i < ARRAYSIZE(_pattern); i++) {
-		_pattern[i] += 2; // Intentional overflow
+	// Update the pattern
+	byte *patternPixels = (byte *) _pattern.getPixels();
+	for (uint i = 0; i < _pattern.w * _pattern.h; i++) {
+		*patternPixels += 2; // Intentional overflow
 	}
 
 	// Update the displacement offsets
@@ -860,7 +846,7 @@ void ShieldEffect::applyForFace(uint face, Graphics::Surface *src, Graphics::Sur
 	assert(src && "ShieldEffect::applyForFace: src surface is null");
 	assert(dst && "ShieldEffect::applyForFace: dst surface is null");
 
-	FaceMask *mask = _facesMasks.getVal(face);
+	FaceMask *mask = _facesMasks[face];
 
 	if (!mask)
 		error("No mask for face %d", face);
@@ -870,32 +856,17 @@ void ShieldEffect::applyForFace(uint face, Graphics::Surface *src, Graphics::Sur
 	assert(mask->surface->w > 0 && mask->surface->h > 0 && "ShieldEffect::applyForFace: mask has zero dimensions");
 	assert(dst->w > 0 && dst->h > 0 && "ShieldEffect::applyForFace: dst has zero dimensions");
 
-	// // Calculate scale ratio for high-resolution modded textures
-	// float scaleRatioX = (float)mask->surface->w / dst->w;
-	// float scaleRatioY = (float)mask->surface->h / dst->h;
-
-	// if (scaleRatioX != 1.0f || scaleRatioY != 1.0f) {
-	// 	debugC(kDebugModding, "ShieldEffect::applyForFace: face=%d, mask=%dx%d, dst=%dx%d, ratio=%.3fx%.3f",
-	// 	       face, mask->surface->w, mask->surface->h, dst->w, dst->h, scaleRatioX, scaleRatioY);
-	// }
-
 	uint32 *dstPtr = (uint32 *)dst->getPixels();
 	byte *maskPtr = (byte *)mask->surface->getPixels();
 	assert(dstPtr && "ShieldEffect::applyForFace: dst pixels are null");
 
-	for (int y = 0; y < dst->h; y++) {
-		// int maskY = (int)(y * scaleRatioY);
-		// assert(maskY >= 0 && maskY < mask->surface->h && "ShieldEffect::applyForFace: maskY out of bounds");
-
-		for (int x = 0; x < dst->w; x++) {
+	for (uint y = 0; y < dst->h; y++) {
+		for (uint x = 0; x < dst->w; x++) {
 			uint8 maskValue = *maskPtr;
-			// int maskX = (int)(x * scaleRatioX);
-			// assert(maskX >= 0 && maskX < mask->surface->w && "ShieldEffect::applyForFace: maskX out of bounds");
-
-			// uint8 maskValue = *((byte *)mask->surface->getBasePtr(maskX, maskY));
 
 			if (maskValue != 0) {
-				int32 yOffset = _displacement[_pattern[(y % 64) * 64 + (x % 64)]];
+				const byte *patternPixel = (const byte *) _pattern.getBasePtr(x % 64, y % 64);
+				int32 yOffset = _displacement[*patternPixel];
 
 				if (yOffset > maskValue) {
 					yOffset = maskValue;
@@ -903,20 +874,6 @@ void ShieldEffect::applyForFace(uint face, Graphics::Surface *src, Graphics::Sur
 
 				*dstPtr = *(uint32 *)src->getBasePtr(x, y + yOffset);
 				
-				// int32 yOffset = _displacement[_pattern[(y % 64) * 64 + (x % 64)]];
-
-				// if (yOffset > maskValue) {
-				// 	yOffset = maskValue;
-				// }
-
-				// // Scale the displacement for high-res textures
-				// int32 scaledYOffset = (int32)(yOffset / scaleRatioY);
-
-				// // Bounds check for source access
-				// int srcY = y + scaledYOffset;
-				// assert(srcY >= 0 && srcY < src->h && "ShieldEffect::applyForFace: srcY out of bounds");
-
-				// *dstPtr = *(uint32 *)src->getBasePtr(x, srcY);
 			}
 
 			maskPtr++;
