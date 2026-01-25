@@ -22,6 +22,7 @@
 #ifndef GFX_OPENGL_SHADERS_H_
 #define GFX_OPENGL_SHADERS_H_
 
+#include "common/array.h"
 #include "common/rect.h"
 
 #include "math/rect2d.h"
@@ -31,6 +32,9 @@
 #include "engines/myst3/gfx.h"
 
 namespace Myst3 {
+
+class Effect;
+class GameState;
 
 class ShaderRenderer : public Renderer {
 public:
@@ -55,17 +59,25 @@ public:
 	                                Texture *texture) override;
 
 	void drawCube(Texture **textures) override;
+	void drawCubeWithEffects(Texture **textures, Texture **effectMasks, Texture *shieldPattern,
+	                         const Common::Array<Effect *> &effects, GameState *state);
 	void draw2DText(const Common::String &text, const Common::Point &position) override;
 
 	Graphics::Surface *getScreenshot() override;
 	Texture *copyScreenshotToTexture() override;
 
+	/** Check if GPU-based effects are supported */
+	bool supportsShaderEffects() const { return _cubeEffectsShader != nullptr; }
+
 private:
 	void setupQuadEBO();
-	// Math::Vector2d scaled(float x, float y) const;
+	void setupEffectsShader(OpenGL::Shader &shader, uint faceId, Texture **effectMasks,
+	                        Texture *shieldPattern, const Common::Array<Effect *> &effects, GameState *state);
 
 	OpenGL::Shader *_boxShader;
 	OpenGL::Shader *_cubeShader;
+	OpenGL::Shader *_cubeEffectsShader;
+	OpenGL::Shader *_frameEffectsShader;
 	OpenGL::Shader *_rect3dShader;
 	OpenGL::Shader *_textShader;
 

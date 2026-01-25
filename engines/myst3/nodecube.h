@@ -33,8 +33,21 @@ public:
 
 	void draw() override;
 
+	void initEffectMaskTextures();
+	void freeEffectMaskTextures();
+
 protected:
 	bool isFaceVisible(uint faceId) override;
+
+private:
+	// GPU effect mask textures (one per face, for water/lava effects)
+	Texture *_effectMaskTextures[6];
+	// GPU effect mask textures for secondary effects (magnet/shield)
+	Texture *_effectMaskTextures2[6];
+	// Shield pattern texture
+	Texture *_shieldPatternTexture;
+	// Whether GPU effect textures have been initialized
+	bool _effectTexturesInitialized;
 };
 
 } // End of namespace Myst3

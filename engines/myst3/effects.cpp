@@ -301,25 +301,31 @@ void WaterEffect::apply(Graphics::Surface *src, Graphics::Surface *dst, Graphics
 	assert(src->w == dst->w && src->h == dst->h && "WaterEffect::apply: src and dst dimensions must match");
 	assert(mask->w > 0 && mask->h > 0 && "WaterEffect::apply: mask has zero dimensions");
 	assert(dst->w > 0 && dst->h > 0 && "WaterEffect::apply: dst has zero dimensions");
-
+	
 	int32 waterEffectAttenuation = _vm->_state->getWaterEffectAttenuation();
 	int32 waterEffectAmplOffset = _vm->_state->getWaterEffectAmplOffset();
-
+	
+	debugC(kDebugModding, "Running WaterEffect::apply. ");
+	
 	int8 *hDisplacement = nullptr;
 	int8 *vDisplacement = nullptr;
-
+	
 	if (bottomFace) {
 		hDisplacement = _bottomDisplacement;
 		vDisplacement = _bottomDisplacement;
 	} else {
 		vDisplacement = _verticalDisplacement;
 	}
-
+	
 	uint32 *dstPtr = (uint32 *)dst->getPixels();
 	byte *maskPtr = (byte *)mask->getPixels();
 	assert(dstPtr && "WaterEffect::apply: dst pixels are null");
+	
+	debugC(kDebugModding, "Running WaterEffect::apply checkpoint 2");
 
-	for (uint y = 0; y < dst->h; y++) {
+	for (int y = 0; y < dst->h; y++) {
+		debugC(kDebugModding, "Running WaterEffect::apply loop y=%d", y);
+
 		if (!bottomFace) {
 			uint32 strength = (320 * (9 - y / 64)) / waterEffectAttenuation;
 			if (strength > 4)
@@ -327,8 +333,9 @@ void WaterEffect::apply(Graphics::Surface *src, Graphics::Surface *dst, Graphics
 			hDisplacement = _horizontalDisplacements[strength];
 		}
 
-		for (uint x = 0; x < dst->w; x++) {
+		for (int x = 0; x < dst->w; x++) {
 			int8 maskValue = *maskPtr;
+			debugC(kDebugModding, "Maskvalue for coord %dx%d = %d", x, y, maskValue);
 
 			if (maskValue != 0) {
 				int8 xOffset = hDisplacement[x];
@@ -356,14 +363,16 @@ void WaterEffect::apply(Graphics::Surface *src, Graphics::Surface *dst, Graphics
 					}
 				}
 
-				uint32 srcValue1 = *(uint32 *) src->getBasePtr(x + xOffset, y + yOffset);
-				uint32 srcValue2 = *(uint32 *) src->getBasePtr(x, y);
+// 				uint32 srcValue1 = *(uint32 *) src->getBasePtr(x + xOffset, y + yOffset);
+// 				uint32 srcValue2 = *(uint32 *) src->getBasePtr(x, y);
 
-#ifdef SCUMM_BIG_ENDIAN
-				*dstPtr = 0x000000FF | ((0x7F7F7F00 & (srcValue1 >> 1)) + (0x7F7F7F00 & (srcValue2 >> 1)));
-#else
-				*dstPtr = 0xFF000000 | ((0x007F7F7F & (srcValue1 >> 1)) + (0x007F7F7F & (srcValue2 >> 1)));
-#endif
+// #ifdef SCUMM_BIG_ENDIAN
+// 				*dstPtr = 0x000000FF | ((0x7F7F7F00 & (srcValue1 >> 1)) + (0x7F7F7F00 & (srcValue2 >> 1)));
+// #else
+// 				*dstPtr = 0xFF000000 | ((0x007F7F7F & (srcValue1 >> 1)) + (0x007F7F7F & (srcValue2 >> 1)));
+// #endif
+				debugC(kDebugModding, "Applying offset %dx%d", xOffset, yOffset);
+				*dstPtr = *(uint32 *)src->getBasePtr(x + xOffset, y + yOffset);
 			}
 
 			maskPtr++;
@@ -442,8 +451,8 @@ void LavaEffect::applyForFace(uint face, Graphics::Surface *src, Graphics::Surfa
 	uint32 *dstPtr = (uint32 *)dst->getPixels();
 	byte *maskPtr = (byte *)mask->surface->getPixels();
 
-	for (uint y = 0; y < dst->h; y++) {
-		for (uint x = 0; x < dst->w; x++) {
+	for (int y = 0; y < dst->h; y++) {
+		for (int x = 0; x < dst->w; x++) {
 			uint8 maskValue = *maskPtr;
 
 			if (maskValue != 0) {
@@ -589,8 +598,8 @@ void MagnetEffect::apply(Graphics::Surface *src, Graphics::Surface *dst, Graphic
 	byte *maskPtr = (byte *)mask->getPixels();
 	assert(dstPtr && "MagnetEffect::apply: dst pixels are null");
 
-	for (uint y = 0; y < dst->h; y++) {
-		for (uint x = 0; x < dst->w; x++) {
+	for (int y = 0; y < dst->h; y++) {
+		for (int x = 0; x < dst->w; x++) {
 			uint8 maskValue = *maskPtr;
 
 			if (maskValue != 0) {
@@ -826,12 +835,12 @@ bool ShieldEffect::update() {
 
 	// Update the pattern
 	byte *patternPixels = (byte *) _pattern.getPixels();
-	for (uint i = 0; i < _pattern.w * _pattern.h; i++) {
+	for (int i = 0; i < _pattern.w * _pattern.h; i++) {
 		*patternPixels += 2; // Intentional overflow
 	}
 
 	// Update the displacement offsets
-	for (uint i = 0; i < 256; i++) {
+	for (int i = 0; i < 256; i++) {
 		_displacement[i] = (sin(i * 2 * M_PI / 255.0) + 1.0) * _amplitude;
 	}
 
@@ -860,8 +869,8 @@ void ShieldEffect::applyForFace(uint face, Graphics::Surface *src, Graphics::Sur
 	byte *maskPtr = (byte *)mask->surface->getPixels();
 	assert(dstPtr && "ShieldEffect::applyForFace: dst pixels are null");
 
-	for (uint y = 0; y < dst->h; y++) {
-		for (uint x = 0; x < dst->w; x++) {
+	for (int y = 0; y < dst->h; y++) {
+		for (int x = 0; x < dst->w; x++) {
 			uint8 maskValue = *maskPtr;
 
 			if (maskValue != 0) {

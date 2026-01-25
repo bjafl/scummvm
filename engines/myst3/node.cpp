@@ -298,12 +298,18 @@ void Node::update() {
 		_spotItems[i]->updateDraw();
 	}
 
+	// Skip CPU effect processing if using GPU shader effects
+	// The effects will be applied in the draw() call via the shader
+	if (_vm->_gfx->supportsShaderEffects() && !_effects.empty()) {
+		return;
+	}
+
 	bool needsUpdate = false;
 	for (uint i = 0; i < _effects.size(); i++) {
 		needsUpdate |= _effects[i]->update();
 	}
 
-	// Apply the effects for all the faces
+	// Apply the effects for all the faces (CPU fallback path)
 	for (uint faceId = 0; faceId < 6; faceId++) {
 		Face *face = _faces[faceId];
 

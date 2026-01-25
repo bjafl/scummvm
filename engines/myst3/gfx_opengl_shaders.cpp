@@ -50,9 +50,11 @@
 #include "graphics/opengl/context.h"
 #include "graphics/opengl/shader.h"
 
+#include "engines/myst3/effects.h"
 #include "engines/myst3/gfx.h"
 #include "engines/myst3/gfx_opengl_texture.h"
 #include "engines/myst3/gfx_opengl_shaders.h"
+#include "engines/myst3/state.h"
 
 namespace Myst3 {
 
@@ -93,6 +95,8 @@ ShaderRenderer::ShaderRenderer(OSystem *system) :
 		_currentViewport(kOriginalWidth, kOriginalHeight),
 		_boxShader(nullptr),
 		_cubeShader(nullptr),
+		_cubeEffectsShader(nullptr),
+		_frameEffectsShader(nullptr),
 		_rect3dShader(nullptr),
 		_textShader(nullptr),
 		_boxVBO(0),
@@ -111,6 +115,8 @@ ShaderRenderer::~ShaderRenderer() {
 
 	delete _boxShader;
 	delete _cubeShader;
+	delete _cubeEffectsShader;
+	delete _frameEffectsShader;
 	delete _rect3dShader;
 	delete _textShader;
 }
@@ -179,6 +185,15 @@ void ShaderRenderer::init() {
 	_textVBO = OpenGL::Shader::createBuffer(GL_ARRAY_BUFFER, 100 * 16 * sizeof(float), nullptr, GL_DYNAMIC_DRAW);
 	_textShader->enableVertexAttribute("texcoord", _textVBO, 2, GL_FLOAT, GL_TRUE, 4 * sizeof(float), 0);
 	_textShader->enableVertexAttribute("position", _textVBO, 2, GL_FLOAT, GL_TRUE, 4 * sizeof(float), 2 * sizeof(float));
+
+	// Initialize effect shaders for GPU-accelerated water/lava/magnet/shield effects
+	_cubeEffectsShader = OpenGL::Shader::fromFiles("myst3_cube_effects", attributes);
+	_cubeEffectsShader->enableVertexAttribute("texcoord", _cubeVBO, 2, GL_FLOAT, GL_TRUE, 5 * sizeof(float), 0);
+	_cubeEffectsShader->enableVertexAttribute("position", _cubeVBO, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), 2 * sizeof(float));
+
+	_frameEffectsShader = OpenGL::Shader::fromFiles("myst3_frame_effects", attributes);
+	_frameEffectsShader->enableVertexAttribute("position", _boxVBO, 2, GL_FLOAT, GL_TRUE, 2 * sizeof(float), 0);
+	_frameEffectsShader->enableVertexAttribute("texcoord", _boxVBO, 2, GL_FLOAT, GL_TRUE, 2 * sizeof(float), 0);
 
 	setupQuadEBO();
 }
@@ -368,6 +383,136 @@ void ShaderRenderer::drawCube(Texture **textures) {
 	glBindTexture(GL_TEXTURE_2D, static_cast<OpenGLTexture *>(textures[5])->id);
 	glDrawArrays(GL_TRIANGLE_STRIP, 20, 4);
 
+	glDepthMask(GL_TRUE);
+}
+
+void ShaderRenderer::setupEffectsShader(OpenGL::Shader &shader, uint faceId, Texture **effectMasks,
+                                        Texture *shieldPattern, const Common::Array<Effect *> &effects, GameState *state) {
+	shader.setUniform("faceId", (int)faceId);
+	shader.setUniform("waterEffect", false);
+	shader.setUniform("lavaEffect", false);
+	shader.setUniform("magnetEffect", false);
+	shader.setUniform("shieldEffect", false);
+
+	for (uint j = 0; j < effects.size(); j++) {
+		Effect *effect = effects[j];
+
+		if (!effect->hasFace(faceId))
+			continue;
+
+		switch (effect->type()) {
+		case kEffectWater: {
+			OpenGLTexture *faceMaskTexture = effectMasks[faceId] ? static_cast<OpenGLTexture *>(effectMasks[faceId]) : nullptr;
+			if (!faceMaskTexture) {
+				break;
+			}
+
+			uint32 currentTime = g_system->getMillis();
+			uint position = (currentTime * state->getWaterEffectSpeed() / state->getWaterEffectMaxStep()) % 1000;
+
+			shader.setUniform("waterEffect", true);
+			shader.setUniform1f("waterEffectPosition", position / 1000.f);
+			shader.setUniform1f("waterEffectAttenuation", 1.f - state->getWaterEffectAttenuation() / 640.f);
+			shader.setUniform1f("waterEffectFrequency", state->getWaterEffectFrequency() / 10.f);
+			shader.setUniform1f("waterEffectAmpl", state->getWaterEffectAmpl() / 20.f);
+			shader.setUniform1f("waterEffectAmplOffset", state->getWaterEffectAmplOffset() / 255.f);
+
+			glActiveTexture(GL_TEXTURE1);
+			glBindTexture(GL_TEXTURE_2D, faceMaskTexture->id);
+			break;
+		}
+		case kEffectLava: {
+			OpenGLTexture *faceMaskTexture = effectMasks[faceId] ? static_cast<OpenGLTexture *>(effectMasks[faceId]) : nullptr;
+			if (!faceMaskTexture) {
+				break;
+			}
+
+			uint32 currentTime = g_system->getMillis();
+			uint position = (currentTime * state->getLavaEffectSpeed() / 256) % 1000;
+
+			float ampl = state->getLavaEffectAmpl() / 10.f;
+
+			shader.setUniform("lavaEffect", true);
+			shader.setUniform1f("lavaEffectPosition", position / 1000.f);
+			shader.setUniform1f("lavaEffectAmpl", ampl);
+
+			glActiveTexture(GL_TEXTURE1);
+			glBindTexture(GL_TEXTURE_2D, faceMaskTexture->id);
+			break;
+		}
+		case kEffectMagnet: {
+			OpenGLTexture *faceMaskTexture = effectMasks[faceId] ? static_cast<OpenGLTexture *>(effectMasks[faceId]) : nullptr;
+			if (!faceMaskTexture) {
+				break;
+			}
+
+			uint32 currentTime = g_system->getMillis();
+			uint position = (currentTime * state->getMagnetEffectSpeed() / 10) % 1000;
+
+			float ampl = (state->getMagnetEffectUnk1() + state->getMagnetEffectUnk3())
+					/ (float)state->getMagnetEffectUnk2();
+
+			shader.setUniform("magnetEffect", true);
+			shader.setUniform1f("magnetEffectPosition", position / 1000.f);
+			shader.setUniform1f("magnetEffectAmpl", ampl);
+
+			glActiveTexture(GL_TEXTURE2);
+			glBindTexture(GL_TEXTURE_2D, faceMaskTexture->id);
+			break;
+		}
+		case kEffectShield: {
+			OpenGLTexture *faceMaskTexture = effectMasks[faceId] ? static_cast<OpenGLTexture *>(effectMasks[faceId]) : nullptr;
+			OpenGLTexture *patternTexture = shieldPattern ? static_cast<OpenGLTexture *>(shieldPattern) : nullptr;
+			if (!faceMaskTexture || !patternTexture) {
+				break;
+			}
+
+			uint32 currentTime = g_system->getMillis();
+			uint position = (currentTime / 4) % 1000;
+
+			float ampl = sin((currentTime % 11520) * 2.f * (float)M_PI / 11520.f) * 1.5f + 2.5f;
+
+			shader.setUniform("shieldEffect", true);
+			shader.setUniform1f("shieldEffectPosition", position / 1000.f);
+			shader.setUniform1f("shieldEffectAmpl", ampl);
+
+			glActiveTexture(GL_TEXTURE2);
+			glBindTexture(GL_TEXTURE_2D, faceMaskTexture->id);
+			glActiveTexture(GL_TEXTURE3);
+			glBindTexture(GL_TEXTURE_2D, patternTexture->id);
+			break;
+		}
+		default:
+			break;
+		}
+	}
+}
+
+void ShaderRenderer::drawCubeWithEffects(Texture **textures, Texture **effectMasks, Texture *shieldPattern,
+                                         const Common::Array<Effect *> &effects, GameState *state) {
+	OpenGLTexture *texture0 = static_cast<OpenGLTexture *>(textures[0]);
+
+	glDepthMask(GL_FALSE);
+
+	_cubeEffectsShader->use();
+	_cubeEffectsShader->setUniform1f("texScale", texture0->width / (float) texture0->internalWidth);
+	_cubeEffectsShader->setUniform("mvpMatrix", _mvpMatrix);
+	_cubeEffectsShader->setUniform("texImage", 0);
+	_cubeEffectsShader->setUniform("texEffect1", 1);
+	_cubeEffectsShader->setUniform("texEffect2", 2);
+	_cubeEffectsShader->setUniform("texEffectPattern", 3);
+	_cubeEffectsShader->setUniform("frame", false);
+
+	for (uint faceId = 0; faceId < 6; faceId++) {
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, static_cast<OpenGLTexture *>(textures[faceId])->id);
+
+		setupEffectsShader(*_cubeEffectsShader, faceId, effectMasks, shieldPattern, effects, state);
+
+		glDrawArrays(GL_TRIANGLE_STRIP, 4 * faceId, 4);
+	}
+
+	glActiveTexture(GL_TEXTURE0);
 	glDepthMask(GL_TRUE);
 }
 

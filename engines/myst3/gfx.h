@@ -35,6 +35,8 @@
 
 namespace Myst3 {
 
+class Effect;
+class GameState;
 class Renderer;
 
 class Layout {
@@ -173,7 +175,12 @@ public:
 									Texture *texture) = 0;
 
 	virtual void drawCube(Texture **textures) = 0;
+	virtual void drawCubeWithEffects(Texture **textures, Texture **effectMasks, Texture *shieldPattern,
+	                                 const Common::Array<Effect *> &effects, GameState *state) {}
 	virtual void draw2DText(const Common::String &text, const Common::Point &position) = 0;
+
+	/** Check if GPU-based effects are supported */
+	virtual bool supportsShaderEffects() const { return false; }
 
 	virtual Graphics::Surface *getScreenshot() = 0;
 	virtual Texture *copyScreenshotToTexture();
