@@ -67,6 +67,9 @@ Effect::~Effect() {
 bool Effect::loadMasks(const Common::String &room, uint32 id, Archive::ResourceType type) {
 	bool isFrame = _vm->_state->getViewType() == kFrame;
 
+	debugC(kDebugModding, "Effect::loadMasks: room=%s, id=%d, type=%d, isFrame=%d",
+	       room.c_str(), id, type, isFrame);
+
 	// Load the mask of each face
 	for (uint i = 0; i < 6; i++) {
 		ResourceDescription desc = _vm->_resourceLoader->getFileDescription(room, id, i + 1, type);
@@ -78,6 +81,9 @@ bool Effect::loadMasks(const Common::String &room, uint32 id, Archive::ResourceT
 			delete _facesMasks[i];
 			_facesMasks[i] = loadMask(data);
 
+			debugC(kDebugModding, "  Loaded mask for face %d: %dx%d",
+			       i, _facesMasks[i]->surface->w, _facesMasks[i]->surface->h);
+
 			// Frame masks are vertically flipped for some reason
 			if (isFrame) {
 				_vm->_gfx->flipVertical(_facesMasks[i]->surface);
@@ -87,9 +93,12 @@ bool Effect::loadMasks(const Common::String &room, uint32 id, Archive::ResourceT
 		}
 	}
 
-	if (_facesMasks.empty())
+	if (_facesMasks.empty()) {
+		debugC(kDebugModding, "  No masks loaded");
 		return false;
+	}
 
+	debugC(kDebugModding, "  Loaded %d masks total", _facesMasks.size());
 	return true;
 }
 
@@ -154,6 +163,11 @@ Common::Rect Effect::getUpdateRectForFace(uint face) {
 			}
 		}
 	}
+
+		/*debugC(kDebugModding, "Effect::getUpdateRectForFace: face=%d, mask=%dx%d, face=%dx%d, scale=%.2fx%.2f, rect=[%d,%d,%d,%d]->[%d,%d,%d,%d]",
+		       face, mask->surface->w, mask->surface->h, faceWidth, faceHeight, scaleX, scaleY,
+		       originalRect.left, originalRect.top, originalRect.right, originalRect.bottom,
+		       rect.left, rect.top, rect.right, rect.bottom);*/
 
 	return rect;
 }
@@ -255,15 +269,28 @@ void WaterEffect::applyForFace(uint face, Graphics::Surface *src, Graphics::Surf
 		return;
 	}
 
+	assert(src && "WaterEffect::applyForFace: src surface is null");
+	assert(dst && "WaterEffect::applyForFace: dst surface is null");
+
 	FaceMask *mask = _facesMasks.getVal(face);
 
 	if (!mask)
 		error("No mask for face %d", face);
 
+	assert(mask->surface && "WaterEffect::applyForFace: mask surface is null");
+
+	debugC(kDebugModding, "WaterEffect::applyForFace: face=%d, src=%dx%d, dst=%dx%d, mask=%dx%d",
+	       face, src->w, src->h, dst->w, dst->h, mask->surface->w, mask->surface->h);
+
 	apply(src, dst, mask->surface, face == 1, _vm->_state->getWaterEffectAmpl());
 }
 
 void WaterEffect::apply(Graphics::Surface *src, Graphics::Surface *dst, Graphics::Surface *mask, bool bottomFace, int32 waterEffectAmpl) {
+	assert(src && dst && mask && "WaterEffect::apply: null surface pointer");
+	assert(src->w == dst->w && src->h == dst->h && "WaterEffect::apply: src and dst dimensions must match");
+	assert(mask->w > 0 && mask->h > 0 && "WaterEffect::apply: mask has zero dimensions");
+	assert(dst->w > 0 && dst->h > 0 && "WaterEffect::apply: dst has zero dimensions");
+
 	int32 waterEffectAttenuation = _vm->_state->getWaterEffectAttenuation();
 	int32 waterEffectAmplOffset = _vm->_state->getWaterEffectAmplOffset();
 
@@ -277,10 +304,19 @@ void WaterEffect::apply(Graphics::Surface *src, Graphics::Surface *dst, Graphics
 		vDisplacement = _verticalDisplacement;
 	}
 
+	/*if (scaleRatioX != 1.0f || scaleRatioY != 1.0f) {
+		debugC(kDebugModding, "WaterEffect::apply: scaling mask %dx%d to dst %dx%d, ratio=%.3fx%.3f",
+		       mask->w, mask->h, dst->w, dst->h, scaleRatioX, scaleRatioY);
+	}*/
+
 	uint32 *dstPtr = (uint32 *)dst->getPixels();
 	byte *maskPtr = (byte *)mask->getPixels();
+	assert(dstPtr && "WaterEffect::apply: dst pixels are null");
 
 	for (int y = 0; y < dst->h; y++) {
+		//int maskY = (int)(y * scaleRatioY);
+		//assert(maskY >= 0 && maskY < mask->h && "WaterEffect::apply: maskY out of bounds");
+
 		if (!bottomFace) {
 			uint32 strength = (320 * (9 - y / 64)) / waterEffectAttenuation;
 			if (strength > 4)
@@ -290,6 +326,10 @@ void WaterEffect::apply(Graphics::Surface *src, Graphics::Surface *dst, Graphics
 
 		for (int x = 0; x < dst->w; x++) {
 			int8 maskValue = *maskPtr;
+			//int maskX = (int)(x * scaleRatioX);
+			//assert(maskX >= 0 && maskX < mask->w && "WaterEffect::apply: maskX out of bounds");
+
+			//int8 maskValue = *((byte *)mask->getBasePtr(maskX, maskY));
 
 			if (maskValue != 0) {
 				int8 xOffset = hDisplacement[x];
@@ -386,10 +426,27 @@ void LavaEffect::applyForFace(uint face, Graphics::Surface *src, Graphics::Surfa
 		return;
 	}
 
+	assert(src && "LavaEffect::applyForFace: src surface is null");
+	assert(dst && "LavaEffect::applyForFace: dst surface is null");
+
 	FaceMask *mask = _facesMasks.getVal(face);
 
 	if (!mask)
 		error("No mask for face %d", face);
+
+	assert(mask->surface && "LavaEffect::applyForFace: mask surface is null");
+	assert(src->w == dst->w && src->h == dst->h && "LavaEffect::applyForFace: src and dst dimensions must match");
+	assert(mask->surface->w > 0 && mask->surface->h > 0 && "LavaEffect::applyForFace: mask has zero dimensions");
+	assert(dst->w > 0 && dst->h > 0 && "LavaEffect::applyForFace: dst has zero dimensions");
+
+	// Calculate scale ratio for high-resolution modded textures
+	float scaleRatioX = (float)mask->surface->w / dst->w;
+	float scaleRatioY = (float)mask->surface->h / dst->h;
+
+	if (scaleRatioX != 1.0f || scaleRatioY != 1.0f) {
+		debugC(kDebugModding, "LavaEffect::applyForFace: face=%d, mask=%dx%d, dst=%dx%d, ratio=%.3fx%.3f",
+		       face, mask->surface->w, mask->surface->h, dst->w, dst->h, scaleRatioX, scaleRatioY);
+	}
 
 	uint32 *dstPtr = (uint32 *)dst->getPixels();
 	byte *maskPtr = (byte *)mask->surface->getPixels();
@@ -512,21 +569,51 @@ bool MagnetEffect::update() {
 }
 
 void MagnetEffect::applyForFace(uint face, Graphics::Surface *src, Graphics::Surface *dst) {
+	assert(src && "MagnetEffect::applyForFace: src surface is null");
+	assert(dst && "MagnetEffect::applyForFace: dst surface is null");
+
 	FaceMask *mask = _facesMasks.getVal(face);
 
 	if (!mask)
 		error("No mask for face %d", face);
 
+	assert(mask->surface && "MagnetEffect::applyForFace: mask surface is null");
+
+	debugC(kDebugModding, "MagnetEffect::applyForFace: face=%d, src=%dx%d, dst=%dx%d, mask=%dx%d",
+	       face, src->w, src->h, dst->w, dst->h, mask->surface->w, mask->surface->h);
+
 	apply(src, dst, mask->surface, _position * 256.0);
 }
 
 void MagnetEffect::apply(Graphics::Surface *src, Graphics::Surface *dst, Graphics::Surface *mask, int32 position) {
+	assert(src && dst && mask && "MagnetEffect::apply: null surface pointer");
+	assert(src->w == dst->w && src->h == dst->h && "MagnetEffect::apply: src and dst dimensions must match");
+	assert(mask->w > 0 && mask->h > 0 && "MagnetEffect::apply: mask has zero dimensions");
+	assert(dst->w > 0 && dst->h > 0 && "MagnetEffect::apply: dst has zero dimensions");
+
+	// Calculate scale ratio for high-resolution modded textures
+	float scaleRatioX = (float)mask->w / dst->w;
+	float scaleRatioY = (float)mask->h / dst->h;
+
+	if (scaleRatioX != 1.0f || scaleRatioY != 1.0f) {
+		debugC(kDebugModding, "MagnetEffect::apply: scaling mask %dx%d to dst %dx%d, ratio=%.3fx%.3f",
+		       mask->w, mask->h, dst->w, dst->h, scaleRatioX, scaleRatioY);
+	}
+
 	uint32 *dstPtr = (uint32 *)dst->getPixels();
 	byte *maskPtr = (byte *)mask->getPixels();
+	assert(dstPtr && "MagnetEffect::apply: dst pixels are null");
 
 	for (int y = 0; y < dst->h; y++) {
+		//int maskY = (int)(y * scaleRatioY);
+		//assert(maskY >= 0 && maskY < mask->h && "MagnetEffect::apply: maskY out of bounds");
+
 		for (int x = 0; x < dst->w; x++) {
 			uint8 maskValue = *maskPtr;
+			// int maskX = (int)(x * scaleRatioX);
+			// assert(maskX >= 0 && maskX < mask->w && "MagnetEffect::apply: maskX out of bounds");
+
+			// uint8 maskValue = *((byte *)mask->getBasePtr(maskX, maskY));
 
 			if (maskValue != 0) {
 				int32 displacement = _verticalDisplacement[(maskValue + position) % 256];
@@ -770,17 +857,42 @@ void ShieldEffect::applyForFace(uint face, Graphics::Surface *src, Graphics::Sur
 		return;
 	}
 
+	assert(src && "ShieldEffect::applyForFace: src surface is null");
+	assert(dst && "ShieldEffect::applyForFace: dst surface is null");
+
 	FaceMask *mask = _facesMasks.getVal(face);
 
 	if (!mask)
 		error("No mask for face %d", face);
 
+	assert(mask->surface && "ShieldEffect::applyForFace: mask surface is null");
+	assert(src->w == dst->w && src->h == dst->h && "ShieldEffect::applyForFace: src and dst dimensions must match");
+	assert(mask->surface->w > 0 && mask->surface->h > 0 && "ShieldEffect::applyForFace: mask has zero dimensions");
+	assert(dst->w > 0 && dst->h > 0 && "ShieldEffect::applyForFace: dst has zero dimensions");
+
+	// // Calculate scale ratio for high-resolution modded textures
+	// float scaleRatioX = (float)mask->surface->w / dst->w;
+	// float scaleRatioY = (float)mask->surface->h / dst->h;
+
+	// if (scaleRatioX != 1.0f || scaleRatioY != 1.0f) {
+	// 	debugC(kDebugModding, "ShieldEffect::applyForFace: face=%d, mask=%dx%d, dst=%dx%d, ratio=%.3fx%.3f",
+	// 	       face, mask->surface->w, mask->surface->h, dst->w, dst->h, scaleRatioX, scaleRatioY);
+	// }
+
 	uint32 *dstPtr = (uint32 *)dst->getPixels();
 	byte *maskPtr = (byte *)mask->surface->getPixels();
+	assert(dstPtr && "ShieldEffect::applyForFace: dst pixels are null");
 
 	for (int y = 0; y < dst->h; y++) {
+		// int maskY = (int)(y * scaleRatioY);
+		// assert(maskY >= 0 && maskY < mask->surface->h && "ShieldEffect::applyForFace: maskY out of bounds");
+
 		for (int x = 0; x < dst->w; x++) {
 			uint8 maskValue = *maskPtr;
+			// int maskX = (int)(x * scaleRatioX);
+			// assert(maskX >= 0 && maskX < mask->surface->w && "ShieldEffect::applyForFace: maskX out of bounds");
+
+			// uint8 maskValue = *((byte *)mask->surface->getBasePtr(maskX, maskY));
 
 			if (maskValue != 0) {
 				int32 yOffset = _displacement[_pattern[(y % 64) * 64 + (x % 64)]];
@@ -790,6 +902,21 @@ void ShieldEffect::applyForFace(uint face, Graphics::Surface *src, Graphics::Sur
 				}
 
 				*dstPtr = *(uint32 *)src->getBasePtr(x, y + yOffset);
+				
+				// int32 yOffset = _displacement[_pattern[(y % 64) * 64 + (x % 64)]];
+
+				// if (yOffset > maskValue) {
+				// 	yOffset = maskValue;
+				// }
+
+				// // Scale the displacement for high-res textures
+				// int32 scaledYOffset = (int32)(yOffset / scaleRatioY);
+
+				// // Bounds check for source access
+				// int srcY = y + scaledYOffset;
+				// assert(srcY >= 0 && srcY < src->h && "ShieldEffect::applyForFace: srcY out of bounds");
+
+				// *dstPtr = *(uint32 *)src->getBasePtr(x, srcY);
 			}
 
 			maskPtr++;

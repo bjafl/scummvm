@@ -101,10 +101,20 @@ Node::Node(Myst3Engine *vm, uint16 id) :
 void Node::initEffects() {
 	resetEffects();
 
+	debugC(kDebugModding, "Node::initEffects: node=%d, viewType=%d", _id, _vm->_state->getViewType());
+
+	// Log face dimensions for debugging modded textures
+	for (uint i = 0; i < 6; i++) {
+		if (_faces[i] && _faces[i]->_bitmap) {
+			debugC(kDebugModding, "  Face %d: bitmap=%dx%d", i, _faces[i]->_bitmap->w, _faces[i]->_bitmap->h);
+		}
+	}
+
 	if (_vm->_state->getViewType() == kMenu) {
 		// The node init script does not clear the magnet effect state.
 		// Here we ignore effects on menu nodes so we don't try to
 		// to load the magnet effect when opening the main menu on Amateria.
+		debugC(kDebugModding, "  Skipping effects for menu node");
 		return;
 	}
 
@@ -113,6 +123,7 @@ void Node::initEffects() {
 		if (effect) {
 			_effects.push_back(effect);
 			_vm->_state->setWaterEffectActive(true);
+			debugC(kDebugModding, "  Created WaterEffect");
 		}
 	}
 
@@ -120,19 +131,24 @@ void Node::initEffects() {
 	if (effect) {
 		_effects.push_back(effect);
 		_vm->_state->setMagnetEffectActive(true);
+		debugC(kDebugModding, "  Created MagnetEffect");
 	}
 
 	effect = LavaEffect::create(_vm, _id);
 	if (effect) {
 		_effects.push_back(effect);
 		_vm->_state->setLavaEffectActive(true);
+		debugC(kDebugModding, "  Created LavaEffect");
 	}
 
 	effect = ShieldEffect::create(_vm, _id);
 	if (effect) {
 		_effects.push_back(effect);
 		_vm->_state->setShieldEffectActive(true);
+		debugC(kDebugModding, "  Created ShieldEffect");
 	}
+
+	debugC(kDebugModding, "  Total effects: %d", _effects.size());
 }
 
 void Node::resetEffects() {
@@ -169,6 +185,9 @@ void Node::loadSpotItem(const Common::String &room, uint16 id, int16 condition, 
 	spotItem->setFade(fade);
 	spotItem->setFadeVar(abs(condition));
 
+	debugC(kDebugModding, "Node::loadSpotItem: room=%s, id=%d, condition=%d, fade=%d",
+	       room.c_str(), id, condition, fade);
+
 	// Common::String roomName = _vm->getCurrentRoomName();
 	ResourceDescriptionArray resources = _vm->_resourceLoader->listSpotItemImages(room, id);
 	TextureLoader textureLoader(*_vm->_gfx);
@@ -176,11 +195,29 @@ void Node::loadSpotItem(const Common::String &room, uint16 id, int16 condition, 
 		const ResourceDescription &image = resources[i];
 		ResourceDescription::SpotItemData spotItemData = image.getSpotItemData();
 
+		debugC(kDebugModding, "  SpotItem face %d: type=%d, u=%d, v=%d",
+		       i, image.getType(), spotItemData.u, spotItemData.v);
+
+		assert(i < 6 && "Node::loadSpotItem: face index out of bounds");
+		assert(_faces[i] && "Node::loadSpotItem: face is null");
+		assert(_faces[i]->_bitmap && "Node::loadSpotItem: face bitmap is null");
+
 		// uint16 faceIndex = image.getFace() - 1; // Faces are 1-indexed in archive, 0-indexed in _faces array
 		SpotItemFace *spotItemFace = new SpotItemFace(_faces[i], spotItemData.u, spotItemData.v);
 
 		Graphics::Surface *bitmapSurface = textureLoader.loadSurface(image, TextureLoader::kImageFormatJPEG);
+		assert(bitmapSurface && "Node::loadSpotItem: failed to load bitmap surface");
 		spotItemFace->loadData(bitmapSurface);
+
+		debugC(kDebugModding, "    Loaded bitmap: %dx%d, face bitmap: %dx%d",
+		       bitmapSurface->w, bitmapSurface->h,
+		       _faces[i]->_bitmap->w, _faces[i]->_bitmap->h);
+
+		// Verify spot item fits within face
+		assert(spotItemData.u + bitmapSurface->w <= _faces[i]->_bitmap->w &&
+		       "Node::loadSpotItem: spot item exceeds face width");
+		assert(spotItemData.v + bitmapSurface->h <= _faces[i]->_bitmap->h &&
+		       "Node::loadSpotItem: spot item exceeds face height");
 
 		// SpotItems with an always true conditions cannot be undrawn.
 		// Draw them now to make sure the "non drawn backups" for other, potentially
@@ -200,6 +237,18 @@ SpotItemFace *Node::loadMenuSpotItem(int16 condition, const Common::Rect &rect) 
 	spotItem->setCondition(condition);
 	spotItem->setFade(false);
 	spotItem->setFadeVar(abs(condition));
+
+	assert(_faces[0] && "Node::loadMenuSpotItem: face 0 is null");
+	assert(_faces[0]->_bitmap && "Node::loadMenuSpotItem: face 0 bitmap is null");
+
+	debugC(kDebugModding, "Node::loadMenuSpotItem: condition=%d, rect=[%d,%d,%d,%d], face0 bitmap=%dx%d",
+	       condition, rect.left, rect.top, rect.right, rect.bottom,
+	       _faces[0]->_bitmap->w, _faces[0]->_bitmap->h);
+
+	assert(rect.left >= 0 && rect.top >= 0 && "Node::loadMenuSpotItem: rect has negative coordinates");
+	assert(rect.width() > 0 && rect.height() > 0 && "Node::loadMenuSpotItem: rect has zero dimensions");
+	assert(rect.right <= _faces[0]->_bitmap->w && rect.bottom <= _faces[0]->_bitmap->h &&
+	       "Node::loadMenuSpotItem: rect exceeds face dimensions");
 
 	SpotItemFace *spotItemFace = new SpotItemFace(_faces[0], rect.left, rect.top);
 	spotItemFace->initBlack(rect.width(), rect.height());

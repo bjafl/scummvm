@@ -30,6 +30,7 @@
 #include "engines/myst3/sound.h"
 #include "engines/myst3/state.h"
 
+#include "common/debug.h"
 #include "common/events.h"
 
 #include "gui/message.h"
@@ -66,10 +67,14 @@ Dialog::Dialog(Myst3Engine *vm, uint id):
 
 	// For modded resources, the screen size is that from the original file
 	if (movieDesc.getType() == Archive::kModdedMovie) {
-		 ResourceDescription::VideoData videoData = movieDesc.getVideoData();
+		ResourceDescription::VideoData videoData = movieDesc.getVideoData();
 		_screenSize = FloatSize(videoData.width, videoData.height);
+		debugC(kDebugModding, "Dialog::Dialog: modded dialog id=%d, texture=%dx%d, screenSize=%.0fx%.0f (from metadata)",
+		       id, _texture->width, _texture->height, _screenSize.width(), _screenSize.height());
 	} else {
 		_screenSize = _texture->size();
+		debugC(kDebugModding, "Dialog::Dialog: dialog id=%d, screenSize=%.0fx%.0f",
+		       id, _screenSize.width(), _screenSize.height());
 	}
 
 	_vm->_sound->playEffect(699, 10);

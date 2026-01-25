@@ -71,6 +71,11 @@ Movie::Movie(Myst3Engine *vm, const Common::String &room, uint16 id) :
 	_resourceType = binkDesc.getType();
 	loadPosition(binkDesc.getVideoData());
 
+	if (_resourceType == Archive::kModdedMovie) {
+		debugC(kDebugModding, "Movie::Movie: Loaded modded movie '%s-%d', posU=%d, posV=%d, posWidth=%d, posHeight=%d",
+		       room.c_str(), id, _posU, _posV, _posWidth, _posHeight);
+	}
+
 	VideoLoader videoLoader;
 	Common::SeekableReadStream *binkStream = videoLoader.load(binkDesc);
 	assert(binkStream);
@@ -151,15 +156,26 @@ void Movie::draw2d() {
 	// Upscaling ratio
 	float scaleRatio;
 	if (_resourceType == Archive::kModdedMovie) {
+		assert(_posWidth > 0 && "Movie::draw2d: _posWidth is zero for modded movie");
+		assert(_posHeight > 0 && "Movie::draw2d: _posHeight is zero for modded movie");
 		scaleRatio = _bink.getWidth() / (float)_posWidth;
+		debugC(kDebugModding, "Movie::draw2d: modded movie id=%d, bink=%dx%d, pos=%dx%d, scaleRatio=%.3f",
+		       _id, _bink.getWidth(), _bink.getHeight(), _posWidth, _posHeight, scaleRatio);
 	} else {
 		scaleRatio = 1.f;
 	}
+
+	assert(scaleRatio > 0 && "Movie::draw2d: scaleRatio must be positive");
 
 	FloatRect screenRect = FloatSize(_bink.getWidth(), _bink.getHeight())
 	        .scale(1 / scaleRatio)
 	        .translate(FloatPoint(_posU, _posV))
 	        .normalize(FloatSize(Renderer::kOriginalWidth, sceneHeight));
+
+	if (_resourceType == Archive::kModdedMovie) {
+		debugC(kDebugModding, "  screenRect=[%.2f,%.2f,%.2f,%.2f]",
+		       screenRect.left(), screenRect.top(), screenRect.right(), screenRect.bottom());
+	}
 
 	if (_forceOpaque)
 		_vm->_gfx->drawTexturedRect2D(screenRect, FloatRect::unit(), _texture);
