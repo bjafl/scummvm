@@ -20,6 +20,7 @@
  */
 
 #include "engines/myst3/gfx.h"
+#include "engines/myst3/myst3.h"
 #include "engines/myst3/resource_loader.h"
 
 #include "engines/util.h"
@@ -348,7 +349,7 @@ FloatRect Layout::frameViewport() const {
 
 FloatRect Layout::screenViewport() const {
 	FloatSize screenSize(_system->getWidth(), _system->getHeight());
-
+	debugC(kDebugUi, "screenViewport - screenSize: %fx%f", screenSize.width(), screenSize.height());
 	if (_widescreenMod) {
 		return FloatRect(screenSize);
 	}

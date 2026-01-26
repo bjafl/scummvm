@@ -132,7 +132,10 @@ void ButtonsDialog::loadButtons() {
 
 void ButtonsDialog::draw() {
 	if (_frameToDisplay != _previousframe) {
-		_bink.seekToFrame(_frameToDisplay);
+		debugC(kDebugUi, "Updating button frame to #%d", _frameToDisplay);
+		if(!_bink.seekToFrame(_frameToDisplay)) {
+			debugC(kDebugUi, "Failed to seek to frame #%d", _frameToDisplay);
+		}
 
 		const Graphics::Surface *frame = _bink.decodeNextFrame();
 		_texture->update(frame);
@@ -166,6 +169,7 @@ int16 ButtonsDialog::update() {
 
 				if (buttonRect.contains(FloatPoint(localMouse.x, localMouse.y))) {
 					_frameToDisplay = i + 1;
+					debugC(kDebugModding, "Hovering button#%d", i);
 					break;
 				}
 			}
