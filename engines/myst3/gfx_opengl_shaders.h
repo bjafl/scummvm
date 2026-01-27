@@ -23,7 +23,7 @@
 #define GFX_OPENGL_SHADERS_H_
 
 #include "common/array.h"
-#include "common/rect.h"
+#include "engines/myst3/rect.h"
 
 #include "math/rect2d.h"
 
@@ -42,7 +42,7 @@ public:
 	virtual ~ShaderRenderer();
 
 	void init() override;
-	// void setViewport(const FloatRect &viewport, bool is3d) override;
+	// void setViewport(const Rect &viewport, bool is3d) override;
 
 	void clear() override;
 	void selectTargetWindow(Window *window, bool is3D, bool scaled) override;
@@ -51,8 +51,8 @@ public:
 	Texture *createTextureFromDDS(const DDS &dds) override;
 	bool supportsCompressedTextures() const override;
 
-	void drawRect2D(const FloatRect &screenRect, uint8 a, uint8 r, uint8 g, uint8 b) override;
-	virtual void drawTexturedRect2D(const FloatRect &screenRect, const FloatRect &textureRect, Texture *texture,
+	void drawRect2D(const Rect &screenRect, uint8 a, uint8 r, uint8 g, uint8 b) override;
+	virtual void drawTexturedRect2D(const Rect &screenRect, const Rect &textureRect, Texture *texture,
 	                        		float transparency = -1.0, bool additiveBlending = false) override;
 	virtual void drawTexturedRect3D(const Math::Vector3d &topLeft, const Math::Vector3d &bottomLeft,
 	                                const Math::Vector3d &topRight, const Math::Vector3d &bottomRight,
@@ -61,7 +61,7 @@ public:
 	void drawCube(Texture **textures) override;
 	void drawCubeWithEffects(Texture **textures, Texture **effectMasks, Texture *shieldPattern,
 	                         const Common::Array<Effect *> &effects, GameState *state);
-	void draw2DText(const Common::String &text, const Common::Point &position) override;
+	void draw2DText(const Common::String &text, const Point &position) override;
 
 	Graphics::Surface *getScreenshot() override;
 	Texture *copyScreenshotToTexture() override;
@@ -87,10 +87,10 @@ private:
 	GLuint _textVBO;
 	GLuint _quadEBO;
 
-	Common::Rect _currentViewport;
+	Rect _currentViewport;
 
 	Common::String _prevText;
-	Common::Point _prevTextPosition;
+	Point _prevTextPosition;
 };
 
 } // End of namespace Myst3

@@ -22,7 +22,7 @@
 #ifndef MYST3_SCENE_H
 #define MYST3_SCENE_H
 
-#include "common/rect.h"
+#include "engines/myst3/rect.h"
 
 #include "engines/myst3/gfx.h"
 
@@ -43,17 +43,17 @@ public:
 	/**
 	 * Transform a point from screen coordinates to scaled window coordinates
 	 */
-	Common::Point scalePoint(const Common::Point &screen) const override;
+	Point scalePoint(const Point &screen) const override;
 
 	// Window API
-	Common::Rect getPosition() const override;
-	Common::Rect getOriginalPosition() const override;
+	Rect getPosition() const override;
+	Rect getOriginalPosition() const override;
 
-	void updateCamera(Common::Point &mouse);
+	void updateCamera(const Point &mouse);
 
 	void updateMouseSpeed();
 
-	void screenPosToDirection(const Common::Point &screen, float &pitch, float &heading) const;
+	void screenPosToDirection(const Point &screen, float &pitch, float &heading) const;
 	static Math::Vector3d directionToVector(float pitch, float heading);
 
 	void drawSunspotFlare(const SunSpot &s);

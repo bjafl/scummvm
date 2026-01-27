@@ -52,7 +52,7 @@ private:
 
 	const Graphics::Font *_font;
 	Graphics::Surface *_surface;
-	float _scale;
+	PointF _scale;
 	uint8 *_charset;
 };
 
@@ -60,7 +60,7 @@ FontSubtitles::FontSubtitles(Myst3Engine *vm) :
 	Subtitles(vm),
 	_font(nullptr),
 	_surface(nullptr),
-	_scale(1.0),
+	_scale(PointF(1, 1)),
 	_charset(nullptr) {
 }
 
@@ -78,7 +78,7 @@ void FontSubtitles::loadResources() {
 	// We draw the subtitles in the adequate resolution so that they are not
 	// scaled up. This is the scale factor of the current resolution
 	// compared to the original
-	_scale = _vm->_layout->scale();
+	_scale = _vm->_gfx->getScale();
 
 #ifdef USE_FREETYPE2
 	const char *ttfFile;
@@ -97,7 +97,7 @@ void FontSubtitles::loadResources() {
 
 	Common::SeekableReadStream *s = SearchMan.createReadStreamForMember(ttfFile);
 	if (s) {
-		_font = Graphics::loadTTFFont(s, DisposeAfterUse::YES, _fontSize * _scale);
+		_font = Graphics::loadTTFFont(s, DisposeAfterUse::YES, (int)(_fontSize * _scale.y));
 	} else {
 		warning("Unable to load the subtitles font '%s'", ttfFile);
 	}
@@ -223,11 +223,12 @@ Common::String FontSubtitles::fakeBidiProcessing(const Common::String &phrase) {
 }
 
 void FontSubtitles::createTexture() {
+	auto screen = _vm->_gfx->viewport();
 	// Create a surface to draw the subtitles on
 	// Use RGB 565 to allow use of BDF fonts
 	if (!_surface) {
-		uint16 width = Renderer::kOriginalWidth * _scale;
-		uint16 height = _surfaceHeight * _scale;
+		uint16 width = screen.width();
+		uint16 height = _surfaceHeight * _scale.y;
 
 		// Make sure the width is even. Some graphics drivers have trouble reading from
 		// surfaces with an odd width (Mesa 18 on Intel).
@@ -282,11 +283,11 @@ void FontSubtitles::drawToTexture(const Phrase *phrase) {
 
 
 	if (_fontCharsetCode == 0) {
-		font->drawString(_surface, phrase->string, 0, _singleLineTop * _scale, _surface->w, 0xFFFFFFFF, Graphics::kTextAlignCenter, 0, false);
+		font->drawString(_surface, phrase->string, 0, _singleLineTop * _scale.y, _surface->w, 0xFFFFFFFF, Graphics::kTextAlignCenter, 0, false);
 	} else {
 		Common::CodePage encoding = getEncodingFromCharsetCode(_fontCharsetCode);
 		Common::U32String unicode = Common::U32String(phrase->string, encoding);
-		font->drawString(_surface, unicode, 0, _singleLineTop * _scale, _surface->w, 0xFFFFFFFF, Graphics::kTextAlignCenter, 0, false);
+		font->drawString(_surface, unicode, 0, _singleLineTop * _scale.y, _surface->w, 0xFFFFFFFF, Graphics::kTextAlignCenter, 0, false);
 	}
 
 	// Update the texture
@@ -471,31 +472,25 @@ void Subtitles::setFrame(int32 frame) {
 void Subtitles::drawOverlay() {
 	if (!_texture) return;
 
-	FloatRect bottomBorder   = _vm->_layout->bottomBorderViewport();
-	FloatRect screenViewport = _vm->_layout->unconstrainedViewport();
+	Rect bottomBorder   = _vm->_gfx->bottomBorder();
+	Rect screenViewport = _vm->_gfx->viewport();
 
 	// _vm->_gfx->setViewport(screenViewport, false);
 
 	if (_vm->isWideScreenModEnabled()) {
 
-		FloatRect blackRect = FloatRect(bottomBorder.left(), bottomBorder.bottom() - _texture->height, bottomBorder.right(), bottomBorder.bottom());
-		FloatRect blackRectNormalized = blackRect.normalize(screenViewport.size());
-
+		Rect blackRect = Rect(bottomBorder.left, bottomBorder.bottom - _texture->height, bottomBorder.right, bottomBorder.bottom);
 		// Draw a black background to cover the main game frame
-		_vm->_gfx->drawRect2D(blackRectNormalized, 0xFF, 0x00, 0x00, 0x00);
-
+		_vm->_gfx->drawRect2D(blackRect, 0xFF, 0x00, 0x00, 0x00);
+		
 		// Center the subtitles in the screen
-		FloatRect subtitlesRect = FloatSize(_texture->width, _texture->height)
-		        .centerIn(blackRect)
-		        .normalize(screenViewport.size());
+		Rect textureRect = _vm->_gfx->createScaledRect(_texture->width, _texture->height).centerIn(blackRect);
 
-		_vm->_gfx->drawTexturedRect2D(subtitlesRect, FloatRect::unit(), _texture);
+		_vm->_gfx->drawTexturedRect2D(bottomBorder, textureRect, _texture);
 	} else {
-		FloatRect subtitlesRect = FloatSize(_texture->width, _texture->height)
-		        .positionIn(bottomBorder, .5f, _surfaceTop / (float)(bottomBorder.height() - _texture->height))
-		        .normalize(screenViewport.size());
+		Rect subtitlesRect = Rect(_texture->width, _texture->height).centerIn(bottomBorder);
 
-		_vm->_gfx->drawTexturedRect2D(subtitlesRect, FloatRect::unit(), _texture);
+		_vm->_gfx->drawTexturedRect2D(bottomBorder, subtitlesRect, _texture);
 	}
 }
 
@@ -527,28 +522,30 @@ void Subtitles::freeTexture() {
 	}
 }
 
-Common::Rect Subtitles::getPosition() const {
-	FloatRect screen = _vm->_gfx->viewport();
+Rect Subtitles::getPosition() const {
+	Rect screen = _vm->_gfx->viewport();
 
-	Common::Rect frame;
+	Rect frame;
 
 	if (_vm->isWideScreenModEnabled()) {
-		frame = Common::Rect(screen.width(), Renderer::kBottomBorderHeight);
+		frame = Rect(screen.width(), Renderer::kBottomBorderHeight);
 
-		Common::Rect scenePosition = _vm->_scene->getPosition();
+		Rect scenePosition = _vm->_scene->getPosition();
 		int16 top = CLIP<int16>(screen.height() - frame.height(), 0, scenePosition.bottom);
 
 		frame.translate(0, top);
 	} else {
-		frame = Common::Rect(screen.width(), screen.height() * Renderer::kBottomBorderHeight / Renderer::kOriginalHeight);
-		frame.translate(screen.left(), screen.top() + screen.height() * (Renderer::kTopBorderHeight + Renderer::kFrameHeight) / Renderer::kOriginalHeight);
+		frame = Rect(screen.width(), screen.height() * Renderer::kBottomBorderHeight / Renderer::kOriginalHeight);
+		frame.translate(screen.left, screen.top + screen.height() * (Renderer::kTopBorderHeight + Renderer::kFrameHeight) / Renderer::kOriginalHeight);
 	}
 
 	return frame;
 }
 
-Common::Rect Subtitles::getOriginalPosition() const {
-	Common::Rect originalPosition = Common::Rect(Renderer::kOriginalWidth, Renderer::kBottomBorderHeight);
+
+//TODO: rem fun?
+Rect Subtitles::getOriginalPosition() const {
+	Rect originalPosition = Rect(Renderer::kOriginalWidth, Renderer::kBottomBorderHeight);
 	originalPosition.translate(0, Renderer::kTopBorderHeight + Renderer::kFrameHeight);
 	return originalPosition;
 }

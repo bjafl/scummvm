@@ -19,7 +19,7 @@
  *
  */
 
-#include "common/rect.h"
+#include "engines/myst3/rect.h"
 #include "common/textconsole.h"
 
 #if defined(USE_OPENGL_GAME)
@@ -44,9 +44,9 @@ OpenGLRenderer::OpenGLRenderer(OSystem *system) :
 OpenGLRenderer::~OpenGLRenderer() {
 }
 
-// void OpenGLRenderer::setViewport(const FloatRect &viewport, bool is3d) {
+// void OpenGLRenderer::setViewport(const Rect &viewport, bool is3d) {
 // 	int32 screenHeight = _system->getHeight();
-// 	glViewport(viewport.left(), screenHeight - viewport.bottom(), viewport.width(), viewport.height());
+// 	glViewport(viewport.left, screenHeight - viewport.bottom(), viewport.width(), viewport.height());
 
 // 	if (is3d) {
 // 		glMatrixMode(GL_PROJECTION);
@@ -100,15 +100,15 @@ void OpenGLRenderer::selectTargetWindow(Window *window, bool is3D, bool scaled) 
 		// No window found ...
 		if (scaled) {
 			// ... in scaled mode draw in the original game screen area
-			FloatRect vp = viewport();
-			glViewport(vp.left(), _system->getHeight() - vp.top() - vp.height(), vp.width(), vp.height());
+			Rect vp = viewport();
+			glViewport(vp.left, _system->getHeight() - vp.top - vp.height(), vp.width(), vp.height());
 		} else {
 			// ... otherwise, draw on the whole screen
 			glViewport(0, 0, _system->getWidth(), _system->getHeight());
 		}
 	} else {
 		// Found a window, draw inside it
-		Common::Rect vp = window->getPosition();
+		Rect vp = window->getPosition();
 		glViewport(vp.left, _system->getHeight() - vp.top - vp.height(), vp.width(), vp.height());
 	}
 
@@ -130,10 +130,10 @@ void OpenGLRenderer::selectTargetWindow(Window *window, bool is3D, bool scaled) 
 			}
 		} else {
 			if (scaled) {
-				Common::Rect originalRect = window->getOriginalPosition();
+				Rect originalRect = window->getOriginalPosition();
 				glOrtho(0.0, originalRect.width(), originalRect.height(), 0.0, -1.0, 1.0);
 			} else {
-				Common::Rect vp = window->getPosition();
+				Rect vp = window->getPosition();
 				glOrtho(0.0, vp.width(), vp.height(), 0.0, -1.0, 1.0);
 			}
 		}
@@ -143,7 +143,7 @@ void OpenGLRenderer::selectTargetWindow(Window *window, bool is3D, bool scaled) 
 	}
 }
 
-void OpenGLRenderer::drawRect2D(const FloatRect &screenRect, uint8 a, uint8 r, uint8 g, uint8 b) {
+void OpenGLRenderer::drawRect2D(const Rect &screenRect, uint8 a, uint8 r, uint8 g, uint8 b) {
 	glDisable(GL_TEXTURE_2D);
 	glColor4ub(r, g, b, a);
 
@@ -153,26 +153,26 @@ void OpenGLRenderer::drawRect2D(const FloatRect &screenRect, uint8 a, uint8 r, u
 	}
 
 	glBegin(GL_TRIANGLE_STRIP);
-		glVertex3f(screenRect.left(), screenRect.bottom(), 0.0f);
-		glVertex3f(screenRect.right(), screenRect.bottom(), 0.0f);
-		glVertex3f(screenRect.left(), screenRect.top(), 0.0f);
-		glVertex3f(screenRect.right(), screenRect.top(), 0.0f);
+		glVertex3f(screenRect.left, screenRect.bottom, 0.0f);
+		glVertex3f(screenRect.right, screenRect.bottom, 0.0f);
+		glVertex3f(screenRect.left, screenRect.top, 0.0f);
+		glVertex3f(screenRect.right, screenRect.top, 0.0f);
 	glEnd();
 
 	glDisable(GL_BLEND);
 }
 
-void OpenGLRenderer::drawTexturedRect2D(const FloatRect &screenRect, const FloatRect &textureRect, Texture *texture,
+void OpenGLRenderer::drawTexturedRect2D(const Rect &screenRect, const Rect &textureRect, Texture *texture,
 	                        			float transparency, bool additiveBlending) {
 	OpenGLTexture *glTexture = static_cast<OpenGLTexture *>(texture);
 
-	const float tLeft   = textureRect.left()   * glTexture->width  / (float)glTexture->internalWidth;
+	const float tLeft   = textureRect.left   * glTexture->width  / (float)glTexture->internalWidth;
 	const float tWidth  = textureRect.width()  * glTexture->width  / (float)glTexture->internalWidth;
-	const float tTop    = textureRect.top()    * glTexture->height / (float)glTexture->internalHeight;
+	const float tTop    = textureRect.top    * glTexture->height / (float)glTexture->internalHeight;
 	const float tHeight = textureRect.height() * glTexture->height / (float)glTexture->internalHeight;
 
-	float sLeft   = screenRect.left();
-	float sTop    = screenRect.top();
+	float sLeft   = screenRect.left;
+	float sTop    = screenRect.top;
 	float sRight  = sLeft + screenRect.width();
 	float sBottom = sTop  + screenRect.height();
 
@@ -215,7 +215,7 @@ void OpenGLRenderer::drawTexturedRect2D(const FloatRect &screenRect, const Float
 	glDepthMask(GL_TRUE);
 }
 
-void OpenGLRenderer::draw2DText(const Common::String &text, const Common::Point &position) {
+void OpenGLRenderer::draw2DText(const Common::String &text, const Point &position) {
 	OpenGLTexture *glFont = static_cast<OpenGLTexture *>(_font);
 
 	// The font only has uppercase letters
@@ -235,7 +235,7 @@ void OpenGLRenderer::draw2DText(const Common::String &text, const Common::Point 
 	int y = position.y;
 
 	for (uint i = 0; i < textToDraw.size(); i++) {
-		Common::Rect textureRect = getFontCharacterRect(textToDraw[i]);
+		Rect textureRect = getFontCharacterRect(textToDraw[i]);
 		int w = textureRect.width();
 		int h = textureRect.height();
 
@@ -323,7 +323,7 @@ void OpenGLRenderer::drawTexturedRect3D(const Math::Vector3d &topLeft, const Mat
 }
 
 Graphics::Surface *OpenGLRenderer::getScreenshot() {
-	Common::Rect screen = viewport().toRect();
+	Rect screen = viewport();
 
 	Graphics::Surface *s = new Graphics::Surface();
 	s->create(screen.width(), screen.height(), Texture::getRGBAPixelFormat());
@@ -339,7 +339,7 @@ Graphics::Surface *OpenGLRenderer::getScreenshot() {
 Texture *OpenGLRenderer::copyScreenshotToTexture() {
 	OpenGLTexture *texture = new OpenGLTexture();
 
-	Common::Rect screen = viewport().toRect();
+	Rect screen = viewport();
 	texture->copyFromFramebuffer(screen);
 
 	return texture;

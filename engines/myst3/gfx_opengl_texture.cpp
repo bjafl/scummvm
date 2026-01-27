@@ -116,10 +116,10 @@ OpenGLTexture::~OpenGLTexture() {
 }
 
 void OpenGLTexture::update(const Graphics::Surface *surface) {
-	updatePartial(surface, Common::Rect(surface->w, surface->h));
+	updatePartial(surface, Rect(surface->w, surface->h));
 }
 
-void OpenGLTexture::updateTexture(const Graphics::Surface *surface, const Common::Rect &rect) {
+void OpenGLTexture::updateTexture(const Graphics::Surface *surface, const Rect &rect) {
 	assert(surface->format == format);
 
 	glBindTexture(GL_TEXTURE_2D, id);
@@ -137,11 +137,11 @@ void OpenGLTexture::updateTexture(const Graphics::Surface *surface, const Common
 	}
 }
 
-void OpenGLTexture::updatePartial(const Graphics::Surface *surface, const Common::Rect &rect) {
+void OpenGLTexture::updatePartial(const Graphics::Surface *surface, const Rect &rect) {
 	updateTexture(surface, rect);
 }
 
-void OpenGLTexture::copyFromFramebuffer(const Common::Rect &screen) {
+void OpenGLTexture::copyFromFramebuffer(const Rect &screen) {
 	internalFormat = GL_RGB;
 	width  = screen.width();
 	height = screen.height();

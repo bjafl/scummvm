@@ -22,6 +22,7 @@
 #include "engines/myst3/gfx.h"
 #include "engines/myst3/myst3.h"
 #include "engines/myst3/resource_loader.h"
+#include "engines/myst3/rect.h"
 
 #include "engines/util.h"
 
@@ -75,11 +76,9 @@ Renderer::Renderer(OSystem *system)
 			_cubeFacesAABB[i].expand(Math::Vector3d(cubeVertices[5 * (4 * i + j) + 2], cubeVertices[5 * (4 * i + j) + 3], cubeVertices[5 * (4 * i + j) + 4]));
 		}
 	}
-	_layout = new Layout(system, ConfMan.getBool("widescreen_mod"));
 }
 
 Renderer::~Renderer() {
-	delete _layout;
 }
 
 void Renderer::toggleFullscreen() {
@@ -123,7 +122,7 @@ Texture *Renderer::copyScreenshotToTexture() {
 	return texture;
 }
 
-Common::Rect Renderer::getFontCharacterRect(uint8 character) {
+Rect Renderer::getFontCharacterRect(uint8 character) {
 	uint index = 0;
 
 	if (character == ' ')
@@ -139,30 +138,47 @@ Common::Rect Renderer::getFontCharacterRect(uint8 character) {
 	else if (character == ':')
 		index = 3 + 10 + 26;
 
-	return Common::Rect(16 * index, 0, 16 * (index + 1), 32);
+	return Rect(16 * index, 0, 16 * (index + 1), 32);
 }
 
-// Common::Rect Renderer::viewport() const {
-// 	return _screenViewport;
-// }
+Rect Renderer::viewport() const {
+	return _screenViewport;
+}
+
+Rect Renderer::topBorder() const {
+	PointF scale = getScale();
+	return Rect(_screenViewport.width(), kTopBorderHeight * scale.y);
+}
+Rect Renderer::bottomBorder() const {
+	PointF scale = getScale();
+	return Rect(_screenViewport.width(), kBottomBorderHeight * scale.y);
+}
+
+Rect Renderer::frameViewport() const {
+	PointF scale = getScale();
+	int topBorderHeight = kTopBorderHeight * scale.y;
+	int bottomBorderHeight = kBottomBorderHeight * scale.y;
+	Rect frame(_screenViewport.width(), _screenViewport.height() - topBorderHeight - bottomBorderHeight);
+	frame.translate(0, topBorderHeight);
+	return frame;
+}
 
 void Renderer::computeScreenViewport() {
-	_screenViewport = _layout->screenViewport();
-	// int32 screenWidth = _system->getWidth();
-	// int32 screenHeight = _system->getHeight();
+	int32 screenWidth = _system->getWidth();
+	int32 screenHeight = _system->getHeight();
 
-	// if (ConfMan.getBool("widescreen_mod")) {
-	// 	_screenViewport = Common::Rect(screenWidth, screenHeight);
-	// } else {
-	// 	// Aspect ratio correction
-	// 	int32 viewportWidth = MIN<int32>(screenWidth, screenHeight * kOriginalWidth / kOriginalHeight);
-	// 	int32 viewportHeight = MIN<int32>(screenHeight, screenWidth * kOriginalHeight / kOriginalWidth);
-	// 	_screenViewport = Common::Rect(viewportWidth, viewportHeight);
+	if (ConfMan.getBool("widescreen_mod")) {
+		_screenViewport = Rect(screenWidth, screenHeight);
+	} else {
+		// Aspect ratio correction
+		int32 viewportWidth = MIN<int32>(screenWidth, screenHeight * kOriginalWidth / kOriginalHeight);
+		int32 viewportHeight = MIN<int32>(screenHeight, screenWidth * kOriginalHeight / kOriginalWidth);
+		_screenViewport = Rect(viewportWidth, viewportHeight);
 
-	// 	// Pillarboxing
-	// 	_screenViewport.translate((screenWidth - viewportWidth) / 2,
-	// 		(screenHeight - viewportHeight) / 2);
-	// }
+		// Pillarboxing
+		_screenViewport.translate((screenWidth - viewportWidth) / 2,
+			(screenHeight - viewportHeight) / 2);
+	}
 }
 
 Math::Matrix4 Renderer::makeProjectionMatrix(float fov) const {
@@ -287,117 +303,69 @@ void Renderer::renderWindowOverlay(Window *window) {
 	renderDrawableOverlay(window, window);
 }
 
+PointF Renderer::getScale() const {
+	return PointF(
+		_screenViewport.width() / (float) kOriginalWidth,
+		_screenViewport.height() / (float) kOriginalHeight
+	);
+}
+
+Rect Renderer::scaleRect(const Rect &rect){
+	PointF scale = getScale();
+	return rect * scale;
+}
+
+Rect Renderer::centerOnViewport(const Rect &rect) {
+	Rect r(rect);
+	r.translate((_screenViewport.width() - rect.width()) / 2,
+			(_screenViewport.height() - rect.height()) / 2);
+	return r;
+}
+
+Rect Renderer::createScaledRect(int16 w, int16 h, bool centerOnViewport){
+	Rect rect = Rect(w, h) * getScale();
+	if (centerOnViewport) {
+		rect = Renderer::centerOnViewport(rect);
+	}
+	return rect;
+}
+
+
 Drawable::Drawable() :
 		_isConstrainedToWindow(true),
 		_is3D(false),
 		_scaled(true) {
 }
 
-Common::Point Window::getCenter() const {
-	Common::Rect frame = getPosition();
-
-	return Common::Point((frame.left + frame.right) / 2, (frame.top + frame.bottom) / 2);
+Point Window::getCenter() const {
+	Rect frame = getPosition();
+	return frame.center();
 }
 
-Common::Point Window::screenPosToWindowPos(const Common::Point &screen) const {
-	Common::Rect frame = getPosition();
+Point Window::screenPosToWindowPos(const Point &screen, bool clip) const {
+	Rect frame = getPosition();
 
-	return Common::Point(screen.x - frame.left, screen.y - frame.top);
-}
-
-Common::Point Window::scalePoint(const Common::Point &screen) const {
-	Common::Rect viewport = getPosition();
-	Common::Rect originalViewport = getOriginalPosition();
-
-	Common::Point scaledPosition = screen;
-	scaledPosition.x -= viewport.left;
-	scaledPosition.y -= viewport.top;
-	scaledPosition.x = CLIP<int16>(scaledPosition.x, 0, viewport.width());
-	scaledPosition.y = CLIP<int16>(scaledPosition.y, 0, viewport.height());
-
-	if (_scaled) {
-		scaledPosition.x *= originalViewport.width() / (float) viewport.width();
-		scaledPosition.y *= originalViewport.height() / (float) viewport.height();
+	Point translated = screen - frame.origin();
+	if (clip) {
+		translated.x = CLIP<int16>(translated.x, 0, frame.width());
+		translated.y = CLIP<int16>(translated.y, 0, frame.height());
 	}
-
-	return scaledPosition;
+	return translated;
 }
+
+Point Window::scalePoint(const Point &screen) const {
+	Point windowPos = screenPosToWindowPos(screen, true);
+	Rect viewport = getPosition();
+	if (_scaled) {
+		windowPos.x *= Renderer::kOriginalWidth / (float) viewport.width();
+		windowPos.y *= Renderer::kOriginalHeight / (float) viewport.height();
+	}
+	return windowPos;
+}
+
 
 const Graphics::PixelFormat Texture::getRGBAPixelFormat() {
 	return Graphics::PixelFormat::createFormatRGBA32();
-}
-
-
-Layout::Layout(OSystem *system, bool widescreenMod) :
-		_system(system),
-		_widescreenMod(widescreenMod) {
-}
-
-FloatRect Layout::menuViewport() const {
-	return sceneViewport(
-	            FloatSize(Renderer::kOriginalWidth, Renderer::kOriginalHeight),
-	            .5f
-	);
-}
-
-FloatRect Layout::frameViewport() const {
-	return sceneViewport(
-	            FloatSize(Renderer::kOriginalWidth, Renderer::kFrameHeight),
-	            Renderer::kTopBorderHeight / (float)(Renderer::kTopBorderHeight + Renderer::kBottomBorderHeight)
-	);
-}
-
-FloatRect Layout::screenViewport() const {
-	FloatSize screenSize(_system->getWidth(), _system->getHeight());
-	debugC(kDebugUi, "screenViewport - screenSize: %fx%f", screenSize.width(), screenSize.height());
-	if (_widescreenMod) {
-		return FloatRect(screenSize);
-	}
-
-	return FloatSize(Renderer::kOriginalWidth, Renderer::kOriginalHeight)
-	        .fitIn(screenSize)
-	        .centerIn(FloatRect(screenSize));
-}
-
-Common::Rect Layout::screenViewportInt() const {
-	FloatRect screenViewPort = screenViewport();
-	return Common::Rect(screenViewPort.left(), screenViewPort.top(), screenViewPort.right(), screenViewPort.bottom());
-}
-
-FloatRect Layout::unconstrainedViewport() const {
-	FloatSize screenSize(_system->getWidth(), _system->getHeight());
-	return FloatRect(screenSize);
-}
-
-FloatRect Layout::bottomBorderViewport() const {
-	FloatRect screenRect = screenViewport();
-	FloatRect frameRect  = frameViewport();
-
-	if (_widescreenMod) {
-		float height = Renderer::kBottomBorderHeight * scale();
-		float bottom = CLIP<float>(frameRect.bottom() + height, 0, screenRect.bottom());
-
-		return FloatRect(frameRect.left(), bottom - height, frameRect.right(), bottom);
-	}
-
-	return FloatRect(screenRect.left(), frameRect.bottom(), screenRect.right(), screenRect.bottom());
-}
-
-float Layout::scale() const {
-	FloatRect screenRect = screenViewport();
-
-	return MIN(
-			screenRect.width()  / (float) Renderer::kOriginalWidth,
-			screenRect.height() / (float) Renderer::kOriginalHeight
-	);
-}
-
-FloatRect Layout::sceneViewport(FloatSize viewportSize, float verticalPositionRatio) const {
-	FloatRect screenRect = screenViewport();
-
-	return viewportSize
-	        .fitIn(screenRect.size())
-	        .positionIn(screenRect, .5f, verticalPositionRatio);
 }
 
 } // End of namespace Myst3

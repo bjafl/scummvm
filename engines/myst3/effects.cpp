@@ -48,8 +48,8 @@ Effect::FaceMask::~FaceMask() {
 	delete surface;
 }
 
-Common::Rect Effect::FaceMask::getBlockRect(uint x, uint y) {
-	Common::Rect rect = Common::Rect(64, 64);
+Rect Effect::FaceMask::getBlockRect(uint x, uint y) {
+	Rect rect = Rect(64, 64);
 	rect.translate(x * 64, y * 64);
 	return rect;
 }
@@ -149,12 +149,12 @@ Effect::FaceMask *Effect::loadMask(Common::SeekableReadStream *maskStream) {
 	return mask;
 }
 
-Common::Rect Effect::getUpdateRectForFace(uint face) {
+Rect Effect::getUpdateRectForFace(uint face) {
 	FaceMask *mask = _facesMasks[face];
 	if (!mask)
 		error("No mask for face %d", face);
 
-	Common::Rect rect;
+	Rect rect;
 
 	// Build a rectangle containing all the active effect blocks
 	for (uint i = 0; i < 10; i++) {

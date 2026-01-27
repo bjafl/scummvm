@@ -35,7 +35,7 @@
  * all copies or substantial portions of the Software.
  */
 
-#include "common/rect.h"
+#include "engines/myst3/rect.h"
 #include "common/textconsole.h"
 
 #if defined(USE_OPENGL_SHADERS)
@@ -121,9 +121,9 @@ ShaderRenderer::~ShaderRenderer() {
 	delete _textShader;
 }
 
-// void ShaderRenderer::setViewport(const FloatRect &viewport, bool is3d) {
+// void ShaderRenderer::setViewport(const Rect &viewport, bool is3d) {
 // 	int32 screenHeight = _system->getHeight();
-// 	glViewport(viewport.left(), screenHeight - viewport.bottom(), viewport.width(), viewport.height());
+// 	glViewport(viewport.left, screenHeight - viewport.bottom(), viewport.width(), viewport.height());
 // }
 
 Texture *ShaderRenderer::createTexture3D(const Graphics::Surface *surface) {
@@ -208,17 +208,17 @@ void ShaderRenderer::selectTargetWindow(Window *window, bool is3D, bool scaled) 
 		// No window found ...
 		if (scaled) {
 			// ... in scaled mode draw in the original game screen area
-			FloatRect vp = viewport();
-			glViewport(vp.left(), _system->getHeight() - vp.top() - vp.height(), vp.width(), vp.height());
-			_currentViewport = Common::Rect(kOriginalWidth, kOriginalHeight);
+			Rect vp = viewport();
+			glViewport(vp.left, _system->getHeight() - vp.top - vp.height(), vp.width(), vp.height());
+			_currentViewport = Rect(kOriginalWidth, kOriginalHeight);
 		} else {
 			// ... otherwise, draw on the whole screen
 			glViewport(0, 0, _system->getWidth(), _system->getHeight());
-			_currentViewport = Common::Rect(_system->getWidth(), _system->getHeight());
+			_currentViewport = Rect(_system->getWidth(), _system->getHeight());
 		}
 	} else {
 		// Found a window, draw inside it
-		Common::Rect vp = window->getPosition();
+		Rect vp = window->getPosition();
 		glViewport(vp.left, _system->getHeight() - vp.top - vp.height(), vp.width(), vp.height());
 
 		if (scaled) {
@@ -229,11 +229,11 @@ void ShaderRenderer::selectTargetWindow(Window *window, bool is3D, bool scaled) 
 	}
 }
 
-void ShaderRenderer::drawRect2D(const FloatRect &screenRect,  uint8 a, uint8 r, uint8 g, uint8 b) {
+void ShaderRenderer::drawRect2D(const Rect &screenRect,  uint8 a, uint8 r, uint8 g, uint8 b) {
 	_boxShader->use();
 	_boxShader->setUniform("textured", false);
 	_boxShader->setUniform("color", Math::Vector4d(r / 255.0, g / 255.0, b / 255.0, a / 255.0));
-	_boxShader->setUniform("verOffsetXY", Math::Vector2d(screenRect.left(), screenRect.top()));
+	_boxShader->setUniform("verOffsetXY", Math::Vector2d(screenRect.left, screenRect.top));
 	_boxShader->setUniform("verSizeWH", Math::Vector2d(screenRect.width(), screenRect.height()));
 	_boxShader->setUniform("flipY", false);
 
@@ -250,13 +250,13 @@ void ShaderRenderer::drawRect2D(const FloatRect &screenRect,  uint8 a, uint8 r, 
 	glDepthMask(GL_TRUE);
 }
 
-void ShaderRenderer::drawTexturedRect2D(const FloatRect &screenRect, const FloatRect &textureRect, Texture *texture,
+void ShaderRenderer::drawTexturedRect2D(const Rect &screenRect, const Rect &textureRect, Texture *texture,
 	                        			float transparency, bool additiveBlending) {
 	OpenGLTexture *glTexture = static_cast<OpenGLTexture *>(texture);
 
-	const float tLeft   = textureRect.left()   * glTexture->width  / (float)glTexture->internalWidth;
+	const float tLeft   = textureRect.left   * glTexture->width  / (float)glTexture->internalWidth;
 	const float tWidth  = textureRect.width()  * glTexture->width  / (float)glTexture->internalWidth;
-	const float tTop    = textureRect.top()    * glTexture->height / (float)glTexture->internalHeight;
+	const float tTop    = textureRect.top    * glTexture->height / (float)glTexture->internalHeight;
 	const float tHeight = textureRect.height() * glTexture->height / (float)glTexture->internalHeight;
 
 	// const float sLeft = screenRect.left;
@@ -278,7 +278,7 @@ void ShaderRenderer::drawTexturedRect2D(const FloatRect &screenRect, const Float
 	_boxShader->use();
 	_boxShader->setUniform("textured", true);
 	_boxShader->setUniform("color", Math::Vector4d(1.0f, 1.0f, 1.0f, transparency));
-	_boxShader->setUniform("verOffsetXY", Math::Vector2d(screenRect.left(), screenRect.top()));
+	_boxShader->setUniform("verOffsetXY", Math::Vector2d(screenRect.left, screenRect.top));
 	_boxShader->setUniform("verSizeWH", Math::Vector2d(screenRect.width(), screenRect.height()));
 	_boxShader->setUniform("texOffsetXY", Math::Vector2d(tLeft, tTop));
 	_boxShader->setUniform("texSizeWH", Math::Vector2d(tWidth, tHeight));
@@ -294,7 +294,7 @@ void ShaderRenderer::drawTexturedRect2D(const FloatRect &screenRect, const Float
 	glDepthMask(GL_TRUE);
 }
 
-void ShaderRenderer::draw2DText(const Common::String &text, const Common::Point &position) {
+void ShaderRenderer::draw2DText(const Common::String &text, const Point &position) {
 	OpenGLTexture *glFont = static_cast<OpenGLTexture *>(_font);
 
 	// The font only has uppercase letters
@@ -318,7 +318,7 @@ void ShaderRenderer::draw2DText(const Common::String &text, const Common::Point 
 		float *cur = bufData;
 
 		for (uint i = 0; i < textToDraw.size(); i++) {
-			Common::Rect textureRect = getFontCharacterRect(textToDraw[i]);
+			Rect textureRect = getFontCharacterRect(textToDraw[i]);
 			float w = textureRect.width() / (float) _currentViewport.width();
 			float h = textureRect.height() / (float) _currentViewport.height();
 
@@ -550,13 +550,13 @@ void ShaderRenderer::drawTexturedRect3D(const Math::Vector3d &topLeft, const Mat
 }
 
 Graphics::Surface *ShaderRenderer::getScreenshot() {
-	FloatRect screen = viewport();
+	Rect screen = viewport();
 
 	Graphics::Surface *s = new Graphics::Surface();
 	s->create(screen.width(), screen.height(), Texture::getRGBAPixelFormat());
 
 	g_system->presentBuffer();
-	glReadPixels(screen.left(), screen.top(), screen.width(), screen.height(), GL_RGBA, GL_UNSIGNED_BYTE, s->getPixels());
+	glReadPixels(screen.left, screen.top, screen.width(), screen.height(), GL_RGBA, GL_UNSIGNED_BYTE, s->getPixels());
 
 	flipVertical(s);
 
@@ -566,8 +566,8 @@ Graphics::Surface *ShaderRenderer::getScreenshot() {
 Texture *ShaderRenderer::copyScreenshotToTexture() {
 	OpenGLTexture *texture = new OpenGLTexture();
 
-	FloatRect screen = viewport();
-	texture->copyFromFramebuffer(screen.toRect());
+	Rect screen = viewport();
+	texture->copyFromFramebuffer(screen);
 
 	return texture;
 }

@@ -26,37 +26,19 @@
 #include "engines/myst3/resource_loader.h"
 #include "engines/myst3/rect.h"
 
-#include "common/rect.h"
+//#include "engines/myst3/rect.h"
 #include "common/system.h"
 
 #include "math/frustum.h"
 #include "math/matrix4.h"
 #include "math/vector3d.h"
+#include "math/vector2d.h"
 
 namespace Myst3 {
 
 class Effect;
 class GameState;
 class Renderer;
-
-class Layout {
-public:
-	Layout(OSystem *system, bool widescreenMod);
-
-	FloatRect menuViewport() const;
-	FloatRect frameViewport() const;
-	FloatRect screenViewport() const;
-	Common::Rect screenViewportInt() const;
-	FloatRect unconstrainedViewport() const;
-	FloatRect bottomBorderViewport() const;
-	float scale() const;
-
-private:
-	FloatRect sceneViewport(FloatSize viewportSize, float verticalPositionRatio) const;
-
-	OSystem *_system;
-	bool _widescreenMod;
-};
 
 class Drawable {
 public:
@@ -74,7 +56,8 @@ public:
 
 	/** Whether to scale the drawable to a size equivalent to the original engine or to draw it at its native size */
 	bool isScaled() const { return _scaled; }
-
+	
+	
 protected:
 	bool _isConstrainedToWindow;
 	bool _is3D;
@@ -92,27 +75,28 @@ public:
 	/**
 	 * Get the window position in screen coordinates
 	 */
-	virtual Common::Rect getPosition() const = 0;
+	virtual Rect getPosition() const = 0;
 
 	/**
 	 * Get the window position in original (640x480) screen coordinates
 	 */
-	virtual Common::Rect getOriginalPosition() const = 0;
+	virtual Rect getOriginalPosition() const = 0;
 
 	/**
 	 * Get the window center in screen coordinates
 	 */
-	Common::Point getCenter() const;
+	Point getCenter() const;
 
 	/**
 	 * Convert screen coordinates to window coordinates
 	 */
-	Common::Point screenPosToWindowPos(const Common::Point &screen) const;
+	Point screenPosToWindowPos(const Point &screen, bool clip = false) const;
 
 	/**
 	 * Transform a point from screen coordinates to scaled window coordinates
 	 */
-	virtual Common::Point scalePoint(const Common::Point &screen) const;
+	virtual Point scalePoint(const Point &screen) const;
+
 };
 
 class Texture {
@@ -123,10 +107,10 @@ public:
 	uint height;
 	Graphics::PixelFormat format;
 
-	FloatSize size() const { return FloatSize(width, height); }
+	Rect size() const { return Rect(width, height); }
 
 	virtual void update(const Graphics::Surface *surface) = 0;
-	virtual void updatePartial(const Graphics::Surface *surface, const Common::Rect &rect) = 0;
+	virtual void updatePartial(const Graphics::Surface *surface, const Rect &rect) = 0;
 
 	static const Graphics::PixelFormat getRGBAPixelFormat();
 };
@@ -137,7 +121,7 @@ public:
 	virtual ~Renderer();
 
 	virtual void init() = 0;
-	// virtual void setViewport(const FloatRect &viewport, bool is3d) = 0;
+	// virtual void setViewport(const Rect &viewport, bool is3d) = 0;
 	virtual void clear() = 0;
 	void toggleFullscreen();
 
@@ -165,9 +149,9 @@ public:
 	 */
 	virtual bool supportsCompressedTextures() const { return false; }
 
-	virtual void drawRect2D(const FloatRect &screenRect, uint8 a, uint8 r, uint8 g, uint8 b) = 0;
+	virtual void drawRect2D(const Rect &screenRect, uint8 a, uint8 r, uint8 g, uint8 b) = 0;
 
-	virtual void drawTexturedRect2D(const FloatRect &screenRect, const FloatRect &textureRect, Texture *texture,
+	virtual void drawTexturedRect2D(const Rect &screenRect, const Rect &textureRect, Texture *texture,
 									float transparency = -1.0, bool additiveBlending = false) = 0;
 
 	virtual void drawTexturedRect3D(const Math::Vector3d &topLeft, const Math::Vector3d &bottomLeft,
@@ -177,7 +161,7 @@ public:
 	virtual void drawCube(Texture **textures) = 0;
 	virtual void drawCubeWithEffects(Texture **textures, Texture **effectMasks, Texture *shieldPattern,
 	                                 const Common::Array<Effect *> &effects, GameState *state) {}
-	virtual void draw2DText(const Common::String &text, const Common::Point &position) = 0;
+	virtual void draw2DText(const Common::String &text, const Point &position) = 0;
 
 	/** Check if GPU-based effects are supported */
 	virtual bool supportsShaderEffects() const { return false; }
@@ -197,8 +181,10 @@ public:
 	/** Render the main Drawable overlay of a Window */
 	void renderWindowOverlay(Window *window);
 
-	// Common::Rect viewport() const;
-	FloatRect viewport() const { return _screenViewport; };
+	Rect viewport() const;
+	Rect frameViewport() const;
+	Rect topBorder() const;
+	Rect bottomBorder() const;
 
 	/**
 	 * Select the window where to render
@@ -223,12 +209,16 @@ public:
 
 	void computeScreenViewport();
 
+	PointF getScale() const;
+	Rect scaleRect(const Rect &rect);
+	Rect createScaledRect(int16 w, int16 h, bool centerOnViewport = false);
+	Rect centerOnViewport(const Rect &rect);
+
 protected:
 	OSystem *_system;
 	Texture *_font;
 
-	// Common::Rect _screenViewport;
-	FloatRect _screenViewport;
+	Rect _screenViewport;
 
 	Math::Matrix4 _projectionMatrix;
 	Math::Matrix4 _modelViewMatrix;
@@ -239,11 +229,10 @@ protected:
 	static const float cubeVertices[5 * 6 * 4];
 	Math::AABB _cubeFacesAABB[6];
 
-	Common::Rect getFontCharacterRect(uint8 character);
+	Rect getFontCharacterRect(uint8 character);
 
 	Math::Matrix4 makeProjectionMatrix(float fov) const;
 
-	Layout *_layout;
 };
 
 Renderer *CreateGfxOpenGL(OSystem *system);

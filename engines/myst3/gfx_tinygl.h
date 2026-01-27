@@ -22,7 +22,7 @@
 #ifndef GFX_TINYGL_H_
 #define GFX_TINYGL_H_
 
-#include "common/rect.h"
+#include "engines/myst3/rect.h"
 #include "common/system.h"
 
 #include "math/vector3d.h"
@@ -39,7 +39,7 @@ public:
 	virtual ~TinyGLRenderer();
 
 	void init() override;
-	// void setViewport(const FloatRect &viewport, bool is3d) override;
+	// void setViewport(const Rect &viewport, bool is3d) override;
 
 	void clear() override;
 	void selectTargetWindow(Window *window, bool is3D, bool scaled) override;
@@ -47,17 +47,17 @@ public:
 	Texture *createTexture2D(const Graphics::Surface *surface) override;
 	Texture *createTexture3D(const Graphics::Surface *surface) override;
 
-	// void drawRect2D(const Common::Rect &rect, uint8 a, uint8 r, uint8 g, uint8 b) override;
-	void drawRect2D(const FloatRect &screenRect, uint8 a, uint8 r, uint8 g, uint8 b) override;
+	// void drawRect2D(const Rect &rect, uint8 a, uint8 r, uint8 g, uint8 b) override;
+	void drawRect2D(const Rect &screenRect, uint8 a, uint8 r, uint8 g, uint8 b) override;
 	
-	virtual void TinyGLRenderer::drawTexturedRect2D(const FloatRect &screenRect, const FloatRect &textureRect,
+	virtual void TinyGLRenderer::drawTexturedRect2D(const Rect &screenRect, const Rect &textureRect,
                                         Texture *texture, float transparency, bool additiveBlending) override;
 	virtual void drawTexturedRect3D(const Math::Vector3d &topLeft, const Math::Vector3d &bottomLeft,
 	                                const Math::Vector3d &topRight, const Math::Vector3d &bottomRight,
 	                                Texture *texture) override;
 
 	void drawCube(Texture **textures) override;
-	void draw2DText(const Common::String &text, const Common::Point &position) override;
+	void draw2DText(const Common::String &text, const Point &position) override;
 
 	Graphics::Surface *getScreenshot() override;
 
@@ -65,7 +65,7 @@ public:
 private:
 	void drawFace(uint face, Texture *texture);
 
-	Common::Rect _viewport;
+	Rect _viewport;
 };
 
 } // End of namespace Myst3

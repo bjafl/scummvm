@@ -65,7 +65,7 @@
 namespace Myst3 {
 
 Myst3Engine::Myst3Engine(OSystem *syst, const Myst3GameDescription *version) :
-		Engine(syst), _system(syst), _gameDescription(version), _layout(nullptr), 
+		Engine(syst), _system(syst), _gameDescription(version), 
 		_db(nullptr), _scriptEngine(nullptr),
 		_state(nullptr), _node(nullptr), _scene(nullptr),
 		_cursor(nullptr), _inventory(nullptr), _gfx(nullptr), _menu(nullptr),
@@ -121,7 +121,6 @@ Myst3Engine::~Myst3Engine() {
 	delete _rnd;
 	delete _sound;
 	delete _ambient;
-	delete _layout;
 	delete _frameLimiter;
 	delete _gfx;
 }
@@ -160,7 +159,6 @@ Common::Error Myst3Engine::run() {
 	_gfx->clear();
 
 	_frameLimiter = new Graphics::FrameLimiter(_system, ConfMan.getInt("engine_speed"));
-	_layout = new Layout(_system, isWideScreenModEnabled());
 	_sound = new Sound(this);
 	_ambient = new Ambient(this);
 	_rnd = new Common::RandomSource("sprint");
@@ -461,7 +459,7 @@ HotSpot *Myst3Engine::getHoveredHotspot(NodePtr nodeData, uint16 var) {
 		}
 	} else {
 		// get the mouse position in original game window coordinates
-		Common::Point mouse = _cursor->getPosition();
+		Point mouse = _cursor->getPosition();
 		mouse = _scene->scalePoint(mouse);
 
 		for (uint j = 0; j < nodeData->hotspots.size(); j++) {
@@ -1379,7 +1377,7 @@ void Myst3Engine::addSpotItem(uint16 id, int16 condition, bool fade) {
 	_node->loadSpotItem(room, id, condition, fade);
 }
 
-SpotItemFace *Myst3Engine::addMenuSpotItem(uint16 id, int16 condition, const Common::Rect &rect) {
+SpotItemFace *Myst3Engine::addMenuSpotItem(uint16 id, int16 condition, const Rect &rect) {
 	assert(_node);
 
 	SpotItemFace *face = _node->loadMenuSpotItem(condition, rect);

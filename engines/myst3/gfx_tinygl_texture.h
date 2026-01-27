@@ -39,7 +39,7 @@ public:
 	TinyGL::BlitImage *getBlitTexture() const;
 
 	void update(const Graphics::Surface *surface) override;
-	void updatePartial(const Graphics::Surface *surface, const Common::Rect &rect) override;
+	void updatePartial(const Graphics::Surface *surface, const Rect &rect) override;
 
 private:
 	TinyGL::BlitImage *_blitImage;
@@ -51,7 +51,7 @@ public:
 	virtual ~TinyGLTexture3D();
 
 	void update(const Graphics::Surface *surface) override;
-	void updatePartial(const Graphics::Surface *surface, const Common::Rect &rect) override;
+	void updatePartial(const Graphics::Surface *surface, const Rect &rect) override;
 
 	TGLuint id;
 	TGLuint internalFormat;

@@ -23,14 +23,57 @@
 #define CURSOR_H_
 
 #include "common/hashmap.h"
-#include "common/rect.h"
 
 #include "engines/myst3/gfx.h"
+#include "engines/myst3/rect.h"
 
 namespace Myst3 {
 
 class Myst3Engine;
 class Texture;
+
+struct CursorDataStruct {
+	uint32 nodeID;
+	uint16 width;
+	uint16 height;
+	uint16 hotspotX;
+	uint16 hotspotY;
+	float transparency;
+	float transparencyXbox;
+};
+
+static const CursorDataStruct availableCursors[] = {
+	{1000, 16, 16, 8, 8, 0.25f, 0.00f}, // Default cursor
+	{1001, 16, 16, 8, 8, 0.50f, 0.50f}, // On top of inventory item
+	{1002, 16, 16, 8, 8, 0.50f, 0.50f}, // Drag cursor
+	{1003, 16, 16, 1, 5, 0.50f, 0.50f},
+	{1004, 16, 16, 14, 5, 0.50f, 0.50f},
+	{1005, 24, 24, 16, 14, 0.50f, 0.50f},
+	{1006, 24, 24, 16, 14, 0.50f, 0.50f},
+	{1007, 16, 16, 8, 8, 0.55f, 0.55f},
+	{1000, 16, 16, 8, 8, 0.25f, 0.00f}, // Default cursor
+	{1001, 16, 16, 8, 8, 0.50f, 0.50f},
+	{1011, 32, 32, 16, 16, 0.50f, 0.50f},
+	{1000, 16, 16, 6, 1, 0.50f, 0.50f},
+	{1000, 16, 16, 8, 8, 0.00f, 0.25f} // Invisible cursor
+};
+
+class CursorData {
+public:
+	CursorData(int idx)
+		: _cursorData(availableCursors[idx]),
+		  transparency(_cursorData.transparency),
+		  nodeID(_cursorData.nodeID) {
+	}
+	Point getHotspot() { return Point(_cursorData.hotspotX, _cursorData.hotspotY); };
+	Rect size() { return Rect(_cursorData.width, _cursorData.height); }
+	
+	const uint32 nodeID;
+	const float transparency;
+
+private:
+	const CursorDataStruct _cursorData;
+};
 
 class Cursor : public Drawable {
 public:
@@ -42,17 +85,18 @@ public:
 	void lockPosition(bool lock);
 
 	/** Get the mouse cursor position */
-	Common::Point getPosition() const {
+	Point getPosition() const {
 		return _position;
 	}
-	
-	void updatePosition(const Common::Point &mouse);
+
+	void updatePosition(const Point &mouse);
 
 	void getDirection(float &pitch, float &heading);
 
 	void draw() override;
 	void setVisible(bool show);
 	bool isVisible();
+
 private:
 	Myst3Engine *_vm;
 
@@ -60,7 +104,7 @@ private:
 	int32 _hideLevel;
 
 	/** Position of the cursor */
-	Common::Point _position;
+	Point _position;
 
 	typedef Common::HashMap<uint32, Texture *> TextureMap;
 	TextureMap _textures;

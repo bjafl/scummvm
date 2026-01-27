@@ -29,7 +29,7 @@
 
 #include "common/config-manager.h"
 #include "common/debug.h"
-#include "common/rect.h"
+#include "engines/myst3/rect.h"
 
 namespace Myst3 {
 
@@ -43,7 +43,7 @@ void Face::setTextureFromBitmap(const ResourceDescription *bitmap) {
 	}
 
 	// Set the whole texture as dirty
-	addTextureDirtyRect(Common::Rect(_bitmap->w, _bitmap->h));
+	addTextureDirtyRect(Rect(_bitmap->w, _bitmap->h));
 }
 
 Face::Face(Myst3Engine *vm, bool is3D) :
@@ -55,7 +55,7 @@ Face::Face(Myst3Engine *vm, bool is3D) :
 		_finalBitmap(nullptr) {
 }
 
-void Face::addTextureDirtyRect(const Common::Rect &rect) {
+void Face::addTextureDirtyRect(const Rect &rect) {
 	if (!_textureDirty) {
 		_textureDirtyRect = rect;
 	} else {
@@ -233,7 +233,7 @@ void Node::loadSpotItem(const Common::String &room, uint16 id, int16 condition, 
 	_spotItems.push_back(spotItem);
 }
 
-SpotItemFace *Node::loadMenuSpotItem(int16 condition, const Common::Rect &rect) {
+SpotItemFace *Node::loadMenuSpotItem(int16 condition, const Rect &rect) {
 	SpotItem *spotItem = new SpotItem(_vm);
 
 	spotItem->setCondition(condition);
@@ -468,10 +468,10 @@ void SpotItemFace::initNotDrawn(uint16 width, uint16 height) {
 	}
 }
 
-Common::Rect SpotItemFace::getFaceRect() const {
+Rect SpotItemFace::getFaceRect() const {
 	assert(_bitmap);
 
-	Common::Rect r = Common::Rect(_bitmap->w, _bitmap->h);
+	Rect r = Rect(_bitmap->w, _bitmap->h);
 	r.translate(_posX, _posY);
 	return r;
 }

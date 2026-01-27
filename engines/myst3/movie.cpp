@@ -143,15 +143,15 @@ void Movie::loadPosition(const ResourceDescription::VideoData &videoData) {
 }
 
 void Movie::draw2d() {
-	FloatRect sceneViewport;
+	Rect sceneViewport;
 	if (_vm->_state->getViewType() == kMenu) {
-		sceneViewport = _vm->_layout->menuViewport();
+		sceneViewport = _vm->_gfx->viewport();
 	} else {
-		sceneViewport = _vm->_layout->frameViewport();
+		sceneViewport = _vm->_gfx->frameViewport();
 	}
 	// _vm->_gfx->setViewport(sceneViewport, false);
 
-	uint sceneHeight = _vm->_state->getViewType() == kMenu ? Renderer::kOriginalHeight : Renderer::kFrameHeight;
+	//uint sceneHeight = _vm->_state->getViewType() == kMenu ? Renderer::kOriginalHeight : Renderer::kFrameHeight;
 
 	// Upscaling ratio
 	float scaleRatio;
@@ -166,21 +166,21 @@ void Movie::draw2d() {
 	}
 
 	assert(scaleRatio > 0 && "Movie::draw2d: scaleRatio must be positive");
-
-	FloatRect screenRect = FloatSize(_bink.getWidth(), _bink.getHeight())
-	        .scale(1 / scaleRatio)
-	        .translate(FloatPoint(_posU, _posV))
-	        .normalize(FloatSize(Renderer::kOriginalWidth, sceneHeight));
+	Point textureSize(_bink.getWidth(), _bink.getHeight()); // X: width, y: height
+	textureSize = textureSize * (1 / scaleRatio);
+	Rect textureRect(textureSize.x, textureSize.y);
+	Rect screenRect(textureRect);//Point(_posU, _posV), textureSize.x, textureSize.y); //topLeft, width, height
+	screenRect.translate(_posU, _posV);
 
 	if (_resourceType == Archive::kModdedMovie) {
 		debugC(kDebugModding, "  screenRect=[%.2f,%.2f,%.2f,%.2f]",
-		       screenRect.left(), screenRect.top(), screenRect.right(), screenRect.bottom());
+		       screenRect.left, screenRect.top, screenRect.right, screenRect.bottom);
 	}
 
 	if (_forceOpaque)
-		_vm->_gfx->drawTexturedRect2D(screenRect, FloatRect::unit(), _texture);
+		_vm->_gfx->drawTexturedRect2D(screenRect, textureRect, _texture);
 	else
-		_vm->_gfx->drawTexturedRect2D(screenRect, FloatRect::unit(), _texture, (float) _transparency / 100, _additiveBlending);
+		_vm->_gfx->drawTexturedRect2D(screenRect, textureRect, _texture, (float) _transparency / 100, _additiveBlending);
 }
 
 void Movie::draw3d() {

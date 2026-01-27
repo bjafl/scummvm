@@ -33,41 +33,15 @@
 
 namespace Myst3 {
 
-struct CursorData {
-	uint32 nodeID;
-	uint16 width;
-	uint16 height;
-	uint16 hotspotX;
-	uint16 hotspotY;
-	float transparency;
-	float transparencyXbox;
-};
-
-static const CursorData availableCursors[] = {
-	{ 1000, 16, 16,  8,  8, 0.25f, 0.00f }, // Default cursor
-	{ 1001, 16, 16,  8,  8, 0.50f, 0.50f }, // On top of inventory item
-	{ 1002, 16, 16,  8,  8, 0.50f, 0.50f }, // Drag cursor
-	{ 1003, 16, 16,  1,  5, 0.50f, 0.50f },
-	{ 1004, 16, 16, 14,  5, 0.50f, 0.50f },
-	{ 1005, 24, 24, 16, 14, 0.50f, 0.50f },
-	{ 1006, 24, 24, 16, 14, 0.50f, 0.50f },
-	{ 1007, 16, 16,  8,  8, 0.55f, 0.55f },
-	{ 1000, 16, 16,  8,  8, 0.25f, 0.00f }, // Default cursor
-	{ 1001, 16, 16,  8,  8, 0.50f, 0.50f },
-	{ 1011, 32, 32, 16, 16, 0.50f, 0.50f },
-	{ 1000, 16, 16,  6,  1, 0.50f, 0.50f },
-	{ 1000, 16, 16,  8,  8, 0.00f, 0.25f }  // Invisible cursor
-};
-
 Cursor::Cursor(Myst3Engine *vm) :
 	_vm(vm),
+	_position(vm->_scene->getCenter()),
 	_hideLevel(0),
 	_lockedAtCenter(false) {
 
-	FloatRect frameViewport = _vm->_layout->frameViewport();
-	FloatPoint center = frameViewport.center();
-	_position.x = center.x();
-	_position.y = center.y();
+	// The cursor is manually scaled
+	_scaled = false;
+	_isConstrainedToWindow = false;
 
 	// Load available cursors
 	loadAvailableCursors();
@@ -135,50 +109,64 @@ void Cursor::lockPosition(bool lock) {
 
 	g_system->lockMouse(lock);
 
-	FloatRect frameViewport = _vm->_layout->frameViewport();
-	FloatPoint center = frameViewport.center();
-
+	Point center = _vm->_scene->getCenter();
 	if (_lockedAtCenter) {
 		// Locking, just move the cursor at the center of the screen
-		_position.x = center.x();
-		_position.y = center.y();
+		_position = center;
 	} else {
 		// Unlocking, warp the actual mouse position to the cursor
-		g_system->warpMouse(center.x(), center.y());
+		g_system->warpMouse(center.x, center.y);
 	}
 }
 
-void Cursor::updatePosition(const Common::Point &mouse) {
+void Cursor::updatePosition(const Point &mouse) {
 	if (!_lockedAtCenter) {
 		_position = mouse;
 	} else {
-		FloatRect frameViewport = _vm->_layout->frameViewport();
-		FloatPoint center = frameViewport.center();
-
-		_position.x = center.x();
-		_position.y = center.y();
+		_position = _vm->_scene->getCenter();
 	}
 }
+
+// Point Cursor::getPosition(bool scaled) {
+// 	if (scaled) {
+// 		Rect viewport = _vm->_gfx->viewport();
+
+// 		// The rest of the engine expects 640x480 coordinates
+// 		Point scaledPosition = _position;
+// 		scaledPosition.x -= viewport.left;
+// 		scaledPosition.y -= viewport.top;
+// 		scaledPosition.x = CLIP<int16>(scaledPosition.x, 0, viewport.width());
+// 		scaledPosition.y = CLIP<int16>(scaledPosition.y, 0, viewport.height());
+// 		scaledPosition.x *= Renderer::kOriginalWidth / (float) viewport.width();
+// 		scaledPosition.y *= Renderer::kOriginalHeight / (float) viewport.height();
+
+// 		return scaledPosition;
+// 	} else {
+// 		return _position;
+// 	}
+// }
 
 void Cursor::draw() {
 	assert(_currentCursorID < ARRAYSIZE(availableCursors));
 
-	const CursorData &cursor = availableCursors[_currentCursorID];
-
+	//const CursorData &cursor = availableCursors[_currentCursorID];
+	CursorData cursor(_currentCursorID);
+	Point cursorHotspot = cursor.getHotspot();
+	Rect cursorSize = cursor.size();
 	Texture *texture = _textures[cursor.nodeID];
 	if (!texture) {
 		error("No texture for cursor with id %d", cursor.nodeID);
 	}
 
 	// Rect where to draw the cursor
-	FloatRect viewport = _vm->_layout->unconstrainedViewport();
-	float scale = _vm->_layout->scale();
-	scale *= cursor.width / (float)texture->width;
-
-	FloatRect cursorRect = texture->size()
-	        .scale(scale)
-	        .translate(FloatPoint(_position.x - cursor.hotspotX * scale, _position.y - cursor.hotspotY * scale))
-	        .normalize(viewport.size());
+	Rect viewport = _vm->_gfx->viewport();
+	PointF scale = _vm->_gfx->getScale();
+	scale = scale * (cursorSize.width() / (float)texture->width);
+	
+	Rect cursorRect = texture->size();
+	cursorRect.setWidth(cursorRect.width() * scale.x);
+	cursorRect.setHeight(cursorRect.height() * scale.y);
+	cursorRect.translate(_position.x - cursorHotspot.x * scale.x, _position.y - cursorHotspot.y * scale.y);
 
 	float transparency = 1.0f;
 
@@ -191,7 +179,7 @@ void Cursor::draw() {
 	}
 
 	// _vm->_gfx->setViewport(viewport, false);
-	_vm->_gfx->drawTexturedRect2D(cursorRect, FloatRect::unit(), texture, transparency);
+	_vm->_gfx->drawTexturedRect2D(viewport, cursorRect, texture, transparency);
 }
 
 void Cursor::setVisible(bool show) {

@@ -28,7 +28,7 @@
 #include "common/hashmap.h"
 #include "common/memstream.h"
 #include "common/ptr.h"
-#include "common/rect.h"
+#include "engines/myst3/rect.h"
 #include "common/savefile.h"
 #include "common/str-array.h"
 
@@ -177,12 +177,12 @@ public:
 	virtual int16 update() = 0;
 
 protected:
-	FloatRect getPosition() const;
+	Rect getPosition() const;
 
 	Myst3Engine *_vm;
 	Video::BinkDecoder _bink;
 	Texture *_texture;
-	FloatSize _screenSize;
+	Rect _screenSize;
 
 	uint _buttonCount;
 };
@@ -196,12 +196,12 @@ public:
 	int16 update() override;
 
 private:
-	Common::Point getRelativeMousePosition() const;
+	Point getRelativeMousePosition() const;
 
 	uint16 _previousframe;
 	uint16 _frameToDisplay;
 
-	Common::Rect _buttons[3];
+	Rect _buttons[3];
 
 	void loadButtons();
 };

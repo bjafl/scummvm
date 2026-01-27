@@ -24,7 +24,7 @@
 
 #include "common/list.h"
 #include "common/memstream.h"
-#include "common/rect.h"
+#include "engines/myst3/rect.h"
 
 #include "engines/myst3/gfx.h"
 
@@ -37,12 +37,16 @@ class Texture;
 
 class Inventory : public Window {
 public:
+	static const int kInventoryTextureId = 1204;
+	static const int kInventoryTextoreOriginalWidth = 256;
+
 	Inventory(Myst3Engine *vm);
 	virtual ~Inventory();
 
 	// Window API
-	Common::Rect getPosition() const override;
-	Common::Rect getOriginalPosition() const override;
+	Rect getPosition() const override;
+	Rect getOriginalPosition() const override;
+	Rect getBottomBorder() const;
 
 	void loadFromState();
 	void updateState();
@@ -69,7 +73,7 @@ public:
 private:
 	struct InventoryItem {
 		uint16 var;
-		FloatRect rect;
+		Rect rect;
 	};
 
 	typedef Common::List<InventoryItem> ItemList;
@@ -112,9 +116,9 @@ private:
 
 	uint16 _frame;
 	Texture *_texture;
-	FloatSize _screenSize;
+	Rect _screenSize;
 
-	FloatRect getPosition();
+	Rect getPosition();
 };
 
 } // End of namespace Myst3

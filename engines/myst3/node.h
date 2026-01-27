@@ -26,7 +26,7 @@
 #include "engines/myst3/gfx.h"
 
 #include "common/array.h"
-#include "common/rect.h"
+#include "engines/myst3/rect.h"
 
 #include "graphics/surface.h"
 
@@ -48,14 +48,14 @@ public:
 
 	void setTextureFromBitmap(const ResourceDescription *jpegDesc);
 
-	void addTextureDirtyRect(const Common::Rect &rect);
+	void addTextureDirtyRect(const Rect &rect);
 	bool isTextureDirty() { return _textureDirty; }
 
 	void uploadTexture();
 
 private:
 	bool _textureDirty;
-	Common::Rect _textureDirtyRect;
+	Rect _textureDirtyRect;
 
 	Myst3Engine *_vm;
 	bool _is3D;
@@ -80,7 +80,7 @@ public:
 	uint16 getFadeValue() { return _fadeValue; }
 	void setFadeValue(uint16 value) { _fadeValue = value; }
 
-	Common::Rect getFaceRect() const;
+	Rect getFaceRect() const;
 
 private:
 	Face *_face;
@@ -140,7 +140,7 @@ public:
 	void drawOverlay() override;
 
 	void loadSpotItem(const Common::String &room, uint16 id, int16 condition, bool fade);
-	SpotItemFace *loadMenuSpotItem(int16 condition, const Common::Rect &rect);
+	SpotItemFace *loadMenuSpotItem(int16 condition, const Rect &rect);
 
 	void loadSubtitles(const Common::String &room, uint32 id);
 	bool hasSubtitlesToDraw();

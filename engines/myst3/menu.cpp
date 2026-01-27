@@ -29,6 +29,7 @@
 #include "engines/myst3/scene.h"
 #include "engines/myst3/sound.h"
 #include "engines/myst3/state.h"
+#include "engines/myst3/rect.h"
 
 #include "common/debug.h"
 #include "common/events.h"
@@ -40,6 +41,9 @@ namespace Myst3 {
 Dialog::Dialog(Myst3Engine *vm, uint id):
 	_vm(vm),
 	_texture(nullptr) {
+	// Draw on the whole screen
+	_isConstrainedToWindow = false;
+	_scaled = !_vm->isWideScreenModEnabled();
 
 	ResourceDescription countDesc = _vm->_resourceLoader->getFileDescription("DLGI", id, 0, Archive::kNumMetadata);
 	ResourceDescription movieDesc = _vm->_resourceLoader->getDialogMovie("DLOG", id);
@@ -68,7 +72,7 @@ Dialog::Dialog(Myst3Engine *vm, uint id):
 	// For modded resources, the screen size is that from the original file
 	if (movieDesc.getType() == Archive::kModdedMovie) {
 		ResourceDescription::VideoData videoData = movieDesc.getVideoData();
-		_screenSize = FloatSize(videoData.width, videoData.height);
+		_screenSize = Rect(videoData.width, videoData.height);
 		debugC(kDebugModding, "Dialog::Dialog: modded dialog id=%d, texture=%dx%d, screenSize=%.0fx%.0f (from metadata)",
 		       id, _texture->width, _texture->height, _screenSize.width(), _screenSize.height());
 	} else {
@@ -85,22 +89,15 @@ Dialog::~Dialog() {
 }
 
 void Dialog::draw() {
-	FloatRect screenRect = _vm->_layout->unconstrainedViewport();
-
-	FloatRect position = getPosition()
-	        .normalize(screenRect.size());
-
-	// _vm->_gfx->setViewport(screenRect, false);
-	_vm->_gfx->drawTexturedRect2D(position, FloatRect::unit(), _texture);
+	Rect textureRect = Rect(_texture->width, _texture->height);
+	Rect scaledTextureRect = _vm->_gfx->scaleRect(textureRect);
+	_vm->_gfx->drawTexturedRect2D(getPosition(), scaledTextureRect, _texture);
 }
 
-FloatRect Dialog::getPosition() const {
-	FloatRect screenRect = _vm->_layout->unconstrainedViewport();
-	float scale = _vm->_layout->scale();
-
-	return _screenSize
-	        .scale(scale)
-	        .centerIn(screenRect);
+Rect Dialog::getPosition() const {
+	//TODO?: _scaled check (orig game width height)
+	Rect screenRect = _vm->_gfx->createScaledRect(_texture->width, _texture->height, true);
+	return screenRect;
 }
 
 ButtonsDialog::ButtonsDialog(Myst3Engine *vm, uint id):
@@ -125,7 +122,7 @@ void ButtonsDialog::loadButtons() {
 		uint32 top = buttonsDesc.getMiscData(i * 4 + 1);
 		uint32 width = buttonsDesc.getMiscData(i * 4 + 2);
 		uint32 height = buttonsDesc.getMiscData(i * 4 + 3);
-		_buttons[i] = Common::Rect(width, height);
+		_buttons[i] = Rect(width, height);
 		_buttons[i].translate(left, top);
 	}
 }
@@ -155,19 +152,18 @@ int16 ButtonsDialog::update() {
 		if (event.type == Common::EVENT_MOUSEMOVE) {
 			// Compute local mouse coordinates
 			_vm->_cursor->updatePosition(event.mouse);
-			Common::Point localMouse = getRelativeMousePosition();
-			float scale = _vm->_layout->scale();
+			Point localMouse = getRelativeMousePosition();
 
 			// No hovered button
 			_frameToDisplay = 0;
 
 			// Display the frame corresponding to the hovered button
 			for (uint i = 0; i < _buttonCount; i++) {
-				Common::Rect button = _buttons[i];
-				FloatRect buttonRect = FloatRect(button.left, button.top, button.right, button.bottom)
-				        .scale(scale);
+				Rect button = _buttons[i];
+				Rect buttonRect(button.left, button.top, button.right, button.bottom);
+				buttonRect = _vm->_gfx->scaleRect(buttonRect);
 
-				if (buttonRect.contains(FloatPoint(localMouse.x, localMouse.y))) {
+				if (buttonRect.contains(Point(localMouse.x, localMouse.y))) {
 					_frameToDisplay = i + 1;
 					debugC(kDebugModding, "Hovering button#%d", i);
 					break;
@@ -192,12 +188,11 @@ int16 ButtonsDialog::update() {
 	return -2;
 }
 
-Common::Point ButtonsDialog::getRelativeMousePosition() const {
-	FloatRect position = getPosition();
-	Common::Point localMouse =_vm->_cursor->getPosition();
-	localMouse.x -= position.left();
-	localMouse.y -= position.top();
-	return localMouse;
+Point ButtonsDialog::getRelativeMousePosition() const {
+	Rect position = getPosition();
+	Point topLeft(position.left, position.top);
+	Point localMouse =_vm->_cursor->getPosition();
+	return localMouse - topLeft;
 }
 
 GamepadDialog::GamepadDialog(Myst3Engine *vm, uint id):
@@ -446,7 +441,7 @@ Graphics::Surface *Menu::createThumbnail(Graphics::Surface *big) {
 	small->create(GameState::kThumbnailWidth, GameState::kThumbnailHeight, Texture::getRGBAPixelFormat());
 
 	// The portion of the screenshot to keep
-	Common::Rect frame = _vm->_scene->getPosition();
+	Rect frame = _vm->_scene->getPosition();
 	Graphics::Surface frameSurface = big->getSubArea(frame);
 
 	uint32 *dst = (uint32 *)small->getPixels();
@@ -727,12 +722,12 @@ void PagingMenu::draw() {
 		PolarRect rect = nodeData->hotspots[i + 1].rects[0];
 
 		Common::String display = prepareSaveNameForDisplay(_saveLoadFiles[itemToDisplay]);
-		_vm->_gfx->draw2DText(display, Common::Point(rect.centerPitch, rect.centerHeading));
+		_vm->_gfx->draw2DText(display, Point(rect.centerPitch, rect.centerHeading));
 	}
 
 	if (!_saveLoadAgeName.empty()) {
 		PolarRect rect = nodeData->hotspots[8].rects[0];
-		_vm->_gfx->draw2DText(_saveLoadAgeName, Common::Point(rect.centerPitch, rect.centerHeading));
+		_vm->_gfx->draw2DText(_saveLoadAgeName, Point(rect.centerPitch, rect.centerHeading));
 	}
 
 	// Save screen specific
@@ -753,7 +748,7 @@ void PagingMenu::draw() {
 		}
 
 		PolarRect rect = nodeData->hotspots[9].rects[0];
-		_vm->_gfx->draw2DText(display, Common::Point(rect.centerPitch, rect.centerHeading));
+		_vm->_gfx->draw2DText(display, Point(rect.centerPitch, rect.centerHeading));
 	}
 }
 
@@ -829,12 +824,12 @@ void AlbumMenu::draw() {
 		return;
 
 	if (!_saveLoadAgeName.empty()) {
-		Common::Point p(184 - (13 * _saveLoadAgeName.size()) / 2, 305);
+		Point p(184 - (13 * _saveLoadAgeName.size()) / 2, 305);
 		_vm->_gfx->draw2DText(_saveLoadAgeName, p);
 	}
 
 	if (!_saveLoadTime.empty()) {
-		Common::Point p(184 - (13 * _saveLoadTime.size()) / 2, 323);
+		Point p(184 - (13 * _saveLoadTime.size()) / 2, 323);
 		_vm->_gfx->draw2DText(_saveLoadTime, p);
 	}
 }

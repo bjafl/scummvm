@@ -504,7 +504,7 @@ void Script::spotItemAddCondFade(Context &c, const Opcode &cmd) {
 void Script::spotItemAddMenu(Context &c, const Opcode &cmd) {
 	debugC(kDebugScript, "Opcode %d: Add menu spotitem %d with condition %d", cmd.op, cmd.args[0], cmd.args[1]);
 
-	Common::Rect rect = Common::Rect(cmd.args[4], cmd.args[5]);
+	Rect rect = Rect(cmd.args[4], cmd.args[5]);
 	rect.translate(cmd.args[2], cmd.args[3]);
 
 	_vm->addMenuSpotItem(cmd.args[0], cmd.args[1], rect);
@@ -1655,10 +1655,10 @@ void Script::ifMouseIsInRect(Context &c, const Opcode &cmd) {
 	debugC(kDebugScript, "Opcode %d: If mouse in rect l%d t%d w%d h%d",
 	       cmd.op, cmd.args[0], cmd.args[1], cmd.args[2], cmd.args[3]);
 
-	Common::Rect r = Common::Rect(cmd.args[2], cmd.args[3]);
+	Rect r = Rect(cmd.args[2], cmd.args[3]);
 	r.translate(cmd.args[0], cmd.args[1]);
 
-	Common::Point mouse = _vm->_cursor->getPosition();
+	Point mouse = _vm->_cursor->getPosition();
 	mouse = _vm->_scene->scalePoint(mouse);
 
 	if (r.contains(mouse))
@@ -1695,7 +1695,7 @@ void Script::leverDrag(Context &c, const Opcode &cmd) {
 
 			ratioPosition = distanceToMax < amplitude ? distanceToMin / amplitude : 0.0;
 		} else {
-			Common::Point mouse = _vm->_cursor->getPosition();
+			Point mouse = _vm->_cursor->getPosition();
 			mouse = _vm->_scene->scalePoint(mouse);
 			int16 amplitude;
 			int16 pixelPosition;
@@ -1834,14 +1834,14 @@ void Script::leverDragXY(Context &c, const Opcode &cmd) {
 	uint16 maxLeverPosition = cmd.args[3];
 	uint16 script = _vm->_state->valueOrVarValue(cmd.args[4]);
 
-	Common::Point mouseInit = _vm->_cursor->getPosition();
+	Point mouseInit = _vm->_cursor->getPosition();
 	mouseInit = _vm->_scene->scalePoint(mouseInit);
 
 	_vm->_cursor->changeCursor(2);
 
 	bool mousePressed = true;
 	do {
-		Common::Point mouse = _vm->_cursor->getPosition();
+		Point mouse = _vm->_cursor->getPosition();
 		mouse = _vm->_scene->scalePoint(mouse);
 		int16 distanceX = (mouseInit.x - mouse.x) / scale;
 		int16 distanceY = (mouseInit.y - mouse.y) / scale;
@@ -1897,7 +1897,7 @@ void Script::runScriptWhileDragging(Context &c, const Opcode &cmd) {
 
 		if (!dragWithDirectionKeys) {
 			// Distance between the mouse and the lever
-			Common::Point mouse = _vm->_cursor->getPosition();
+			Point mouse = _vm->_cursor->getPosition();
 			mouse = _vm->_scene->scalePoint(mouse);
 			int16 distanceX = mouse.x - leverWidth / 2 - _vm->_state->getVar(cmd.args[0]);
 			int16 distanceY = mouse.y - leverHeight / 2 - _vm->_state->getVar(cmd.args[1]);

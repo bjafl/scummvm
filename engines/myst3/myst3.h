@@ -30,6 +30,7 @@
 #include "common/system.h"
 
 #include "engines/myst3/archive.h"
+#include "engines/myst3/rect.h"
 #include "engines/myst3/resource_loader.h"
 
 namespace Graphics {
@@ -69,7 +70,6 @@ class GameState;
 class HotSpot;
 class Cursor;
 class Inventory;
-class Layout;
 class Database;
 class Scene;
 class Script;
@@ -107,7 +107,6 @@ public:
 	Database *_db;
 	Sound *_sound;
 	Ambient *_ambient;
-	Layout *_layout;
 
 	Common::RandomSource *_rnd;
 
@@ -170,7 +169,7 @@ public:
 	void setMovieLooping(uint16 id, bool loop);
 
 	void addSpotItem(uint16 id, int16 condition, bool fade);
-	SpotItemFace *addMenuSpotItem(uint16 id, int16 condition, const Common::Rect &rect);
+	SpotItemFace *addMenuSpotItem(uint16 id, int16 condition, const Rect &rect);
 	void loadNodeSubtitles(uint32 id);
 
 	void addSunSpot(uint16 pitch, uint16 heading, uint16 intensity,

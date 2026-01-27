@@ -39,7 +39,7 @@ Scene::Scene(Myst3Engine *vm) :
 	updateMouseSpeed();
 }
 
-void Scene::updateCamera(Common::Point &mouse) {
+void Scene::updateCamera(const Point &mouse) {
 	float pitch = _vm->_state->getLookAtPitch();
 	float heading = _vm->_state->getLookAtHeading();
 
@@ -47,7 +47,7 @@ void Scene::updateCamera(Common::Point &mouse) {
 		float speed = 25 / (float)(200 - _mouseSpeed);
 
 		// Adjust the speed according to the resolution
-		float scale = _vm->_layout->scale();
+		float scale = _vm->_gfx->getScale().x;
 		speed /= scale;
 
 		if (ConfMan.getBool("mouse_inverted")) {
@@ -100,7 +100,7 @@ void Scene::updateCamera(Common::Point &mouse) {
 }
 
 void Scene::drawSunspotFlare(const SunSpot &s) {
-	// Common::Rect frame = Common::Rect(Renderer::kOriginalWidth, Renderer::kFrameHeight);
+	Rect frame = _vm->_gfx->frameViewport();
 
 	uint8 a = (uint8)(s.intensity * s.radius);
 	uint8 r = (s.color >> 16) & 0xFF;
@@ -108,11 +108,7 @@ void Scene::drawSunspotFlare(const SunSpot &s) {
 	uint8 b = (s.color >>  0) & 0xFF;
 
 	_vm->_gfx->selectTargetWindow(this, false, true);
-	//TODO: check target viewport selection. Ref from residualvm below
-	// FloatRect viewport = _vm->_layout->frameViewport();
-	// _vm->_gfx->setViewport(viewport, false);
-	_vm->_gfx->drawRect2D(FloatRect::unit(), a, r, g, b);
-	// _vm->_gfx->drawRect2D(frame, a, r, g, b);
+	_vm->_gfx->drawRect2D(frame, a, r, g, b);
 }
 
 
@@ -142,10 +138,10 @@ void Scene::updateMouseSpeed() {
 	_mouseSpeed = ConfMan.getInt("mouse_speed");
 }
 
-Common::Rect Scene::getPosition() const {
-	FloatRect screen = _vm->_gfx->viewport();
+Rect Scene::getPosition() const {
+	Rect screen = _vm->_gfx->viewport();
 
-	Common::Rect frame;
+	Rect frame;
 	if (_vm->isWideScreenModEnabled()) {
 		int32 viewportWidth = Renderer::kOriginalWidth;
 
@@ -157,7 +153,7 @@ Common::Rect Scene::getPosition() const {
 		}
 
 		// Aspect ratio correction
-		frame = Common::Rect(MIN<int32>(screen.width(), screen.height() * viewportWidth / viewportHeight),
+		frame = Rect(MIN<int32>(screen.width(), screen.height() * viewportWidth / viewportHeight),
 		                     MIN<int32>(screen.height(), screen.width() * viewportHeight / viewportWidth));
 
 		// Pillarboxing
@@ -173,35 +169,35 @@ Common::Rect Scene::getPosition() const {
 		frame.translate(left, top);
 	} else {
 		if (_vm->_state->getViewType() != kMenu) {
-			frame = Common::Rect(screen.width(), screen.height() * Renderer::kFrameHeight / Renderer::kOriginalHeight);
-			frame.translate(screen.left(), screen.top() + screen.height() * Renderer::kTopBorderHeight / Renderer::kOriginalHeight);
+			frame = Rect(screen.width(), screen.height() * Renderer::kFrameHeight / Renderer::kOriginalHeight);
+			frame.translate(screen.left, screen.top + screen.height() * Renderer::kTopBorderHeight / Renderer::kOriginalHeight);
 		} else {
-			frame = screen.toRect();
+			frame = screen;
 		}
 	}
 
 	return frame;
 }
 
-Common::Rect Scene::getOriginalPosition() const {
-	Common::Rect originalPosition;
+Rect Scene::getOriginalPosition() const {
+	Rect originalPosition;
 
 	if (_vm->_state->getViewType() != kMenu) {
-		originalPosition = Common::Rect(Renderer::kOriginalWidth, Renderer::kFrameHeight);
+		originalPosition = Rect(Renderer::kOriginalWidth, Renderer::kFrameHeight);
 		originalPosition.translate(0, Renderer::kTopBorderHeight);
 	} else {
-		originalPosition = Common::Rect(Renderer::kOriginalWidth, Renderer::kOriginalHeight);
+		originalPosition = Rect(Renderer::kOriginalWidth, Renderer::kOriginalHeight);
 	}
 
 	return originalPosition;
 }
 
-void Scene::screenPosToDirection(const Common::Point &screen, float &pitch, float &heading) const {
-	// Common::Rect frame = getPosition();
-	FloatRect frame = _vm->_layout->frameViewport();
+void Scene::screenPosToDirection(const Point &screen, float &pitch, float &heading) const {
+	// Rect frame = getPosition();
+	Rect frame = _vm->_gfx->frameViewport();
 
 	// Screen coords to window coords
-	Common::Point pos = screenPosToWindowPos(screen);
+	Point pos = screenPosToWindowPos(screen);
 
 	// Window coords to normalized coords
 	Math::Vector4d in;
@@ -230,20 +226,20 @@ void Scene::screenPosToDirection(const Common::Point &screen, float &pitch, floa
 }
 
 //TODO: below ported from residualvm. Check if it may / should be used, or remove. Compare with func in base class..
-Common::Point Scene::scalePoint(const Common::Point &screen) const {
-	FloatRect viewport;
-	FloatSize originalSize;
+Point Scene::scalePoint(const Point &screen) const {
+	Rect viewport;
+	Rect originalSize;
 	if (_vm->_state->getViewType() == kMenu) {
-		viewport = _vm->_layout->menuViewport();
-		originalSize = FloatSize(Renderer::kOriginalWidth, Renderer::kOriginalHeight);
+		viewport = _vm->_gfx->viewport();//TODO?menuViewport();
+		originalSize = Rect(Renderer::kOriginalWidth, Renderer::kOriginalHeight);
 	} else {
-		viewport = _vm->_layout->frameViewport();
-		originalSize = FloatSize(Renderer::kOriginalWidth, Renderer::kFrameHeight);
+		viewport = _vm->_gfx->frameViewport();
+		originalSize = Rect(Renderer::kOriginalWidth, Renderer::kFrameHeight);
 	}
 
-	Common::Point scaledPosition = screen;
-	scaledPosition.x -= viewport.left();
-	scaledPosition.y -= viewport.top();
+	Point scaledPosition = screen;
+	scaledPosition.x -= viewport.left;
+	scaledPosition.y -= viewport.top;
 	scaledPosition.x = CLIP<int16>(scaledPosition.x, 0, viewport.width());
 	scaledPosition.y = CLIP<int16>(scaledPosition.y, 0, viewport.height());
 

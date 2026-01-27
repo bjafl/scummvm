@@ -37,8 +37,8 @@ public:
 	virtual ~Subtitles();
 
 	// Window API
-	Common::Rect getPosition() const override;
-	Common::Rect getOriginalPosition() const override;
+	Rect getPosition() const override;
+	Rect getOriginalPosition() const override;
 
 	void setFrame(int32 frame);
 	void drawOverlay() override;

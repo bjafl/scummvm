@@ -1147,7 +1147,7 @@ void Puzzles::journalSaavedro(int16 move) {
 
 			// Create a spotitem covering the left half of the screen
 			// to display the left page
-			Common::Rect leftFrameHalf(Renderer::kOriginalWidth / 2, Renderer::kFrameHeight);
+			Rect leftFrameHalf(Renderer::kOriginalWidth / 2, Renderer::kFrameHeight);
 			SpotItemFace *leftPage = _vm->addMenuSpotItem(999, 1, leftFrameHalf);
 
 			Graphics::Surface *bitmap;
@@ -1519,7 +1519,7 @@ void Puzzles::mainMenu(uint16 action) {
 	_vm->setMenuAction(action);
 }
 
-static void copySurfaceRect(Graphics::Surface *dest, const Common::Point &destPoint, const Graphics::Surface *src) {
+static void copySurfaceRect(Graphics::Surface *dest, const Point &destPoint, const Graphics::Surface *src) {
 	for (uint16 i = 0; i < src->h; i++)
 		memcpy(dest->getBasePtr(destPoint.x, i + destPoint.y), src->getBasePtr(0, i), src->pitch);
 }
@@ -1549,7 +1549,7 @@ void Puzzles::projectorLoadBitmap(uint16 bitmap) {
 	for (uint i = 0; i < 1024; i += 256) {
 		for (uint j = 0; j < 1024; j += 256) {
 			const Graphics::Surface *frame = bink.decodeNextFrame();
-			copySurfaceRect(_vm->_projectorBackground, Common::Point(j, i), frame);
+			copySurfaceRect(_vm->_projectorBackground, Point(j, i), frame);
 		}
 	}
 }
@@ -1578,7 +1578,7 @@ void Puzzles::projectorAddSpotItem(uint16 bitmap, uint16 x, uint16 y) {
 	bink.start();
 
 	const Graphics::Surface *frame = bink.decodeNextFrame();
-	copySurfaceRect(_vm->_projectorBackground, Common::Point(x, y), frame);
+	copySurfaceRect(_vm->_projectorBackground, Point(x, y), frame);
 }
 
 void Puzzles::projectorUpdateCoordinates() {

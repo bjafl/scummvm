@@ -23,7 +23,7 @@
 #define EFFECTS_H_
 
 #include "common/hashmap.h"
-#include "common/rect.h"
+#include "engines/myst3/rect.h"
 
 #include "graphics/surface.h"
 
@@ -53,7 +53,7 @@ public:
 		FaceMask();
 		~FaceMask();
 
-		static Common::Rect getBlockRect(uint x, uint y);
+		static Rect getBlockRect(uint x, uint y);
 
 		Graphics::Surface *surface;
 		bool block[10][10];
@@ -73,7 +73,7 @@ public:
 		return face < _facesMasks.size() && _facesMasks[face];
 	}
 
-	Common::Rect getUpdateRectForFace(uint face);
+	Rect getUpdateRectForFace(uint face);
 
 	// Public and static for use by the debug console
 	static FaceMask *loadMask(Common::SeekableReadStream *maskStream);

@@ -22,7 +22,7 @@
 #ifndef HOTSPOT_H_
 #define HOTSPOT_H_
 
-#include "common/rect.h"
+#include "engines/myst3/rect.h"
 #include "common/array.h"
 
 namespace Myst3 {
@@ -56,7 +56,7 @@ public:
 	Common::Array<Opcode> script;
 
 	int32 isPointInRectsCube(float pitch, float heading);
-	int32 isPointInRectsFrame(GameState *state, const Common::Point &p);
+	int32 isPointInRectsFrame(GameState *state, const Point &p);
 	bool isEnabled(GameState *state, uint16 var = 0);
 
 private:
