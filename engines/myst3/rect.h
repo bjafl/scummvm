@@ -37,7 +37,7 @@ struct Rect : public Common::RectBase<int16, Rect, Point> {
 	constexpr Rect(const Point &topLeft, int16 w, int16 h) : RectBase(topLeft, w, h) {}
 	Rect(int16 x1, int16 y1, int16 x2, int16 y2) : RectBase(x1, y1, x2, y2) {}
     operator Common::Rect() const {
-        return Common::Rect(top, left, bottom, right);
+        return Common::Rect(left, top, right, bottom);
     }
 	Rect centerIn(const Rect &rect) const {
 	Rect r(rect);

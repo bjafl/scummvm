@@ -191,15 +191,15 @@ void Inventory::reflow() {
 		const ItemData &item = getData(it->var);
 
 		PointF itemSize = PointF(item.textureWidth, item.textureHeight) * scaleVector;
-		
+
 		uint16 top = (bottomBorder.height() - itemSize.y) / 2;
 
-		it->rect.translate(bottomBorder.left + left, bottomBorder.top + top);
+		it->rect = Rect(Point(bottomBorder.left + left, bottomBorder.top + top), (int16)itemSize.x, (int16)itemSize.y);
 
 		left += itemSize.x;
 
 		if (itemCount >= 2)
-			left += 9 * itemSize.x;
+			left += 9 * scaleVector.x;
 	}
 }
 
@@ -372,13 +372,10 @@ DragItem::~DragItem() {
 }
 
 void DragItem::drawOverlay() {
-	Rect viewport = _vm->_gfx->viewport();
-
 	Rect itemRect = getPosition();
-	        //.normalize(viewport.size());
 
 	// _vm->_gfx->setViewport(viewport, false);
-	_vm->_gfx->drawTexturedRect2D(itemRect, viewport, _texture, 0.99f);
+	_vm->_gfx->drawTexturedRect2D(itemRect, Rect(_texture->width, _texture->height), _texture, 0.99f);
 }
 
 void DragItem::setFrame(uint16 frame) {
@@ -402,8 +399,7 @@ Rect DragItem::getPosition() {
 	            CLIP<float>(mouse.x, viewport.left + itemSize.width()  / 2, viewport.right  - itemSize.width()  / 2),
 	            CLIP<float>(mouse.y, viewport.top  + itemSize.height() / 2, viewport.bottom - itemSize.height() / 2)
 	);
-	Point itemSizeCenter = itemSize.center();
-	Point topLeftTarget = itemTargetCenter - (itemSizeCenter / 2);
+	Point topLeftTarget = itemTargetCenter - itemSize.center();
 	return Rect(topLeftTarget, itemSize.width(), itemSize.height());
 }
 

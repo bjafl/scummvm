@@ -179,7 +179,7 @@ void Cursor::draw() {
 	}
 
 	// _vm->_gfx->setViewport(viewport, false);
-	_vm->_gfx->drawTexturedRect2D(viewport, cursorRect, texture, transparency);
+	_vm->_gfx->drawTexturedRect2D(cursorRect, Rect(texture->width, texture->height), texture, transparency);
 }
 
 void Cursor::setVisible(bool show) {
