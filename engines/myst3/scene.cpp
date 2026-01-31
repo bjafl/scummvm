@@ -243,8 +243,8 @@ Point Scene::scalePoint(const Point &screen) const {
 	scaledPosition.x = CLIP<int16>(scaledPosition.x, 0, viewport.width());
 	scaledPosition.y = CLIP<int16>(scaledPosition.y, 0, viewport.height());
 
-	scaledPosition.x *= originalSize.width()  / viewport.width();
-	scaledPosition.y *= originalSize.height() / viewport.height();
+	scaledPosition.x *= originalSize.width()  / (float)viewport.width();
+	scaledPosition.y *= originalSize.height() / (float)viewport.height();
 
 	return scaledPosition;
 }

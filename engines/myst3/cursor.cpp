@@ -36,6 +36,7 @@ namespace Myst3 {
 Cursor::Cursor(Myst3Engine *vm) :
 	_vm(vm),
 	_position(vm->_scene->getCenter()),
+	_currentCursorID(0),
 	_hideLevel(0),
 	_lockedAtCenter(false) {
 
@@ -69,6 +70,8 @@ void Cursor::loadAvailableCursors() {
 		// Create and store the texture
 		Texture *cursorTexture = textureLoader.load(cursorDesc, TextureLoader::kImageFormatBMP);
 		_textures.setVal(availableCursors[i].nodeID, cursorTexture);
+
+		debugC(kDebugModding, "Cursor loaded - id: %d", availableCursors[i].nodeID);
 	}
 }
 

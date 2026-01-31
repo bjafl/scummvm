@@ -48,11 +48,11 @@ void NodeFrame::draw() {
 		screenRect = _vm->_gfx->frameViewport();
 	}
 
-	// Used fragment of texture
-	Rect textureRect = Rect(screenRect.width(), screenRect.height());
-
 	// Update the OpenGL texture if needed
 	_faces[0]->uploadTexture();
+
+	// Used fragment of texture (full texture)
+	Rect textureRect = Rect(_faces[0]->_texture->width, _faces[0]->_texture->height);
 
 	// Draw
 	_vm->_gfx->drawTexturedRect2D(screenRect, textureRect, _faces[0]->_texture);

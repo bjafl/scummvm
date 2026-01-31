@@ -90,8 +90,7 @@ Dialog::~Dialog() {
 
 void Dialog::draw() {
 	Rect textureRect = Rect(_texture->width, _texture->height);
-	Rect scaledTextureRect = _vm->_gfx->scaleRect(textureRect);
-	_vm->_gfx->drawTexturedRect2D(getPosition(), scaledTextureRect, _texture);
+	_vm->_gfx->drawTexturedRect2D(getPosition(), textureRect, _texture);
 }
 
 Rect Dialog::getPosition() const {
