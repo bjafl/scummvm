@@ -175,7 +175,7 @@ Rect Scene::getPosition() const {
 			frame = screen;
 		}
 	}
-
+	debugC(kDebugUi, "Scene frame x1,y1,x2,y2: %d,%d,%d,%d", frame.top, frame.left, frame.bottom, frame.right);
 	return frame;
 }
 

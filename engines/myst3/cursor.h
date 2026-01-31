@@ -32,7 +32,7 @@ namespace Myst3 {
 class Myst3Engine;
 class Texture;
 
-struct CursorDataStruct {
+struct CursorDataStruct{
 	uint32 nodeID;
 	uint16 width;
 	uint16 height;
@@ -58,22 +58,29 @@ static const CursorDataStruct availableCursors[] = {
 	{1000, 16, 16, 8, 8, 0.00f, 0.25f} // Invisible cursor
 };
 
-class CursorData {
-public:
-	CursorData(int idx)
-		: _cursorData(availableCursors[idx]),
-		  transparency(_cursorData.transparency),
-		  nodeID(_cursorData.nodeID) {
-	}
-	Point getHotspot() { return Point(_cursorData.hotspotX, _cursorData.hotspotY); };
-	Rect size() { return Rect(_cursorData.width, _cursorData.height); }
-	
-	const uint32 nodeID;
-	const float transparency;
-
-private:
-	const CursorDataStruct _cursorData;
+struct CursorData : CursorDataStruct {
+	//constexpr CursorData(uint32 id, uint16 w, uint16 h, uint16 hotX, uint16 hotY, float t, float tXbox) : CursorDataStruct({id,w,h,hotX,hotY,t,tXbox}){}//: nodeID(id), width(w), height(h), hotspotX(hotX), hotspotY(hotY), transparency(t), transparencyXbox(tXbox) {};
+	constexpr CursorData(int idx) : CursorDataStruct(availableCursors[idx]) {};
+	Rect size() { return Rect(width, height); }
+	Point getHotspot() { return Point(hotspotX, hotspotY); }
 };
+
+// class CursorData {
+// public:
+// 	CursorData(int idx)
+// 		: _cursorData(availableCursors[idx]),
+// 		  transparency(_cursorData.transparency),
+// 		  nodeID(_cursorData.nodeID) {
+// 	}
+// 	Point getHotspot() { return Point(_cursorData.hotspotX, _cursorData.hotspotY); };
+// 	Rect size() { return Rect(_cursorData.width, _cursorData.height); }
+	
+// 	const uint32 nodeID;
+// 	const float transparency;
+
+// private:
+// 	const CursorDataStruct _cursorData;
+// };
 
 class Cursor : public Drawable {
 public:

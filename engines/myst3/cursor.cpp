@@ -83,7 +83,7 @@ Cursor::~Cursor() {
 }
 
 void Cursor::changeCursor(uint32 index) {
-	if (index >= ARRAYSIZE(availableCursors))
+	if (index >= ARRAYSIZE(availableCursors) || index < 0)
 		return;
 
 	if (_vm->getPlatform() == Common::kPlatformXbox) {
