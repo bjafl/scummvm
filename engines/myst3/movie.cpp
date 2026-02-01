@@ -177,6 +177,7 @@ void Movie::draw2d() {
 		       screenRect.left, screenRect.top, screenRect.right, screenRect.bottom);
 	}
 
+    debugC(kDebugVideo, "Movie drawTexturedRect2D - screen [%dx%d], texture [%dx%d]", screenRect.width(), screenRect.height(), textureRect.width(), textureRect.height());
 	if (_forceOpaque)
 		_vm->_gfx->drawTexturedRect2D(screenRect, textureRect, _texture);
 	else

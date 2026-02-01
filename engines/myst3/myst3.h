@@ -51,6 +51,7 @@ enum {
 	kDebugNode,
 	kDebugScript,
 	kDebugVideo,
+	kDebugGraphics,
 	kDebugUi,
 	kDebugModding
 };

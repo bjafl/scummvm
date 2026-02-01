@@ -177,7 +177,7 @@ Rect Renderer::origAspectRatioViewport() const {
 	Rect screen(_system->getWidth(), _system->getHeight());
 	Rect origFrame(kOriginalWidth, kOriginalHeight);
 	Rect scaledFrame = origFrame.fitInside(screen);
-	debugC(kDebugUi, "OrigAspectRatioViewport - screen (%dx%d), orig (%dx%d), scaled (%dx%d)", screen.width(), screen.height(), origFrame.width(), origFrame.height(), scaledFrame.width(), scaledFrame.height());
+	debugC(kDebugGraphics, "OrigAspectRatioViewport - screen (%dx%d), orig (%dx%d), scaled (%dx%d)", screen.width(), screen.height(), origFrame.width(), origFrame.height(), scaledFrame.width(), scaledFrame.height());
 	return scaledFrame;
 }
 

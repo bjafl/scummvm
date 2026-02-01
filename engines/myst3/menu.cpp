@@ -89,8 +89,10 @@ Dialog::~Dialog() {
 }
 
 void Dialog::draw() {
-	Rect textureRect = Rect(_texture->width, _texture->height);
-	_vm->_gfx->drawTexturedRect2D(getPosition(), textureRect, _texture);
+	Rect textureRect(_texture->width, _texture->height);
+	Rect screenRect = getPosition();
+	_vm->_gfx->drawTexturedRect2D(screenRect, textureRect, _texture);
+    debugC(kDebugGraphics, "Dialog drawTexturedRect2D - screen [%dx%d], texture [%dx%d]", screenRect.width(), screenRect.height(), textureRect.width(), textureRect.height());
 }
 
 Rect Dialog::getPosition() const {

@@ -102,6 +102,7 @@ void Inventory::draw() {
 		//TODO: Normalize?
 
 		_vm->_gfx->drawTexturedRect2D(it->rect, textureRect, _texture);
+    debugC(kDebugGraphics, "Inventory drawTexturedRect2D - screen [%dx%d], texture [%dx%d]", it->rect.width(), it->rect.height(), textureRect.width(), textureRect.height());
 	}
 }
 

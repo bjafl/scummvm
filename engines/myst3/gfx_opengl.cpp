@@ -27,6 +27,7 @@
 #include "graphics/opengl/context.h"
 #include "graphics/surface.h"
 
+#include "engines/myst3/myst3.h"
 #include "engines/myst3/gfx.h"
 #include "engines/myst3/gfx_opengl.h"
 #include "engines/myst3/gfx_opengl_texture.h"
@@ -164,6 +165,8 @@ void OpenGLRenderer::drawRect2D(const Rect &screenRect, uint8 a, uint8 r, uint8 
 
 void OpenGLRenderer::drawTexturedRect2D(const Rect &screenRect, const Rect &textureRect, Texture *texture,
 	                        			float transparency, bool additiveBlending) {
+	
+    debugC(kDebugGraphics, "OpenGL drawTexturedRect2D - screen [%dx%d], texture [%dx%d]", screenRect.width(), screenRect.height(), textureRect.width(), textureRect.height());
 	OpenGLTexture *glTexture = static_cast<OpenGLTexture *>(texture);
 
 	const float tLeft   = textureRect.left   * glTexture->width  / (float)glTexture->internalWidth;

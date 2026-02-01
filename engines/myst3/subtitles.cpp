@@ -487,10 +487,12 @@ void Subtitles::drawOverlay() {
 		Rect textureRect = _vm->_gfx->createScaledRect(_texture->width, _texture->height).centerIn(blackRect);
 
 		_vm->_gfx->drawTexturedRect2D(bottomBorder, textureRect, _texture);
+    debugC(kDebugGraphics, "Subtitles drawTexturedRect2D - screen [%dx%d], texture [%dx%d]", bottomBorder.width(), bottomBorder.height(), textureRect.width(), textureRect.height());
 	} else {
 		Rect subtitlesRect = Rect(_texture->width, _texture->height).centerIn(bottomBorder);
 
 		_vm->_gfx->drawTexturedRect2D(bottomBorder, subtitlesRect, _texture);
+    debugC(kDebugGraphics, "Subtitles drawTexturedRect2D - screen [%dx%d], texture [%dx%d]", bottomBorder.width(), bottomBorder.height(), subtitlesRect.width(), subtitlesRect.height());
 	}
 }
 

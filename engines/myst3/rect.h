@@ -51,8 +51,8 @@ struct Rect : public Common::RectBase<int16, Rect, Point> {
 		int16 h = rect.height();
 		int16 newW = MIN<int16>(w, h * aspectRatio);
 		int16 newH = MIN<int16>(h, w / aspectRatio);
-		Rect r(w, h);
-		r.translate(left, top);
+		Rect r(newW, newH);
+		r.translate(rect.left, rect.top);
 		if (center) {
 			r.translate((w - newW) / 2, (h - newH) / 2);
 		}
