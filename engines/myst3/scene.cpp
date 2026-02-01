@@ -21,21 +21,20 @@
 
 #include "common/config-manager.h"
 
-#include "engines/myst3/scene.h"
 #include "engines/myst3/gfx.h"
 #include "engines/myst3/myst3.h"
 #include "engines/myst3/node.h"
+#include "engines/myst3/scene.h"
 #include "engines/myst3/state.h"
 
-#include "math/vector2d.h"
 #include "math/utils.h"
+#include "math/vector2d.h"
 
 namespace Myst3 {
 
-Scene::Scene(Myst3Engine *vm) :
-		Window(),
-		_vm(vm),
-		_mouseSpeed(50) {
+Scene::Scene(Myst3Engine *vm) : Window(),
+								_vm(vm),
+								_mouseSpeed(50) {
 	updateMouseSpeed();
 }
 
@@ -104,13 +103,12 @@ void Scene::drawSunspotFlare(const SunSpot &s) {
 
 	uint8 a = (uint8)(s.intensity * s.radius);
 	uint8 r = (s.color >> 16) & 0xFF;
-	uint8 g = (s.color >>  8) & 0xFF;
-	uint8 b = (s.color >>  0) & 0xFF;
+	uint8 g = (s.color >> 8) & 0xFF;
+	uint8 b = (s.color >> 0) & 0xFF;
 
 	_vm->_gfx->selectTargetWindow(this, false, true);
 	_vm->_gfx->drawRect2D(frame, a, r, g, b);
 }
-
 
 Math::Vector3d Scene::directionToVector(float pitch, float heading) {
 	Math::Vector3d v;
@@ -139,43 +137,9 @@ void Scene::updateMouseSpeed() {
 }
 
 Rect Scene::getPosition() const {
-	Rect screen = _vm->_gfx->viewport();
-
-	Rect frame;
-	if (_vm->isWideScreenModEnabled()) {
-		int32 viewportWidth = Renderer::kOriginalWidth;
-
-		int32 viewportHeight;
-		if (_vm->_state->getViewType() == kMenu) {
-			viewportHeight = Renderer::kOriginalHeight;
-		} else {
-			viewportHeight = Renderer::kFrameHeight;
-		}
-
-		// Aspect ratio correction
-		frame = Rect(MIN<int32>(screen.width(), screen.height() * viewportWidth / viewportHeight),
-		                     MIN<int32>(screen.height(), screen.width() * viewportHeight / viewportWidth));
-
-		// Pillarboxing
-		uint left = (screen.width() - frame.width()) / 2;
-
-		uint top;
-		if (_vm->_state->getViewType() == kMenu) {
-			top = (screen.height() - frame.height()) / 2;
-		} else {
-			top = (screen.height() - frame.height()) * Renderer::kTopBorderHeight / (Renderer::kTopBorderHeight + Renderer::kBottomBorderHeight);
-		}
-
-		frame.translate(left, top);
-	} else {
-		if (_vm->_state->getViewType() != kMenu) {
-			frame = Rect(screen.width(), screen.height() * Renderer::kFrameHeight / Renderer::kOriginalHeight);
-			frame.translate(screen.left, screen.top + screen.height() * Renderer::kTopBorderHeight / Renderer::kOriginalHeight);
-		} else {
-			frame = screen;
-		}
-	}
-	debugC(kDebugUi, "Scene frame x1,y1,x2,y2: %d,%d,%d,%d", frame.top, frame.left, frame.bottom, frame.right);
+	ViewType viewType = _vm->_state->getViewType();
+	Rect frame = viewType == kMenu ? _vm->_gfx->origAspectRatioViewport() : _vm->_gfx->frameViewport();
+	debugC(kDebugUi, "Scene (type: %d) frame x1,y1,x2,y2: %d,%d,%d,%d (WxH: %dx%d)", viewType, frame.top, frame.left, frame.bottom, frame.right, frame.width(), frame.height());
 	return frame;
 }
 
@@ -201,8 +165,8 @@ void Scene::screenPosToDirection(const Point &screen, float &pitch, float &headi
 
 	// Window coords to normalized coords
 	Math::Vector4d in;
-	in.x() = pos.x * 2 / (float) frame.width() - 1.0;
-	in.y() = 1.0 - pos.y * 2 / (float) frame.height();
+	in.x() = pos.x * 2 / (float)frame.width() - 1.0;
+	in.y() = 1.0 - pos.y * 2 / (float)frame.height();
 	in.z() = 1.0;
 	in.w() = 1.0;
 
@@ -225,12 +189,12 @@ void Scene::screenPosToDirection(const Point &screen, float &pitch, float &headi
 		heading = 360 - heading;
 }
 
-//TODO: below ported from residualvm. Check if it may / should be used, or remove. Compare with func in base class..
+// TODO: below ported from residualvm. Check if it may / should be used, or remove. Compare with func in base class..
 Point Scene::scalePoint(const Point &screen) const {
 	Rect viewport;
 	Rect originalSize;
 	if (_vm->_state->getViewType() == kMenu) {
-		viewport = _vm->_gfx->viewport();//TODO?menuViewport();
+		viewport = _vm->_gfx->viewport(); // TODO?menuViewport();
 		originalSize = Rect(Renderer::kOriginalWidth, Renderer::kOriginalHeight);
 	} else {
 		viewport = _vm->_gfx->frameViewport();
@@ -243,7 +207,7 @@ Point Scene::scalePoint(const Point &screen) const {
 	scaledPosition.x = CLIP<int16>(scaledPosition.x, 0, viewport.width());
 	scaledPosition.y = CLIP<int16>(scaledPosition.y, 0, viewport.height());
 
-	scaledPosition.x *= originalSize.width()  / (float)viewport.width();
+	scaledPosition.x *= originalSize.width() / (float)viewport.width();
 	scaledPosition.y *= originalSize.height() / (float)viewport.height();
 
 	return scaledPosition;

@@ -21,8 +21,8 @@
 
 #include "engines/myst3/gfx.h"
 #include "engines/myst3/myst3.h"
-#include "engines/myst3/resource_loader.h"
 #include "engines/myst3/rect.h"
+#include "engines/myst3/resource_loader.h"
 
 #include "engines/util.h"
 
@@ -42,34 +42,33 @@ namespace Myst3 {
 const float Renderer::cubeVertices[] = {
 	// S     T      X      Y      Z
 	0.0f, 1.0f, -320.0f, -320.0f, -320.0f,
-	1.0f, 1.0f,  320.0f, -320.0f, -320.0f,
-	0.0f, 0.0f, -320.0f,  320.0f, -320.0f,
-	1.0f, 0.0f,  320.0f,  320.0f, -320.0f,
-	0.0f, 1.0f,  320.0f, -320.0f, -320.0f,
+	1.0f, 1.0f, 320.0f, -320.0f, -320.0f,
+	0.0f, 0.0f, -320.0f, 320.0f, -320.0f,
+	1.0f, 0.0f, 320.0f, 320.0f, -320.0f,
+	0.0f, 1.0f, 320.0f, -320.0f, -320.0f,
 	1.0f, 1.0f, -320.0f, -320.0f, -320.0f,
-	0.0f, 0.0f,  320.0f, -320.0f,  320.0f,
-	1.0f, 0.0f, -320.0f, -320.0f,  320.0f,
-	0.0f, 1.0f,  320.0f, -320.0f,  320.0f,
-	1.0f, 1.0f, -320.0f, -320.0f,  320.0f,
-	0.0f, 0.0f,  320.0f,  320.0f,  320.0f,
-	1.0f, 0.0f, -320.0f,  320.0f,  320.0f,
-	0.0f, 1.0f,  320.0f, -320.0f, -320.0f,
-	1.0f, 1.0f,  320.0f, -320.0f,  320.0f,
-	0.0f, 0.0f,  320.0f,  320.0f, -320.0f,
-	1.0f, 0.0f,  320.0f,  320.0f,  320.0f,
-	0.0f, 1.0f, -320.0f, -320.0f,  320.0f,
+	0.0f, 0.0f, 320.0f, -320.0f, 320.0f,
+	1.0f, 0.0f, -320.0f, -320.0f, 320.0f,
+	0.0f, 1.0f, 320.0f, -320.0f, 320.0f,
+	1.0f, 1.0f, -320.0f, -320.0f, 320.0f,
+	0.0f, 0.0f, 320.0f, 320.0f, 320.0f,
+	1.0f, 0.0f, -320.0f, 320.0f, 320.0f,
+	0.0f, 1.0f, 320.0f, -320.0f, -320.0f,
+	1.0f, 1.0f, 320.0f, -320.0f, 320.0f,
+	0.0f, 0.0f, 320.0f, 320.0f, -320.0f,
+	1.0f, 0.0f, 320.0f, 320.0f, 320.0f,
+	0.0f, 1.0f, -320.0f, -320.0f, 320.0f,
 	1.0f, 1.0f, -320.0f, -320.0f, -320.0f,
-	0.0f, 0.0f, -320.0f,  320.0f,  320.0f,
-	1.0f, 0.0f, -320.0f,  320.0f, -320.0f,
-	0.0f, 1.0f,  320.0f,  320.0f,  320.0f,
-	1.0f, 1.0f, -320.0f,  320.0f,  320.0f,
-	0.0f, 0.0f,  320.0f,  320.0f, -320.0f,
-	1.0f, 0.0f, -320.0f,  320.0f, -320.0f
-};
+	0.0f, 0.0f, -320.0f, 320.0f, 320.0f,
+	1.0f, 0.0f, -320.0f, 320.0f, -320.0f,
+	0.0f, 1.0f, 320.0f, 320.0f, 320.0f,
+	1.0f, 1.0f, -320.0f, 320.0f, 320.0f,
+	0.0f, 0.0f, 320.0f, 320.0f, -320.0f,
+	1.0f, 0.0f, -320.0f, 320.0f, -320.0f};
 
 Renderer::Renderer(OSystem *system)
-		: _system(system),
-		  _font(nullptr){
+	: _system(system),
+	  _font(nullptr) {
 	// Compute the cube faces Axis Aligned Bounding Boxes
 	for (uint i = 0; i < ARRAYSIZE(_cubeFacesAABB); i++) {
 		for (uint j = 0; j < 4; j++) {
@@ -89,11 +88,11 @@ void Renderer::toggleFullscreen() {
 // 	_font = createTexture2D(surface);
 // }
 void Renderer::initFont(ResourceLoader *resourceLoader) {
-	
+
 	ResourceDescription fontDesc = resourceLoader->getRawData("GLOB", 1206);
 	if (!fontDesc.isValid())
 		error("The font texture, GLOB-1206 was not found");
-	
+
 	TextureLoader textureLoader(*this);
 	_font = textureLoader.load(fontDesc, TextureLoader::kImageFormatTEX);
 }
@@ -163,21 +162,32 @@ Rect Renderer::frameViewport() const {
 	return frame;
 }
 
-void Renderer::computeScreenViewport() {
-	int32 screenWidth = _system->getWidth();
-	int32 screenHeight = _system->getHeight();
+Rect Renderer::origAspectRatioViewport() const {
+	// int32 screenWidth = _system->getWidth();
+	// int32 screenHeight = _system->getHeight();
+	// // Aspect ratio correction
+	// int32 viewportWidth = MIN<int32>(screenWidth, screenHeight * kOriginalWidth / kOriginalHeight);
+	// int32 viewportHeight = MIN<int32>(screenHeight, screenWidth * kOriginalHeight / kOriginalWidth);
+	// Rect frame(viewportWidth, viewportHeight);
 
+	// // Pillarboxing
+	// frame.translate((screenWidth - viewportWidth) / 2,
+	// 				(screenHeight - viewportHeight) / 2);
+	// return frame;
+	Rect screen(_system->getWidth(), _system->getHeight());
+	Rect origFrame(kOriginalWidth, kOriginalHeight);
+	Rect scaledFrame = origFrame.fitInside(screen);
+	debugC(kDebugUi, "OrigAspectRatioViewport - screen (%dx%d), orig (%dx%d), scaled (%dx%d)", screen.width(), screen.height(), origFrame.width(), origFrame.height(), scaledFrame.width(), scaledFrame.height());
+	return scaledFrame;
+}
+
+void Renderer::computeScreenViewport() {
 	if (ConfMan.getBool("widescreen_mod")) {
+		int32 screenWidth = _system->getWidth();
+		int32 screenHeight = _system->getHeight();
 		_screenViewport = Rect(screenWidth, screenHeight);
 	} else {
-		// Aspect ratio correction
-		int32 viewportWidth = MIN<int32>(screenWidth, screenHeight * kOriginalWidth / kOriginalHeight);
-		int32 viewportHeight = MIN<int32>(screenHeight, screenWidth * kOriginalHeight / kOriginalWidth);
-		_screenViewport = Rect(viewportWidth, viewportHeight);
-
-		// Pillarboxing
-		_screenViewport.translate((screenWidth - viewportWidth) / 2,
-			(screenHeight - viewportHeight) / 2);
+		_screenViewport = origAspectRatioViewport();
 	}
 }
 
@@ -185,7 +195,7 @@ Math::Matrix4 Renderer::makeProjectionMatrix(float fov) const {
 	static const float nearClipPlane = 1.0;
 	static const float farClipPlane = 10000.0;
 
-	float aspectRatio = kOriginalWidth / (float) kFrameHeight;
+	float aspectRatio = kOriginalWidth / (float)kFrameHeight;
 
 	float xmaxValue = nearClipPlane * tan(fov * M_PI / 360.0);
 	float ymaxValue = xmaxValue / aspectRatio;
@@ -231,15 +241,15 @@ Renderer *createRenderer(OSystem *system) {
 	Graphics::RendererType desiredRendererType = Graphics::Renderer::parseTypeCode(rendererConfig);
 	Graphics::RendererType matchingRendererType = Graphics::Renderer::getBestMatchingAvailableType(desiredRendererType,
 #if defined(USE_OPENGL_GAME)
-			Graphics::kRendererTypeOpenGL |
+																								   Graphics::kRendererTypeOpenGL |
 #endif
 #if defined(USE_OPENGL_SHADERS)
-			Graphics::kRendererTypeOpenGLShaders |
+																									   Graphics::kRendererTypeOpenGLShaders |
 #endif
 #if defined(USE_TINYGL)
-			Graphics::kRendererTypeTinyGL |
+																									   Graphics::kRendererTypeTinyGL |
 #endif
-			0);
+																									   0);
 
 	bool isAccelerated = matchingRendererType != Graphics::kRendererTypeTinyGL;
 
@@ -289,7 +299,7 @@ void Renderer::renderDrawableOverlay(Drawable *drawable, Window *window) {
 	// Overlays are always 2D
 	if (drawable->isConstrainedToWindow()) {
 		selectTargetWindow(window, drawable->is3D(), drawable->isScaled());
-	} else { 
+	} else {
 		selectTargetWindow(nullptr, drawable->is3D(), drawable->isScaled());
 	}
 	drawable->drawOverlay();
@@ -305,36 +315,35 @@ void Renderer::renderWindowOverlay(Window *window) {
 
 PointF Renderer::getScale() const {
 	return PointF(
-		_screenViewport.width() / (float) kOriginalWidth,
-		_screenViewport.height() / (float) kOriginalHeight
-	);
+		_screenViewport.width() / (float)kOriginalWidth,
+		_screenViewport.height() / (float)kOriginalHeight);
 }
 
-Rect Renderer::scaleRect(const Rect &rect){
+Rect Renderer::scaleRect(const Rect &rect) {
 	PointF scale = getScale();
 	return rect * scale;
 }
 
-Rect Renderer::centerOnViewport(const Rect &rect) {
+// TODO: check centerOnScreen functions in other classes for refractooring opportunities
+Rect Renderer::centerOnViewport(const Rect &rect, bool useFrameViewport) {
 	Rect r(rect);
-	r.translate((_screenViewport.width() - rect.width()) / 2,
-			(_screenViewport.height() - rect.height()) / 2);
+	Rect screenViewport = useFrameViewport ? frameViewport() : viewport();
+	r.translate((screenViewport.width() - rect.width()) / 2,
+				(screenViewport.height() - rect.height()) / 2);
 	return r;
 }
 
-Rect Renderer::createScaledRect(int16 w, int16 h, bool centerOnViewport){
+Rect Renderer::createScaledRect(int16 w, int16 h, bool centerOnViewport, bool useFrameViewport) {
 	Rect rect = Rect(w, h) * getScale();
 	if (centerOnViewport) {
-		rect = Renderer::centerOnViewport(rect);
+		rect = Renderer::centerOnViewport(rect, useFrameViewport);
 	}
 	return rect;
 }
 
-
-Drawable::Drawable() :
-		_isConstrainedToWindow(true),
-		_is3D(false),
-		_scaled(true) {
+Drawable::Drawable() : _isConstrainedToWindow(true),
+					   _is3D(false),
+					   _scaled(true) {
 }
 
 Point Window::getCenter() const {
@@ -357,12 +366,11 @@ Point Window::scalePoint(const Point &screen) const {
 	Point windowPos = screenPosToWindowPos(screen, true);
 	Rect viewport = getPosition();
 	if (_scaled) {
-		windowPos.x *= Renderer::kOriginalWidth / (float) viewport.width();
-		windowPos.y *= Renderer::kOriginalHeight / (float) viewport.height();
+		windowPos.x *= Renderer::kOriginalWidth / (float)viewport.width();
+		windowPos.y *= Renderer::kOriginalHeight / (float)viewport.height();
 	}
 	return windowPos;
 }
-
 
 const Graphics::PixelFormat Texture::getRGBAPixelFormat() {
 	return Graphics::PixelFormat::createFormatRGBA32();

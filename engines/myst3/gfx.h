@@ -183,6 +183,7 @@ public:
 
 	Rect viewport() const;
 	Rect frameViewport() const;
+	Rect origAspectRatioViewport() const;
 	Rect topBorder() const;
 	Rect bottomBorder() const;
 
@@ -211,8 +212,8 @@ public:
 
 	PointF getScale() const;
 	Rect scaleRect(const Rect &rect);
-	Rect createScaledRect(int16 w, int16 h, bool centerOnViewport = false);
-	Rect centerOnViewport(const Rect &rect);
+	Rect createScaledRect(int16 w, int16 h, bool centerOnViewport = false, bool useFrameViewport = false);
+	Rect centerOnViewport(const Rect &rect, bool useFrameViewport = false);
 
 protected:
 	OSystem *_system;
