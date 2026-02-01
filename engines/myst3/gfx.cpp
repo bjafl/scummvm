@@ -290,7 +290,8 @@ void Renderer::renderDrawable(Drawable *drawable, Window *window) {
 	if (drawable->isConstrainedToWindow()) {
 		selectTargetWindow(window, drawable->is3D());
 	} else {
-		selectTargetWindow(nullptr, drawable->is3D());
+		// Not constrained to window: use full screen with absolute screen coords
+		selectTargetWindow(nullptr, drawable->is3D(), false);
 	}
 	drawable->draw();
 }
@@ -300,7 +301,8 @@ void Renderer::renderDrawableOverlay(Drawable *drawable, Window *window) {
 	if (drawable->isConstrainedToWindow()) {
 		selectTargetWindow(window, drawable->is3D());
 	} else {
-		selectTargetWindow(nullptr, drawable->is3D());
+		// Not constrained to window: use full screen with absolute screen coords
+		selectTargetWindow(nullptr, drawable->is3D(), false);
 	}
 	drawable->drawOverlay();
 }

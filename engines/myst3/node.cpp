@@ -35,6 +35,10 @@ namespace Myst3 {
 
 void Face::setTextureFromBitmap(const ResourceDescription *bitmap) {
 	TextureLoader loader(*_vm->_gfx);
+	if (_bitmap) {
+		_bitmap->free();
+		delete _bitmap;
+	}
 	_bitmap = loader.loadSurface(*bitmap, TextureLoader::kImageFormatJPEG);
 	if (_is3D) {
 		_texture = _vm->_gfx->createTexture3D(_bitmap);
@@ -77,9 +81,11 @@ void Face::uploadTexture() {
 }
 
 Face::~Face() {
-	_bitmap->free();
-	delete _bitmap;
-	_bitmap = nullptr;
+	if (_bitmap) {
+		_bitmap->free();
+		delete _bitmap;
+		_bitmap = nullptr;
+	}
 
 	if (_finalBitmap) {
 		_finalBitmap->free();
@@ -220,6 +226,9 @@ void Node::loadSpotItem(const Common::String &room, uint16 id, int16 condition, 
 		       "Node::loadSpotItem: spot item exceeds face width");
 		assert(std::_Cmp_less_equal(spotItemData.v + bitmapSurface->h, _faces[i]->_bitmap->h) &&
 		       "Node::loadSpotItem: spot item exceeds face height");
+
+		bitmapSurface->free();
+		delete bitmapSurface;
 
 		// SpotItems with an always true conditions cannot be undrawn.
 		// Draw them now to make sure the "non drawn backups" for other, potentially
@@ -435,9 +444,15 @@ void SpotItemFace::initBlack(uint16 width, uint16 height) {
 	_drawn = false;
 }
 
-void SpotItemFace::loadData(Graphics::Surface *bitmap) {
+void SpotItemFace::loadData(const Graphics::Surface *bitmap) {
+	assert(bitmap->format == Texture::getRGBAPixelFormat());
 	// Convert active SpotItem image to raw data
-	_bitmap = bitmap;
+	if (_bitmap) {
+		_bitmap->free();
+		delete _bitmap;
+	}
+	_bitmap = new Graphics::Surface();
+	_bitmap->copyFrom(*bitmap);
 
 	initNotDrawn(_bitmap->w, _bitmap->h);
 }
@@ -446,7 +461,7 @@ void SpotItemFace::updateData(const Graphics::Surface *surface) {
 	assert(_bitmap && surface);
 	assert(surface->format == Texture::getRGBAPixelFormat());
 
-	_bitmap->free();
+	//_bitmap->free();
 	_bitmap->copyFrom(*surface);
 
 	_drawn = false;

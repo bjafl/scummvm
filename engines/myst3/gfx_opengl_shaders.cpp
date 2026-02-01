@@ -220,6 +220,14 @@ void ShaderRenderer::selectTargetWindow(Window *window, bool is3D, bool scaled) 
 	}
 	glViewport(vp.left, _system->getHeight() - vp.top - vp.height(), vp.width(), vp.height());
 
+	// Enable/disable depth testing based on 2D vs 3D rendering
+	if (is3D) {
+		glEnable(GL_DEPTH_TEST);
+	} else {
+		// 2D rendering: disable depth test so 2D elements draw on top
+		glDisable(GL_DEPTH_TEST);
+	}
+
 	// Store viewport size for shader coordinate calculations
 	// Draw coordinates are in screen pixels relative to the viewport
 	_currentViewport = Rect(vp.width(), vp.height());

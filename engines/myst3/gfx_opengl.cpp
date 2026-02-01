@@ -114,13 +114,18 @@ void OpenGLRenderer::selectTargetWindow(Window *window, bool is3D, bool scaled) 
 	glViewport(vp.left, _system->getHeight() - vp.top - vp.height(), vp.width(), vp.height());
 
 	if (is3D) {
+		glEnable(GL_DEPTH_TEST);
+
 		glMatrixMode(GL_PROJECTION);
 		glLoadMatrixf(_projectionMatrix.getData());
 
 		glMatrixMode(GL_MODELVIEW);
 		glLoadMatrixf(_modelViewMatrix.getData());
 	} else {
-		// 2D rendering: set up ortho projection matching the viewport size
+		// 2D rendering: disable depth test so 2D elements draw on top
+		glDisable(GL_DEPTH_TEST);
+
+		// Set up ortho projection matching the viewport size
 		// This means draw coordinates are in screen pixels relative to the viewport
 		glMatrixMode(GL_PROJECTION);
 		glLoadIdentity();
@@ -153,7 +158,7 @@ void OpenGLRenderer::drawRect2D(const Rect &screenRect, uint8 a, uint8 r, uint8 
 void OpenGLRenderer::drawTexturedRect2D(const Rect &screenRect, const Rect &textureRect, Texture *texture,
 	                        			float transparency, bool additiveBlending) {
 	
-    debugC(kDebugGraphics, "OpenGL drawTexturedRect2D - screen [%dx%d], texture [%dx%d]", screenRect.width(), screenRect.height(), textureRect.width(), textureRect.height());
+    //debugC(kDebugGraphics, "OpenGL drawTexturedRect2D - screen [%dx%d], texture [%dx%d]", screenRect.width(), screenRect.height(), textureRect.width(), textureRect.height());
 	OpenGLTexture *glTexture = static_cast<OpenGLTexture *>(texture);
 
 	const float tLeft   = textureRect.left   * glTexture->width  / (float)glTexture->internalWidth;

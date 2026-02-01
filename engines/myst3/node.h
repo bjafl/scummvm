@@ -67,7 +67,7 @@ public:
 	~SpotItemFace();
 
 	void initBlack(uint16 width, uint16 height);
-	void loadData(Graphics::Surface *bitmap);
+	void loadData(const Graphics::Surface *bitmap);
 	void updateData(const Graphics::Surface *surface);
 	void clear();
 

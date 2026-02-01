@@ -1150,10 +1150,8 @@ void Puzzles::journalSaavedro(int16 move) {
 			Rect leftFrameHalf(Renderer::kOriginalWidth / 2, Renderer::kFrameHeight);
 			SpotItemFace *leftPage = _vm->addMenuSpotItem(999, 1, leftFrameHalf);
 
-			Graphics::Surface *bitmap;
-
-			TextureLoader textureLoader(*_vm->_gfx);
-			bitmap = textureLoader.loadSurface(resource, TextureLoader::kImageFormatJPEG);
+				TextureLoader textureLoader(*_vm->_gfx);
+			Graphics::Surface *bitmap = textureLoader.loadSurface(resource, TextureLoader::kImageFormatJPEG);
 
 			// Copy the left half of the node to a new surface
 			Graphics::Surface *leftBitmap = new Graphics::Surface();

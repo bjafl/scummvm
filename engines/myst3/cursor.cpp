@@ -180,10 +180,10 @@ void Cursor::draw() {
 			transparency = getTransparencyForId(_currentCursorID);
 	}
 
-	// _vm->_gfx->setViewport(viewport, false);
 	Rect textureRect(texture->width, texture->height);
 	_vm->_gfx->drawTexturedRect2D(cursorRect, textureRect, texture, transparency);
-    debugC(kDebugUi, "Cursor drawTexturedRect2D - screen [%dx%d], texture [%dx%d]", cursorRect.width(), cursorRect.height(), textureRect.width(), textureRect.height());
+	//_vm->_gfx->drawRect2D(cursorRect, 255, 255,0,0); //TODO: test....
+    debugC(kDebugUi, "Cursor drawTexturedRect2D - screen (%d, %d)[%dx%d], texture [%dx%d]", cursorRect.left, cursorRect.top, cursorRect.width(), cursorRect.height(), textureRect.width(), textureRect.height());
 }
 
 void Cursor::setVisible(bool show) {

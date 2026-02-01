@@ -443,6 +443,9 @@ Graphics::Surface *TextureLoader::loadSurface(const ResourceDescription &resourc
 
 	if (!imageStream) {
 		imageStream = resource.getData();
+		if (!imageStream) {
+			error("Failed to get data for resource %s-%d-%d", resource.getRoom().c_str(), resource.getIndex(), resource.getFace());
+		}
 		if (resource.getType() == Archive::kModdedCubeFace || resource.getType() == Archive::kModdedFrame || resource.getType() == Archive::kModdedSpotItem || resource.getType() == Archive::kModdedRawData) {
 			imageFormat = kImageFormatDDS;
 		} else {
@@ -457,7 +460,7 @@ Graphics::Surface *TextureLoader::loadSurface(const ResourceDescription &resourc
 		}
 	}
 
-	Graphics::Surface *surface = new Graphics::Surface();
+	Graphics::Surface *surface = nullptr;
 	switch (imageFormat) {
 	case kImageFormatJPEG: {
 		Image::JPEGDecoder jpeg;
@@ -469,7 +472,9 @@ Graphics::Surface *TextureLoader::loadSurface(const ResourceDescription &resourc
 
 		const Graphics::Surface *bitmap = jpeg.getSurface();
 		assert(bitmap->format == Texture::getRGBAPixelFormat());
-		surface->copyFrom(*bitmap);
+		Graphics::Surface *copy = new Graphics::Surface();
+		copy->copyFrom(*bitmap);
+		surface = copy;
 		break;
 	}
 	case kImageFormatPNG: {
@@ -478,7 +483,14 @@ Graphics::Surface *TextureLoader::loadSurface(const ResourceDescription &resourc
 		if (!decoder.loadStream(*imageStream)) {
 			error("Failed to decode PNG %s", name.c_str());
 		}
-		surface->copyFrom(*decoder.getSurface());
+		const Graphics::Surface *pngSurface = decoder.getSurface();
+		if (pngSurface->format == Texture::getRGBAPixelFormat()) {
+			Graphics::Surface *copy = new Graphics::Surface();
+			copy->copyFrom(*pngSurface);
+			surface = copy;
+		} else {
+			surface = pngSurface->convertTo(Texture::getRGBAPixelFormat());
+		}
 		break;
 	}
 	case kImageFormatDDS: {
@@ -489,28 +501,25 @@ Graphics::Surface *TextureLoader::loadSurface(const ResourceDescription &resourc
 		}
 
 		switch (decoder.dataFormat()) {
-		case DDS::kDataFormatMipMaps:
-			surface->copyFrom(decoder.getMipMaps()[0]);
+		case DDS::kDataFormatMipMaps: {
+			Graphics::Surface *copy = new Graphics::Surface();
+			copy->copyFrom(decoder.getMipMaps()[0]);
+			surface = copy;
 			break;
+		}
 		case DDS::kDataFormatRawBC1Unorm: {
 			Graphics::Surface *decompressed = decompressDXT1(decoder.rawData(), decoder.rawDataSize(), decoder.width(), decoder.height());
-			surface->copyFrom(*decompressed);
-			decompressed->free();
-			delete decompressed;
+			surface = decompressed;
 			break;
 		}
 		case DDS::kDataFormatRawBC2Unorm: {
 			Graphics::Surface *decompressed = decompressDXT3(decoder.rawData(), decoder.rawDataSize(), decoder.width(), decoder.height());
-			surface->copyFrom(*decompressed);
-			decompressed->free();
-			delete decompressed;
+			surface = decompressed;
 			break;
 		}
 		case DDS::kDataFormatRawBC3Unorm: {
 			Graphics::Surface *decompressed = decompressDXT5(decoder.rawData(), decoder.rawDataSize(), decoder.width(), decoder.height());
-			surface->copyFrom(*decompressed);
-			decompressed->free();
-			delete decompressed;
+			surface = decompressed;
 			break;
 		}
 		case DDS::kDataFormatRawBC7Unorm:
@@ -527,7 +536,9 @@ Graphics::Surface *TextureLoader::loadSurface(const ResourceDescription &resourc
 		if (!decoder.loadStream(*imageStream, name)) {
 			error("Failed to decode TEX %s", name.c_str());
 		}
-		surface->copyFrom(*decoder.getSurface());
+		Graphics::Surface *copy = new Graphics::Surface();
+		copy->copyFrom(*decoder.getSurface());
+		surface = copy;
 		break;
 	}
 	case kImageFormatBMP: {
@@ -557,8 +568,6 @@ Graphics::Surface *TextureLoader::loadSurface(const ResourceDescription &resourc
 			}
 		}
 
-		surface->free();
-		delete surface;
 		surface = surfaceRGBA;
 		break;
 	}
@@ -566,6 +575,10 @@ Graphics::Surface *TextureLoader::loadSurface(const ResourceDescription &resourc
 		error("Unknown image format %d", imageFormat);
 	}
 	delete imageStream;
+	if (!surface) {
+		error("Failed to load surface for %s-%d-%d", resource.getRoom().c_str(), resource.getIndex(), resource.getFace());
+	}
+	debugC(kDebugGraphics, "Loaded surface %s-%d.%d (format: %d)", resource.getRoom().c_str(), resource.getIndex(), resource.getFace(), imageFormat);
 	return surface;
 }
 
@@ -593,6 +606,7 @@ Texture *TextureLoader::load(const ResourceDescription &resource, TextureLoader:
 				// Try GPU-native texture creation
 				Texture *texture = _renderer.createTextureFromDDS(dds);
 				if (texture) {
+					debugC(kDebugGraphics, "TextureLoader - loaded dds texture for %s.%d (type: %d)", resource.getRoom().c_str(), resource.getIndex(), resource.getType());
 					return texture;
 				}
 				// Fall through to software decompression if GPU path failed

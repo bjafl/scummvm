@@ -115,13 +115,18 @@ void TinyGLRenderer::selectTargetWindow(Window *window, bool is3D, bool scaled) 
 	tglViewport(_viewport.left, _system->getHeight() - _viewport.top - _viewport.height(), _viewport.width(), _viewport.height());
 
 	if (is3D) {
+		tglEnable(TGL_DEPTH_TEST);
+
 		tglMatrixMode(TGL_PROJECTION);
 		tglLoadMatrixf(_projectionMatrix.getData());
 
 		tglMatrixMode(TGL_MODELVIEW);
 		tglLoadMatrixf(_modelViewMatrix.getData());
 	} else {
-		// 2D rendering: set up ortho projection matching the viewport size
+		// 2D rendering: disable depth test so 2D elements draw on top
+		tglDisable(TGL_DEPTH_TEST);
+
+		// Set up ortho projection matching the viewport size
 		// This means draw coordinates are in screen pixels relative to the viewport
 		tglMatrixMode(TGL_PROJECTION);
 		tglLoadIdentity();
