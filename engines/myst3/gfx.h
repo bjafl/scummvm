@@ -90,7 +90,7 @@ public:
 	/**
 	 * Transform a point from screen coordinates to scaled window coordinates
 	 */
-	virtual Point scalePoint(const Point &screen) const;
+	Point scalePoint(const Point &screen) const;
 
 };
 

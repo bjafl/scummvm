@@ -26,6 +26,7 @@
 #include "engines/myst3/state.h"
 #include "engines/myst3/subtitles.h"
 #include "engines/myst3/rect.h"
+#include "engines/myst3/scene.h"
 
 #include "common/config-manager.h"
 
@@ -143,41 +144,43 @@ void Movie::loadPosition(const ResourceDescription::VideoData &videoData) {
 }
 
 void Movie::draw2d() {
-	Rect sceneViewport;
-	if (_vm->_state->getViewType() == kMenu) {
-		sceneViewport = _vm->_gfx->viewport();
-	} else {
-		sceneViewport = _vm->_gfx->frameViewport();
-	}
-	// _vm->_gfx->setViewport(sceneViewport, false);
+	// Get the scene window to determine scaling
+	Rect sceneViewport = _vm->_scene->getPosition();
+	Rect originalSize = _vm->_scene->getOriginalPosition();
 
-	//uint sceneHeight = _vm->_state->getViewType() == kMenu ? Renderer::kOriginalHeight : Renderer::kFrameHeight;
+	// Scale factor from original coords to viewport coords
+	PointF scale(sceneViewport.width() / (float)originalSize.width(),
+	             sceneViewport.height() / (float)originalSize.height());
 
-	// Upscaling ratio
-	float scaleRatio;
+	// Upscaling ratio for modded movies (texture may be higher res than original)
+	float textureScaleRatio;
 	if (_resourceType == Archive::kModdedMovie) {
 		assert(_posWidth > 0 && "Movie::draw2d: _posWidth is zero for modded movie");
 		assert(_posHeight > 0 && "Movie::draw2d: _posHeight is zero for modded movie");
-		scaleRatio = _bink.getWidth() / (float)_posWidth;
+		textureScaleRatio = _bink.getWidth() / (float)_posWidth;
 		debugC(kDebugModding, "Movie::draw2d: modded movie id=%d, bink=%dx%d, pos=%dx%d, scaleRatio=%.3f",
-		       _id, _bink.getWidth(), _bink.getHeight(), _posWidth, _posHeight, scaleRatio);
+		       _id, _bink.getWidth(), _bink.getHeight(), _posWidth, _posHeight, textureScaleRatio);
 	} else {
-		scaleRatio = 1.f;
+		textureScaleRatio = 1.f;
 	}
 
-	assert(scaleRatio > 0 && "Movie::draw2d: scaleRatio must be positive");
-	Point textureSize(_bink.getWidth(), _bink.getHeight()); // X: width, y: height
-	textureSize = textureSize * (1 / scaleRatio);
+	assert(textureScaleRatio > 0 && "Movie::draw2d: textureScaleRatio must be positive");
+
+	// Texture rect (portion of texture to use)
+	Point textureSize(_bink.getWidth(), _bink.getHeight());
+	textureSize = textureSize * (1 / textureScaleRatio);
 	Rect textureRect(textureSize.x, textureSize.y);
-	Rect screenRect(textureRect);//Point(_posU, _posV), textureSize.x, textureSize.y); //topLeft, width, height
-	screenRect.translate(_posU, _posV);
+
+	// Screen rect in viewport coords (scaled from original coords)
+	Rect screenRect((int16)(textureSize.x * scale.x), (int16)(textureSize.y * scale.y));
+	screenRect.translate((int16)(_posU * scale.x), (int16)(_posV * scale.y));
 
 	if (_resourceType == Archive::kModdedMovie) {
-		debugC(kDebugModding, "  screenRect=[%.2f,%.2f,%.2f,%.2f]",
+		debugC(kDebugModding, "  screenRect=[%d,%d,%d,%d]",
 		       screenRect.left, screenRect.top, screenRect.right, screenRect.bottom);
 	}
 
-    debugC(kDebugVideo, "Movie drawTexturedRect2D - screen [%dx%d], texture [%dx%d]", screenRect.width(), screenRect.height(), textureRect.width(), textureRect.height());
+	debugC(kDebugVideo, "Movie drawTexturedRect2D - screen [%dx%d], texture [%dx%d]", screenRect.width(), screenRect.height(), textureRect.width(), textureRect.height());
 	if (_forceOpaque)
 		_vm->_gfx->drawTexturedRect2D(screenRect, textureRect, _texture);
 	else

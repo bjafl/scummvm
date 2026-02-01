@@ -39,15 +39,11 @@ NodeFrame::~NodeFrame() {
 }
 
 void NodeFrame::draw() {
-	Rect screenRect;
+	// Get the window position from the scene (viewport is set up by renderDrawable)
+	Rect windowPos = _vm->_scene->getPosition();
 
-	// Size and position of the frame
-	if (_vm->_state->getViewType() == kMenu) {
-		//screenRect = _vm->_gfx->viewport();
-		screenRect = _vm->_gfx->origAspectRatioViewport();
-	} else {
-		screenRect = _vm->_gfx->frameViewport();
-	}
+	// Draw rect is relative to viewport (0,0 is top-left of the window)
+	Rect screenRect(windowPos.width(), windowPos.height());
 
 	// Update the OpenGL texture if needed
 	_faces[0]->uploadTexture();
@@ -57,7 +53,7 @@ void NodeFrame::draw() {
 
 	// Draw
 	_vm->_gfx->drawTexturedRect2D(screenRect, textureRect, _faces[0]->_texture);
-    debugC(kDebugGraphics, "NodeFrame drawTexturedRect2D - screen [%dx%d], texture [%dx%d]", screenRect.width(), screenRect.height(), textureRect.width(), textureRect.height());
+	debugC(kDebugGraphics, "NodeFrame drawTexturedRect2D - screen [%dx%d], texture [%dx%d]", screenRect.width(), screenRect.height(), textureRect.width(), textureRect.height());
 }
 
 } // End of namespace Myst3

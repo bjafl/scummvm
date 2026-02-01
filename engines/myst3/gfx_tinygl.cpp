@@ -99,17 +99,17 @@ void TinyGLRenderer::clear() {
 }
 
 void TinyGLRenderer::selectTargetWindow(Window *window, bool is3D, bool scaled) {
+	// Determine viewport (screen pixel area to render into)
 	if (!window) {
-		// No window found ...
 		if (scaled) {
-			// ... in scaled mode draw in the original game screen area
+			// No window, scaled mode: draw in the game viewport area
 			_viewport = viewport();
 		} else {
-			// ... otherwise, draw on the whole screen (used by Transition)
+			// No window, unscaled: draw on the whole screen (used by Transition)
 			_viewport = Rect(_system->getWidth(), _system->getHeight());
 		}
 	} else {
-		// Found a window, draw inside it
+		// With a window: draw inside the window's screen position
 		_viewport = window->getPosition();
 	}
 	tglViewport(_viewport.left, _system->getHeight() - _viewport.top - _viewport.height(), _viewport.width(), _viewport.height());
@@ -121,20 +121,11 @@ void TinyGLRenderer::selectTargetWindow(Window *window, bool is3D, bool scaled) 
 		tglMatrixMode(TGL_MODELVIEW);
 		tglLoadMatrixf(_modelViewMatrix.getData());
 	} else {
+		// 2D rendering: set up ortho projection matching the viewport size
+		// This means draw coordinates are in screen pixels relative to the viewport
 		tglMatrixMode(TGL_PROJECTION);
 		tglLoadIdentity();
-
-		if (!window) {
-			if (scaled) {
-				tglOrthof(0, kOriginalWidth, kOriginalHeight, 0, -1, 1);
-			} else {
-				tglOrthof(0, _system->getWidth(), _system->getHeight(), 0, -1, 1);
-			}
-		} else {
-			// With a window, always use original coordinates for ortho projection
-			Rect originalRect = window->getOriginalPosition();
-			tglOrthof(0, originalRect.width(), originalRect.height(), 0, -1, 1);
-		}
+		tglOrthof(0, _viewport.width(), _viewport.height(), 0, -1, 1);
 
 		tglMatrixMode(TGL_MODELVIEW);
 		tglLoadIdentity();

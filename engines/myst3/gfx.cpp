@@ -324,10 +324,10 @@ Rect Renderer::scaleRect(const Rect &rect) {
 	return rect * scale;
 }
 
-// TODO: check centerOnScreen functions in other classes for refractooring opportunities
 Rect Renderer::centerOnViewport(const Rect &rect, bool useFrameViewport) {
-	Rect r(rect);
 	Rect screenViewport = useFrameViewport ? frameViewport() : viewport();
+	// Return rect centered within viewport, with position relative to viewport origin (0,0)
+	Rect r(rect.width(), rect.height());
 	r.translate((screenViewport.width() - rect.width()) / 2,
 				(screenViewport.height() - rect.height()) / 2);
 	return r;
@@ -362,12 +362,9 @@ Point Window::screenPosToWindowPos(const Point &screen, bool clip) const {
 }
 
 Point Window::scalePoint(const Point &screen) const {
-	Point windowPos = screenPosToWindowPos(screen, true);
-	Rect viewport = getPosition();
-	Rect originalPos = getOriginalPosition();
-	windowPos.x *= originalPos.width() / (float)viewport.width();
-	windowPos.y *= originalPos.height() / (float)viewport.height();
-	return windowPos;
+	// Convert screen coordinates to window-relative viewport coordinates
+	// No scaling needed since draw coords are now in viewport pixels
+	return screenPosToWindowPos(screen, true);
 }
 
 const Graphics::PixelFormat Texture::getRGBAPixelFormat() {

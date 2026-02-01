@@ -471,27 +471,33 @@ void Subtitles::setFrame(int32 frame) {
 void Subtitles::drawOverlay() {
 	if (!_texture) return;
 
-	Rect bottomBorder   = _vm->_gfx->bottomBorder();
-	Rect screenViewport = _vm->_gfx->viewport();
+	// Get window position (viewport is set to this by renderDrawableOverlay)
+	Rect windowPos = getPosition();
 
-	// _vm->_gfx->setViewport(screenViewport, false);
+	// Draw rect covers the full window, relative to viewport (0,0)
+	Rect drawRect(windowPos.width(), windowPos.height());
 
 	if (_vm->isWideScreenModEnabled()) {
-
-		Rect blackRect = Rect(bottomBorder.left, bottomBorder.bottom - _texture->height, bottomBorder.right, bottomBorder.bottom);
-		// Draw a black background to cover the main game frame
+		// Draw a black background at bottom of window
+		Rect blackRect(windowPos.width(), _texture->height);
+		blackRect.translate(0, windowPos.height() - _texture->height);
 		_vm->_gfx->drawRect2D(blackRect, 0xFF, 0x00, 0x00, 0x00);
-		
-		// Center the subtitles in the screen
-		Rect textureRect = _vm->_gfx->createScaledRect(_texture->width, _texture->height).centerIn(blackRect);
 
-		_vm->_gfx->drawTexturedRect2D(bottomBorder, textureRect, _texture);
-    debugC(kDebugGraphics, "Subtitles drawTexturedRect2D - screen [%dx%d], texture [%dx%d]", bottomBorder.width(), bottomBorder.height(), textureRect.width(), textureRect.height());
+		// Center the subtitles texture in the black area
+		Rect textureRect(_texture->width, _texture->height);
+		textureRect.translate((windowPos.width() - _texture->width) / 2,
+		                      windowPos.height() - _texture->height);
+
+		_vm->_gfx->drawTexturedRect2D(textureRect, Rect(_texture->width, _texture->height), _texture);
+		debugC(kDebugGraphics, "Subtitles drawTexturedRect2D - screen [%dx%d], texture [%dx%d]", textureRect.width(), textureRect.height(), _texture->width, _texture->height);
 	} else {
-		Rect subtitlesRect = Rect(_texture->width, _texture->height).centerIn(bottomBorder);
+		// Center subtitles in the window
+		Rect textureRect(_texture->width, _texture->height);
+		textureRect.translate((windowPos.width() - _texture->width) / 2,
+		                      (windowPos.height() - _texture->height) / 2);
 
-		_vm->_gfx->drawTexturedRect2D(bottomBorder, subtitlesRect, _texture);
-    debugC(kDebugGraphics, "Subtitles drawTexturedRect2D - screen [%dx%d], texture [%dx%d]", bottomBorder.width(), bottomBorder.height(), subtitlesRect.width(), subtitlesRect.height());
+		_vm->_gfx->drawTexturedRect2D(textureRect, Rect(_texture->width, _texture->height), _texture);
+		debugC(kDebugGraphics, "Subtitles drawTexturedRect2D - screen [%dx%d], texture [%dx%d]", textureRect.width(), textureRect.height(), _texture->width, _texture->height);
 	}
 }
 

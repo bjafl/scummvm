@@ -71,10 +71,12 @@ Rect Inventory::getBottomBorder() const {
 	return bottomBorder;
 }
 void Inventory::draw() {
+	Rect windowPos = getPosition();
+
 	if (_vm->isWideScreenModEnabled()) {
 		// Draw a black background to cover the main game frame
-		auto bottomBorder = getBottomBorder();
-		_vm->_gfx->drawRect2D(bottomBorder, 0xFF, 0x00, 0x00, 0x00);
+		// Use full window rect (0,0 to width,height) since we're drawing relative to viewport
+		_vm->_gfx->drawRect2D(Rect(windowPos.width(), windowPos.height()), 0xFF, 0x00, 0x00, 0x00);
 	}
 
 	uint16 hoveredItemVar = hoveredItem();
@@ -170,36 +172,39 @@ const Inventory::ItemData &Inventory::getData(uint16 var) {
 void Inventory::reflow() {
 	uint16 itemCount = 0;
 	uint16 totalWidth = 0;
-	//Rect screen = _vm->_gfx->viewport();
-	//float wScale = screen.width() / (float) Renderer::kOriginalWidth;
-	PointF scaleVector = _vm->_gfx->getScale();
+	Rect windowPos = getPosition();
+	Rect originalPos = getOriginalPosition();
+
+	// Scale factor from original to viewport
+	PointF scale(windowPos.width() / (float)originalPos.width(),
+	             windowPos.height() / (float)originalPos.height());
 
 	for (uint i = 0; _availableItems[i].var; i++) {
 		if (hasItem(_availableItems[i].var)) {
-			totalWidth += _availableItems[i].textureWidth * scaleVector.x;
+			totalWidth += _availableItems[i].textureWidth * scale.x;
 			itemCount++;
 		}
 	}
 
 	if (itemCount >= 2)
-		totalWidth += 9 * scaleVector.x * (itemCount - 1);
+		totalWidth += 9 * scale.x * (itemCount - 1);
 
-	auto bottomBorder = getBottomBorder();
-	uint left = (bottomBorder.width() - totalWidth) / 2;
+	// Center items horizontally, position relative to window (0,0 is top-left)
+	uint left = (windowPos.width() - totalWidth) / 2;
 
 	for (ItemList::iterator it = _inventory.begin(); it != _inventory.end(); it++) {
 		const ItemData &item = getData(it->var);
 
-		PointF itemSize = PointF(item.textureWidth, item.textureHeight) * scaleVector;
+		PointF itemSize(item.textureWidth * scale.x, item.textureHeight * scale.y);
+		uint16 top = (windowPos.height() - itemSize.y) / 2;
 
-		uint16 top = (bottomBorder.height() - itemSize.y) / 2;
-
-		it->rect = Rect(Point(bottomBorder.left + left, bottomBorder.top + top), (int16)itemSize.x, (int16)itemSize.y);
+		// Rect is relative to the window viewport, in viewport pixels
+		it->rect = Rect(Point(left, top), (int16)itemSize.x, (int16)itemSize.y);
 
 		left += itemSize.x;
 
 		if (itemCount >= 2)
-			left += 9 * scaleVector.x;
+			left += 9 * scale.x;
 	}
 }
 

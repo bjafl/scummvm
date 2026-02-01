@@ -189,10 +189,15 @@ int16 ButtonsDialog::update() {
 }
 
 Point ButtonsDialog::getRelativeMousePosition() const {
-	Rect position = getPosition();
-	Point topLeft(position.left, position.top);
-	Point localMouse =_vm->_cursor->getPosition();
-	return localMouse - topLeft;
+	// Convert cursor screen position to viewport-relative, then to dialog-relative
+	Rect viewport = _vm->_gfx->viewport();
+	Rect dialogPos = getPosition();
+
+	Point cursorPos = _vm->_cursor->getPosition();
+	// Cursor is in screen coords, convert to viewport-relative
+	Point viewportRelative(cursorPos.x - viewport.left, cursorPos.y - viewport.top);
+	// Then to dialog-relative
+	return Point(viewportRelative.x - dialogPos.left, viewportRelative.y - dialogPos.top);
 }
 
 GamepadDialog::GamepadDialog(Myst3Engine *vm, uint id):

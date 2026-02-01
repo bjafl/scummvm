@@ -204,25 +204,25 @@ void ShaderRenderer::clear() {
 }
 
 void ShaderRenderer::selectTargetWindow(Window *window, bool is3D, bool scaled) {
+	// Determine viewport (screen pixel area to render into)
+	Rect vp;
 	if (!window) {
-		// No window found ...
 		if (scaled) {
-			// ... in scaled mode draw in the original game screen area
-			Rect vp = viewport();
-			glViewport(vp.left, _system->getHeight() - vp.top - vp.height(), vp.width(), vp.height());
-			_currentViewport = Rect(kOriginalWidth, kOriginalHeight);
+			// No window, scaled mode: draw in the game viewport area
+			vp = viewport();
 		} else {
-			// ... otherwise, draw on the whole screen (used by Transition)
-			glViewport(0, 0, _system->getWidth(), _system->getHeight());
-			_currentViewport = Rect(_system->getWidth(), _system->getHeight());
+			// No window, unscaled: draw on the whole screen (used by Transition)
+			vp = Rect(_system->getWidth(), _system->getHeight());
 		}
 	} else {
-		// Found a window, draw inside it
-		Rect vp = window->getPosition();
-		glViewport(vp.left, _system->getHeight() - vp.top - vp.height(), vp.width(), vp.height());
-		// With a window, always use original coordinates
-		_currentViewport = window->getOriginalPosition();
+		// With a window: draw inside the window's screen position
+		vp = window->getPosition();
 	}
+	glViewport(vp.left, _system->getHeight() - vp.top - vp.height(), vp.width(), vp.height());
+
+	// Store viewport size for shader coordinate calculations
+	// Draw coordinates are in screen pixels relative to the viewport
+	_currentViewport = Rect(vp.width(), vp.height());
 }
 
 void ShaderRenderer::drawRect2D(const Rect &screenRect,  uint8 a, uint8 r, uint8 g, uint8 b) {

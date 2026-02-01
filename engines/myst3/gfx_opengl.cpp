@@ -97,21 +97,21 @@ void OpenGLRenderer::clear() {
 }
 
 void OpenGLRenderer::selectTargetWindow(Window *window, bool is3D, bool scaled) {
+	// Determine viewport (screen pixel area to render into)
+	Rect vp;
 	if (!window) {
-		// No window found ...
 		if (scaled) {
-			// ... in scaled mode draw in the original game screen area
-			Rect vp = viewport();
-			glViewport(vp.left, _system->getHeight() - vp.top - vp.height(), vp.width(), vp.height());
+			// No window, scaled mode: draw in the game viewport area
+			vp = viewport();
 		} else {
-			// ... otherwise, draw on the whole screen (used by Transition)
-			glViewport(0, 0, _system->getWidth(), _system->getHeight());
+			// No window, unscaled: draw on the whole screen (used by Transition)
+			vp = Rect(_system->getWidth(), _system->getHeight());
 		}
 	} else {
-		// Found a window, draw inside it
-		Rect vp = window->getPosition();
-		glViewport(vp.left, _system->getHeight() - vp.top - vp.height(), vp.width(), vp.height());
+		// With a window: draw inside the window's screen position
+		vp = window->getPosition();
 	}
+	glViewport(vp.left, _system->getHeight() - vp.top - vp.height(), vp.width(), vp.height());
 
 	if (is3D) {
 		glMatrixMode(GL_PROJECTION);
@@ -120,20 +120,11 @@ void OpenGLRenderer::selectTargetWindow(Window *window, bool is3D, bool scaled) 
 		glMatrixMode(GL_MODELVIEW);
 		glLoadMatrixf(_modelViewMatrix.getData());
 	} else {
+		// 2D rendering: set up ortho projection matching the viewport size
+		// This means draw coordinates are in screen pixels relative to the viewport
 		glMatrixMode(GL_PROJECTION);
 		glLoadIdentity();
-
-		if (!window) {
-			if (scaled) {
-				glOrtho(0.0, kOriginalWidth, kOriginalHeight, 0.0, -1.0, 1.0);
-			} else {
-				glOrtho(0.0, _system->getWidth(), _system->getHeight(), 0.0, -1.0, 1.0);
-			}
-		} else {
-			// With a window, always use original coordinates for ortho projection
-			Rect originalRect = window->getOriginalPosition();
-			glOrtho(0.0, originalRect.width(), originalRect.height(), 0.0, -1.0, 1.0);
-		}
+		glOrtho(0.0, vp.width(), vp.height(), 0.0, -1.0, 1.0);
 
 		glMatrixMode(GL_MODELVIEW);
 		glLoadIdentity();
