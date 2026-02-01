@@ -26,6 +26,7 @@
 
 #include "engines/myst3/gfx.h"
 #include "engines/myst3/rect.h"
+#include "graphics/surface.h"
 
 namespace Myst3 {
 
@@ -113,6 +114,11 @@ private:
 	/** Position of the cursor */
 	Point _position;
 
+	// Surfaces for hardware cursor (CursorMan)
+	typedef Common::HashMap<uint32, Graphics::Surface *> SurfaceMap;
+	SurfaceMap _surfaces;
+
+	// Textures for manual drawing when locked at center
 	typedef Common::HashMap<uint32, Texture *> TextureMap;
 	TextureMap _textures;
 

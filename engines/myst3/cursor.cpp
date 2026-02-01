@@ -27,6 +27,7 @@
 #include "engines/myst3/scene.h"
 #include "engines/myst3/state.h"
 
+#include "graphics/cursorman.h"
 #include "graphics/surface.h"
 
 #include "image/bmp.h"
@@ -40,11 +41,12 @@ Cursor::Cursor(Myst3Engine *vm) :
 	_hideLevel(0),
 	_lockedAtCenter(false) {
 
-	// The cursor is drawn on the full screen and manually scaled
-	_isConstrainedToWindow = false;
-
 	// Load available cursors
 	loadAvailableCursors();
+
+	// Push initial cursor onto CursorMan stack
+	CursorMan.pushCursor(nullptr, 0, 0, 0, 0, 0);
+	CursorMan.showMouse(true);
 
 	// Set default cursor
 	changeCursor(8);
@@ -52,37 +54,51 @@ Cursor::Cursor(Myst3Engine *vm) :
 }
 
 void Cursor::loadAvailableCursors() {
+	assert(_surfaces.empty());
 	assert(_textures.empty());
 
 	TextureLoader textureLoader(*_vm->_gfx);
 
 	// Load available cursors
 	for (uint i = 0; i < ARRAYSIZE(availableCursors); i++) {
-		// Check if a cursor sharing the same texture has already been loaded
-		if (_textures.contains(availableCursors[i].nodeID)) continue;
+		// Check if a cursor sharing the same image has already been loaded
+		if (_surfaces.contains(availableCursors[i].nodeID)) continue;
 
 		// Load the cursor bitmap
 		ResourceDescription cursorDesc = _vm->_resourceLoader->getRawData("GLOB", availableCursors[i].nodeID);
 		if (!cursorDesc.isValid())
 			error("Cursor %d does not exist", availableCursors[i].nodeID);
 
-		// Create and store the texture
+		// Load as surface for hardware cursor (CursorMan)
+		Graphics::Surface *cursorSurface = textureLoader.loadSurface(cursorDesc, TextureLoader::kImageFormatBMP);
+		_surfaces.setVal(availableCursors[i].nodeID, cursorSurface);
+
+		// Load as GPU texture for manual drawing when locked at center
 		Texture *cursorTexture = textureLoader.load(cursorDesc, TextureLoader::kImageFormatBMP);
 		_textures.setVal(availableCursors[i].nodeID, cursorTexture);
 
-		debugC(kDebugModding, "Cursor loaded - id: %d", availableCursors[i].nodeID);
+		debugC(kDebugModding, "Cursor loaded - id: %d, size: %dx%d", availableCursors[i].nodeID, cursorSurface->w, cursorSurface->h);
 	}
 }
 
 Cursor::~Cursor() {
-	// Free cursors textures
+	// Pop cursor from CursorMan stack
+	CursorMan.popCursor();
+
+	// Free cursor surfaces
+	for (SurfaceMap::iterator it = _surfaces.begin(); it != _surfaces.end(); it++) {
+		it->_value->free();
+		delete it->_value;
+	}
+
+	// Free cursor textures
 	for (TextureMap::iterator it = _textures.begin(); it != _textures.end(); it++) {
 		delete it->_value;
 	}
 }
 
 void Cursor::changeCursor(uint32 index) {
-	if (index >= ARRAYSIZE(availableCursors) || index < 0)
+	if (index >= ARRAYSIZE(availableCursors))
 		return;
 
 	if (_vm->getPlatform() == Common::kPlatformXbox) {
@@ -91,7 +107,23 @@ void Cursor::changeCursor(uint32 index) {
 			index = 12;
 	}
 
+	if (_currentCursorID == index)
+		return;
+
 	_currentCursorID = index;
+
+	// Update hardware cursor (only used when not locked at center)
+	CursorData cursor(_currentCursorID);
+	Graphics::Surface *surface = _surfaces[cursor.nodeID];
+	if (!surface) {
+		error("No surface for cursor with id %d", cursor.nodeID);
+	}
+
+	// Use 0x00000000 (transparent black) as the keycolor for RGBA surfaces
+	// The BMP loader uses green (0,255,0) as transparency which gets converted to alpha=0
+	uint32 keycolor = surface->format.ARGBToColor(0, 0, 0, 0);
+
+	CursorMan.replaceCursor(*surface, cursor.hotspotX, cursor.hotspotY, keycolor, false);
 }
 
 float Cursor::getTransparencyForId(uint32 cursorId) {
@@ -113,11 +145,14 @@ void Cursor::lockPosition(bool lock) {
 
 	Point center = _vm->_scene->getCenter();
 	if (_lockedAtCenter) {
-		// Locking, just move the cursor at the center of the screen
+		// Locking - hide system cursor, we'll draw manually at center
 		_position = center;
+		CursorMan.showMouse(false);
 	} else {
-		// Unlocking, warp the actual mouse position to the cursor
+		// Unlocking - show system cursor, warp to center
 		g_system->warpMouse(center.x, center.y);
+		bool shouldBeVisible = !_hideLevel && !_vm->_state->getCursorHidden() && !_vm->_state->getCursorLocked();
+		CursorMan.showMouse(shouldBeVisible);
 	}
 }
 
@@ -129,61 +164,41 @@ void Cursor::updatePosition(const Point &mouse) {
 	}
 }
 
-// Point Cursor::getPosition(bool scaled) {
-// 	if (scaled) {
-// 		Rect viewport = _vm->_gfx->viewport();
-
-// 		// The rest of the engine expects 640x480 coordinates
-// 		Point scaledPosition = _position;
-// 		scaledPosition.x -= viewport.left;
-// 		scaledPosition.y -= viewport.top;
-// 		scaledPosition.x = CLIP<int16>(scaledPosition.x, 0, viewport.width());
-// 		scaledPosition.y = CLIP<int16>(scaledPosition.y, 0, viewport.height());
-// 		scaledPosition.x *= Renderer::kOriginalWidth / (float) viewport.width();
-// 		scaledPosition.y *= Renderer::kOriginalHeight / (float) viewport.height();
-
-// 		return scaledPosition;
-// 	} else {
-// 		return _position;
-// 	}
-// }
-
 void Cursor::draw() {
-	assert(_currentCursorID < ARRAYSIZE(availableCursors));
+	if (_lockedAtCenter) {
+		// When locked at center, draw cursor manually using GPU texture
+		if (!isVisible())
+			return;
 
-	//const CursorData &cursor = availableCursors[_currentCursorID];
-	CursorData cursor(_currentCursorID);
-	Point cursorHotspot = cursor.getHotspot();
-	Rect cursorSize = cursor.size();
-	Texture *texture = _textures[cursor.nodeID];
-	if (!texture) {
-		error("No texture for cursor with id %d", cursor.nodeID);
+		CursorData cursor(_currentCursorID);
+		Point cursorHotspot = cursor.getHotspot();
+		Texture *texture = _textures[cursor.nodeID];
+		if (!texture) {
+			error("No texture for cursor with id %d", cursor.nodeID);
+		}
+
+		// Draw at center of screen
+		Point center = _vm->_scene->getCenter();
+		Rect cursorRect = texture->size();
+		cursorRect.translate(center.x - cursorHotspot.x, center.y - cursorHotspot.y);
+
+		float transparency = 1.0f;
+		int32 varTransparency = _vm->_state->getCursorTransparency();
+		if (varTransparency == 0) {
+			if (varTransparency >= 0)
+				transparency = varTransparency / 100.0f;
+			else
+				transparency = getTransparencyForId(_currentCursorID);
+		}
+
+		Rect textureRect(texture->width, texture->height);
+		_vm->_gfx->drawTexturedRect2D(cursorRect, textureRect, texture, transparency);
+	} else {
+		// When not locked, system cursor handles drawing
+		// Just ensure visibility is correct
+		bool shouldBeVisible = !_hideLevel && !_vm->_state->getCursorHidden() && !_vm->_state->getCursorLocked();
+		CursorMan.showMouse(shouldBeVisible);
 	}
-
-	// Rect where to draw the cursor
-	Rect viewport = _vm->_gfx->viewport();
-	PointF scale = _vm->_gfx->getScale();
-	scale = scale * (cursorSize.width() / (float)texture->width);
-	
-	Rect cursorRect = texture->size();
-	cursorRect.setWidth(cursorRect.width() * scale.x);
-	cursorRect.setHeight(cursorRect.height() * scale.y);
-	cursorRect.translate(_position.x - cursorHotspot.x * scale.x, _position.y - cursorHotspot.y * scale.y);
-
-	float transparency = 1.0f;
-
-	int32 varTransparency = _vm->_state->getCursorTransparency();
-	if (_lockedAtCenter || varTransparency == 0) {
-		if (varTransparency >= 0)
-			transparency = varTransparency / 100.0f;
-		else
-			transparency = getTransparencyForId(_currentCursorID);
-	}
-
-	Rect textureRect(texture->width, texture->height);
-	_vm->_gfx->drawTexturedRect2D(cursorRect, textureRect, texture, transparency);
-	//_vm->_gfx->drawRect2D(cursorRect, 255, 255,0,0); //TODO: test....
-    debugC(kDebugUi, "Cursor drawTexturedRect2D - screen (%d, %d)[%dx%d], texture [%dx%d]", cursorRect.left, cursorRect.top, cursorRect.width(), cursorRect.height(), textureRect.width(), textureRect.height());
 }
 
 void Cursor::setVisible(bool show) {
@@ -191,6 +206,12 @@ void Cursor::setVisible(bool show) {
 		_hideLevel = MAX<int32>(0, --_hideLevel);
 	else
 		_hideLevel++;
+
+	// Update cursor visibility (only affects system cursor when not locked)
+	if (!_lockedAtCenter) {
+		bool shouldBeVisible = !_hideLevel && !_vm->_state->getCursorHidden() && !_vm->_state->getCursorLocked();
+		CursorMan.showMouse(shouldBeVisible);
+	}
 }
 
 bool Cursor::isVisible() {
