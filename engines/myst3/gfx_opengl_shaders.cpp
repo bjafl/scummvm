@@ -255,10 +255,10 @@ void ShaderRenderer::drawTexturedRect2D(const Rect &screenRect, const Rect &text
 	const float tTop    = textureRect.top    * glTexture->height / (float)glTexture->internalHeight;
 	const float tHeight = textureRect.height() * glTexture->height / (float)glTexture->internalHeight;
 
-	// const float sLeft = screenRect.left;
-	// const float sTop = screenRect.top;
-	// const float sWidth = screenRect.width();
-	// const float sHeight = screenRect.height();
+	const float sLeft = screenRect.left;
+	const float sTop = screenRect.top;
+	const float sWidth = screenRect.width();
+	const float sHeight = screenRect.height();
 
 	if (transparency >= 0.0) {
 		if (additiveBlending) {
@@ -274,8 +274,8 @@ void ShaderRenderer::drawTexturedRect2D(const Rect &screenRect, const Rect &text
 	_boxShader->use();
 	_boxShader->setUniform("textured", true);
 	_boxShader->setUniform("color", Math::Vector4d(1.0f, 1.0f, 1.0f, transparency));
-	_boxShader->setUniform("verOffsetXY", Math::Vector2d(screenRect.left, screenRect.top));
-	_boxShader->setUniform("verSizeWH", Math::Vector2d(screenRect.width(), screenRect.height()));
+	_boxShader->setUniform("verOffsetXY", Math::Vector2d(sLeft, sTop));
+	_boxShader->setUniform("verSizeWH", Math::Vector2d(sWidth, sHeight));
 	_boxShader->setUniform("texOffsetXY", Math::Vector2d(tLeft, tTop));
 	_boxShader->setUniform("texSizeWH", Math::Vector2d(tWidth, tHeight));
 	_boxShader->setUniform("flipY", glTexture->upsideDown);

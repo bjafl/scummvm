@@ -43,8 +43,8 @@ void NodeFrame::draw() {
 
 	// Size and position of the frame
 	if (_vm->_state->getViewType() == kMenu) {
-		screenRect = _vm->_gfx->viewport();
-		//screenRect = _vm->_gfx->origAspectRatioViewport();
+		//screenRect = _vm->_gfx->viewport();
+		screenRect = _vm->_gfx->origAspectRatioViewport();
 	} else {
 		screenRect = _vm->_gfx->frameViewport();
 	}
