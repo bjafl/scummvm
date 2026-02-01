@@ -54,14 +54,9 @@ public:
 	/** Whether to setup the renderer state for 2D or 3D when processing the drawable */
 	bool is3D() const { return _is3D; }
 
-	/** Whether to scale the drawable to a size equivalent to the original engine or to draw it at its native size */
-	bool isScaled() const { return _scaled; }
-	
-	
 protected:
 	bool _isConstrainedToWindow;
 	bool _is3D;
-	bool _scaled;
 };
 
 /**
@@ -190,9 +185,11 @@ public:
 	/**
 	 * Select the window where to render
 	 *
-	 * This also sets the viewport
+	 * This also sets the viewport. When a window is provided, the ortho projection
+	 * uses the window's original coordinates. When no window is provided, scaled
+	 * determines whether to use original (640x480) or screen coordinates.
 	 */
-	virtual void selectTargetWindow(Window *window, bool is3D, bool scaled) = 0;
+	virtual void selectTargetWindow(Window *window, bool is3D, bool scaled = true) = 0;
 
 	void setupCameraPerspective(float pitch, float heading, float fov);
 

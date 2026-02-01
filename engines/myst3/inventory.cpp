@@ -42,7 +42,6 @@ Inventory::Inventory(Myst3Engine *vm) :
 		Window(),
 		_vm(vm),
 		_texture(nullptr) {
-	_scaled = !_vm->isWideScreenModEnabled();
 	initializeTexture();
 }
 
@@ -339,7 +338,6 @@ DragItem::DragItem(Myst3Engine *vm, uint id):
 		_frame(1) {
 	// Draw on the whole screen
 	_isConstrainedToWindow = false;
-	_scaled = !_vm->isWideScreenModEnabled();
 	
 	ResourceDescription movieDesc = _vm->_resourceLoader->getStillMovie("DRAG", id);
 

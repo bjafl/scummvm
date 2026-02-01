@@ -106,7 +106,7 @@ void Scene::drawSunspotFlare(const SunSpot &s) {
 	uint8 g = (s.color >> 8) & 0xFF;
 	uint8 b = (s.color >> 0) & 0xFF;
 
-	_vm->_gfx->selectTargetWindow(this, false, true);
+	_vm->_gfx->selectTargetWindow(this, false);
 	_vm->_gfx->drawRect2D(frame, a, r, g, b);
 }
 

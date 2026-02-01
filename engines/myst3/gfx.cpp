@@ -288,9 +288,9 @@ Renderer *createRenderer(OSystem *system) {
 
 void Renderer::renderDrawable(Drawable *drawable, Window *window) {
 	if (drawable->isConstrainedToWindow()) {
-		selectTargetWindow(window, drawable->is3D(), drawable->isScaled());
+		selectTargetWindow(window, drawable->is3D());
 	} else {
-		selectTargetWindow(nullptr, drawable->is3D(), drawable->isScaled());
+		selectTargetWindow(nullptr, drawable->is3D());
 	}
 	drawable->draw();
 }
@@ -298,9 +298,9 @@ void Renderer::renderDrawable(Drawable *drawable, Window *window) {
 void Renderer::renderDrawableOverlay(Drawable *drawable, Window *window) {
 	// Overlays are always 2D
 	if (drawable->isConstrainedToWindow()) {
-		selectTargetWindow(window, drawable->is3D(), drawable->isScaled());
+		selectTargetWindow(window, drawable->is3D());
 	} else {
-		selectTargetWindow(nullptr, drawable->is3D(), drawable->isScaled());
+		selectTargetWindow(nullptr, drawable->is3D());
 	}
 	drawable->drawOverlay();
 }
@@ -342,8 +342,7 @@ Rect Renderer::createScaledRect(int16 w, int16 h, bool centerOnViewport, bool us
 }
 
 Drawable::Drawable() : _isConstrainedToWindow(true),
-					   _is3D(false),
-					   _scaled(true) {
+					   _is3D(false) {
 }
 
 Point Window::getCenter() const {
@@ -365,10 +364,9 @@ Point Window::screenPosToWindowPos(const Point &screen, bool clip) const {
 Point Window::scalePoint(const Point &screen) const {
 	Point windowPos = screenPosToWindowPos(screen, true);
 	Rect viewport = getPosition();
-	if (_scaled) {
-		windowPos.x *= Renderer::kOriginalWidth / (float)viewport.width();
-		windowPos.y *= Renderer::kOriginalHeight / (float)viewport.height();
-	}
+	Rect originalPos = getOriginalPosition();
+	windowPos.x *= originalPos.width() / (float)viewport.width();
+	windowPos.y *= originalPos.height() / (float)viewport.height();
 	return windowPos;
 }
 

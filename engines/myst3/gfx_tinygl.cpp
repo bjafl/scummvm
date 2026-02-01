@@ -105,7 +105,7 @@ void TinyGLRenderer::selectTargetWindow(Window *window, bool is3D, bool scaled) 
 			// ... in scaled mode draw in the original game screen area
 			_viewport = viewport();
 		} else {
-			// ... otherwise, draw on the whole screen
+			// ... otherwise, draw on the whole screen (used by Transition)
 			_viewport = Rect(_system->getWidth(), _system->getHeight());
 		}
 	} else {
@@ -131,13 +131,9 @@ void TinyGLRenderer::selectTargetWindow(Window *window, bool is3D, bool scaled) 
 				tglOrthof(0, _system->getWidth(), _system->getHeight(), 0, -1, 1);
 			}
 		} else {
-			if (scaled) {
-				Rect originalRect = window->getOriginalPosition();
-				tglOrthof(0, originalRect.width(), originalRect.height(), 0, -1, 1);
-			} else {
-				Rect vp = window->getPosition();
-				tglOrthof(0, vp.width(), vp.height(), 0, -1, 1);
-			}
+			// With a window, always use original coordinates for ortho projection
+			Rect originalRect = window->getOriginalPosition();
+			tglOrthof(0, originalRect.width(), originalRect.height(), 0, -1, 1);
 		}
 
 		tglMatrixMode(TGL_MODELVIEW);

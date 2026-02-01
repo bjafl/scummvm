@@ -386,7 +386,6 @@ Subtitles::Subtitles(Myst3Engine *vm) :
 		_vm(vm),
 		_texture(nullptr),
 		_frame(-1) {
-	_scaled = !_vm->isWideScreenModEnabled();
 }
 
 Subtitles::~Subtitles() {

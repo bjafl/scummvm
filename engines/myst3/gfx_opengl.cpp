@@ -104,7 +104,7 @@ void OpenGLRenderer::selectTargetWindow(Window *window, bool is3D, bool scaled) 
 			Rect vp = viewport();
 			glViewport(vp.left, _system->getHeight() - vp.top - vp.height(), vp.width(), vp.height());
 		} else {
-			// ... otherwise, draw on the whole screen
+			// ... otherwise, draw on the whole screen (used by Transition)
 			glViewport(0, 0, _system->getWidth(), _system->getHeight());
 		}
 	} else {
@@ -130,13 +130,9 @@ void OpenGLRenderer::selectTargetWindow(Window *window, bool is3D, bool scaled) 
 				glOrtho(0.0, _system->getWidth(), _system->getHeight(), 0.0, -1.0, 1.0);
 			}
 		} else {
-			if (scaled) {
-				Rect originalRect = window->getOriginalPosition();
-				glOrtho(0.0, originalRect.width(), originalRect.height(), 0.0, -1.0, 1.0);
-			} else {
-				Rect vp = window->getPosition();
-				glOrtho(0.0, vp.width(), vp.height(), 0.0, -1.0, 1.0);
-			}
+			// With a window, always use original coordinates for ortho projection
+			Rect originalRect = window->getOriginalPosition();
+			glOrtho(0.0, originalRect.width(), originalRect.height(), 0.0, -1.0, 1.0);
 		}
 
 		glMatrixMode(GL_MODELVIEW);

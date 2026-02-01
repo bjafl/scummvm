@@ -43,7 +43,6 @@ Dialog::Dialog(Myst3Engine *vm, uint id):
 	_texture(nullptr) {
 	// Draw on the whole screen
 	_isConstrainedToWindow = false;
-	_scaled = !_vm->isWideScreenModEnabled();
 
 	ResourceDescription countDesc = _vm->_resourceLoader->getFileDescription("DLGI", id, 0, Archive::kNumMetadata);
 	ResourceDescription movieDesc = _vm->_resourceLoader->getDialogMovie("DLOG", id);

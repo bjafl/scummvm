@@ -212,7 +212,7 @@ void ShaderRenderer::selectTargetWindow(Window *window, bool is3D, bool scaled) 
 			glViewport(vp.left, _system->getHeight() - vp.top - vp.height(), vp.width(), vp.height());
 			_currentViewport = Rect(kOriginalWidth, kOriginalHeight);
 		} else {
-			// ... otherwise, draw on the whole screen
+			// ... otherwise, draw on the whole screen (used by Transition)
 			glViewport(0, 0, _system->getWidth(), _system->getHeight());
 			_currentViewport = Rect(_system->getWidth(), _system->getHeight());
 		}
@@ -220,12 +220,8 @@ void ShaderRenderer::selectTargetWindow(Window *window, bool is3D, bool scaled) 
 		// Found a window, draw inside it
 		Rect vp = window->getPosition();
 		glViewport(vp.left, _system->getHeight() - vp.top - vp.height(), vp.width(), vp.height());
-
-		if (scaled) {
-			_currentViewport = window->getOriginalPosition();
-		} else {
-			_currentViewport = vp;
-		}
+		// With a window, always use original coordinates
+		_currentViewport = window->getOriginalPosition();
 	}
 }
 

@@ -40,8 +40,7 @@ Cursor::Cursor(Myst3Engine *vm) :
 	_hideLevel(0),
 	_lockedAtCenter(false) {
 
-	// The cursor is manually scaled
-	_scaled = false;
+	// The cursor is drawn on the full screen and manually scaled
 	_isConstrainedToWindow = false;
 
 	// Load available cursors
