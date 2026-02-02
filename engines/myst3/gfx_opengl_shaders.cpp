@@ -161,7 +161,7 @@ Texture *ShaderRenderer::createTextureFromDDS(const DDS &dds) {
 void ShaderRenderer::init() {
 	debug("Initializing OpenGL Renderer with shaders");
 
-	// computeScreenViewport();
+	computeScreenViewport();
 
 	glEnable(GL_DEPTH_TEST);
 
@@ -205,7 +205,7 @@ void ShaderRenderer::clear() {
 
 void ShaderRenderer::selectTargetWindow(Window *window, bool is3D, bool scaled) {
 	// Determine viewport (screen pixel area to render into)
-	Rect vp;
+	Rect vp;// = Rect(_system->getWidth(), _system->getHeight());
 	if (!window) {
 		if (scaled) {
 			// No window, scaled mode: draw in the game viewport area
@@ -218,6 +218,7 @@ void ShaderRenderer::selectTargetWindow(Window *window, bool is3D, bool scaled) 
 		// With a window: draw inside the window's screen position
 		vp = window->getPosition();
 	}
+	debugC(kDebugGraphics, "glViewport - (%d, %d) [%dx%d]", vp.left, _system->getHeight() - vp.top - vp.height(), vp.width(), vp.height());
 	glViewport(vp.left, _system->getHeight() - vp.top - vp.height(), vp.width(), vp.height());
 
 	// Enable/disable depth testing based on 2D vs 3D rendering
@@ -258,15 +259,8 @@ void ShaderRenderer::drawTexturedRect2D(const Rect &screenRect, const Rect &text
 	                        			float transparency, bool additiveBlending) {
 	OpenGLTexture *glTexture = static_cast<OpenGLTexture *>(texture);
 
-	const float tLeft   = textureRect.left   * glTexture->width  / (float)glTexture->internalWidth;
-	const float tWidth  = textureRect.width()  * glTexture->width  / (float)glTexture->internalWidth;
-	const float tTop    = textureRect.top    * glTexture->height / (float)glTexture->internalHeight;
-	const float tHeight = textureRect.height() * glTexture->height / (float)glTexture->internalHeight;
-
-	const float sLeft = screenRect.left;
-	const float sTop = screenRect.top;
-	const float sWidth = screenRect.width();
-	const float sHeight = screenRect.height();
+	RectF sRectRel = scaleRectRelative(screenRect);
+	RectF tRectRel = scaleRectRelative(textureRect);
 
 	if (transparency >= 0.0) {
 		if (additiveBlending) {
@@ -282,10 +276,12 @@ void ShaderRenderer::drawTexturedRect2D(const Rect &screenRect, const Rect &text
 	_boxShader->use();
 	_boxShader->setUniform("textured", true);
 	_boxShader->setUniform("color", Math::Vector4d(1.0f, 1.0f, 1.0f, transparency));
-	_boxShader->setUniform("verOffsetXY", Math::Vector2d(sLeft, sTop));
-	_boxShader->setUniform("verSizeWH", Math::Vector2d(sWidth, sHeight));
-	_boxShader->setUniform("texOffsetXY", Math::Vector2d(tLeft, tTop));
-	_boxShader->setUniform("texSizeWH", Math::Vector2d(tWidth, tHeight));
+	_boxShader->setUniform("verOffsetXY", Math::Vector2d());
+	_boxShader->setUniform("verSizeWH", sRectRel.size());
+	_boxShader->setUniform("texOffsetXY", tRectRel.topLeft());
+	_boxShader->setUniform("texSizeWH", tRectRel.size());
+	_boxShader->setUniform("texOffsetXY", tRectRel.topLeft());
+	_boxShader->setUniform("texSizeWH", tRectRel.size());
 	_boxShader->setUniform("flipY", glTexture->upsideDown);
 
 	glDepthMask(GL_FALSE);

@@ -163,17 +163,6 @@ Rect Renderer::frameViewport() const {
 }
 
 Rect Renderer::origAspectRatioViewport() const {
-	// int32 screenWidth = _system->getWidth();
-	// int32 screenHeight = _system->getHeight();
-	// // Aspect ratio correction
-	// int32 viewportWidth = MIN<int32>(screenWidth, screenHeight * kOriginalWidth / kOriginalHeight);
-	// int32 viewportHeight = MIN<int32>(screenHeight, screenWidth * kOriginalHeight / kOriginalWidth);
-	// Rect frame(viewportWidth, viewportHeight);
-
-	// // Pillarboxing
-	// frame.translate((screenWidth - viewportWidth) / 2,
-	// 				(screenHeight - viewportHeight) / 2);
-	// return frame;
 	Rect screen(_system->getWidth(), _system->getHeight());
 	Rect origFrame(kOriginalWidth, kOriginalHeight);
 	Rect scaledFrame = origFrame.fitInside(screen);
@@ -241,15 +230,15 @@ Renderer *createRenderer(OSystem *system) {
 	Graphics::RendererType desiredRendererType = Graphics::Renderer::parseTypeCode(rendererConfig);
 	Graphics::RendererType matchingRendererType = Graphics::Renderer::getBestMatchingAvailableType(desiredRendererType,
 #if defined(USE_OPENGL_GAME)
-																								   Graphics::kRendererTypeOpenGL |
+	Graphics::kRendererTypeOpenGL |
 #endif
 #if defined(USE_OPENGL_SHADERS)
-																									   Graphics::kRendererTypeOpenGLShaders |
+	Graphics::kRendererTypeOpenGLShaders |
 #endif
 #if defined(USE_TINYGL)
-																									   Graphics::kRendererTypeTinyGL |
+	Graphics::kRendererTypeTinyGL |
 #endif
-																									   0);
+	0);
 
 	bool isAccelerated = matchingRendererType != Graphics::kRendererTypeTinyGL;
 
@@ -326,6 +315,11 @@ Rect Renderer::scaleRect(const Rect &rect) {
 	return rect * scale;
 }
 
+RectF Renderer::scaleRectRelative(const Rect &rect) {
+	PointF vpSize(g_system->getWidth(), g_system->getHeight());
+	return RectF(rect) / vpSize;
+}
+
 Rect Renderer::centerOnViewport(const Rect &rect, bool useFrameViewport) {
 	Rect screenViewport = useFrameViewport ? frameViewport() : viewport();
 	// Return rect centered within viewport, with position relative to viewport origin (0,0)
@@ -364,10 +358,13 @@ Point Window::screenPosToWindowPos(const Point &screen, bool clip) const {
 }
 
 Point Window::scalePoint(const Point &screen) const {
-	// Convert screen coordinates to window-relative viewport coordinates
-	// No scaling needed since draw coords are now in viewport pixels
 	return screenPosToWindowPos(screen, true);
-}
+	// // Convert screen coordinates to original game coords
+	// Point windowPos = screenPosToWindowPos(screen, true);
+	// PointF relPos = windowPos / PointF(g_system->getWidth(), g_system->getHeight());
+	// Point origPos = relPos * Point(Renderer::kOriginalWidth, Renderer::kOriginalHeight);
+	// return origPos;
+}	
 
 const Graphics::PixelFormat Texture::getRGBAPixelFormat() {
 	return Graphics::PixelFormat::createFormatRGBA32();

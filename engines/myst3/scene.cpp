@@ -190,27 +190,27 @@ void Scene::screenPosToDirection(const Point &screen, float &pitch, float &headi
 }
 
 // TODO: below ported from residualvm. Check if it may / should be used, or remove. Compare with func in base class..
-// Point Scene::scalePoint(const Point &screen) const {
-// 	Rect viewport;
-// 	Rect originalSize;
-// 	if (_vm->_state->getViewType() == kMenu) {
-// 		viewport = _vm->_gfx->viewport(); // TODO?menuViewport();
-// 		originalSize = Rect(Renderer::kOriginalWidth, Renderer::kOriginalHeight);
-// 	} else {
-// 		viewport = _vm->_gfx->frameViewport();
-// 		originalSize = Rect(Renderer::kOriginalWidth, Renderer::kFrameHeight);
-// 	}
+Point Scene::scalePoint(const Point &screen) const {
+	Rect viewport;
+	Rect originalSize;
+	if (_vm->_state->getViewType() == kMenu) {
+		viewport = _vm->_gfx->origAspectRatioViewport(); // TODO?viewport();
+		originalSize = Rect(Renderer::kOriginalWidth, Renderer::kOriginalHeight);
+	} else {
+		viewport = _vm->_gfx->frameViewport();
+		originalSize = Rect(Renderer::kOriginalWidth, Renderer::kFrameHeight);
+	}
 
-// 	Point scaledPosition = screen;
-// 	scaledPosition.x -= viewport.left;
-// 	scaledPosition.y -= viewport.top;
-// 	scaledPosition.x = CLIP<int16>(scaledPosition.x, 0, viewport.width());
-// 	scaledPosition.y = CLIP<int16>(scaledPosition.y, 0, viewport.height());
+	Point scaledPosition = screen;
+	scaledPosition.x -= viewport.left;
+	scaledPosition.y -= viewport.top;
+	scaledPosition.x = CLIP<int16>(scaledPosition.x, 0, viewport.width());
+	scaledPosition.y = CLIP<int16>(scaledPosition.y, 0, viewport.height());
 
-// 	scaledPosition.x *= originalSize.width() / (float)viewport.width();
-// 	scaledPosition.y *= originalSize.height() / (float)viewport.height();
+	scaledPosition.x *= originalSize.width() / (float)viewport.width();
+	scaledPosition.y *= originalSize.height() / (float)viewport.height();
 
-// 	return scaledPosition;
-// }
+	return scaledPosition;
+}
 
 } // end of namespace Myst3

@@ -90,7 +90,7 @@ public:
 	/**
 	 * Transform a point from screen coordinates to scaled window coordinates
 	 */
-	Point scalePoint(const Point &screen) const;
+	virtual Point scalePoint(const Point &screen) const;
 
 };
 
@@ -209,6 +209,7 @@ public:
 
 	PointF getScale() const;
 	Rect scaleRect(const Rect &rect);
+	RectF scaleRectRelative(const Rect &rect);
 	Rect createScaledRect(int16 w, int16 h, bool centerOnViewport = false, bool useFrameViewport = false);
 	Rect centerOnViewport(const Rect &rect, bool useFrameViewport = false);
 

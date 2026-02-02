@@ -71,6 +71,7 @@ public:
 
 private:
 	void setupQuadEBO();
+	Math::Vector2d scaled(float x, float y) const;
 	void setupEffectsShader(OpenGL::Shader &shader, uint faceId, Texture **effectMasks,
 	                        Texture *shieldPattern, const Common::Array<Effect *> &effects, GameState *state);
 

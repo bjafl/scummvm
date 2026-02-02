@@ -2,6 +2,7 @@
 #ifndef RECT_H_
 #define RECT_H_
 #include "common/rect.h"
+#include "math/rect2d.h"
 
 namespace Myst3 {
 // BEGIN_POINT_TYPE(float, PointF);
@@ -16,6 +17,7 @@ static inline PointF operator*(int multiplier, const PointF &p) { return PointF(
 static inline PointF operator*(double multiplier, const PointF &p) { return PointF((float)(p.x * multiplier), (float)(p.y * multiplier)); }
 static inline PointF operator*(Common::Point point, const PointF &p) { return PointF((float)(p.x * point.x), (float)(p.y * point.y)); }
 static inline PointF operator*(PointF point, const PointF &p) { return PointF((p.x * point.x), (p.y * point.y)); }
+static inline PointF operator/(Common::Point point, const PointF &p) { return PointF((float)(p.x / point.x), (float)(p.y / point.y)); }
 
 struct Point : public Common::PointBase<int16, Point> {
 	constexpr Point() : PointBase() {}
@@ -59,11 +61,25 @@ struct Rect : public Common::RectBase<int16, Rect, Point> {
 		return r;
 	}
 };
-static inline Rect operator*(const Rect &r, const PointF &pointF) {
-	Rect r2(r);
-	r2.setWidth(r.width() * pointF.x);
-	r2.setHeight(r.height() * pointF.y);
-	return r2;
+static inline Rect operator*(const Rect &r, const PointF &p) {
+	return Rect(Point(r.left * p.x, r.right * p.y), r.width() * p.x, r.height() * p.y);
+}
+struct RectF  : public Common::RectBase<float, RectF , PointF> {
+	constexpr RectF () : RectBase() {}
+	RectF (const Rect &rect) : RectBase((float)rect.left, (float)rect.top, (float)rect.right, (float)rect.bottom) {}
+	constexpr RectF (float w, float h) : RectBase(w, h) {}
+	RectF (const PointF &topLeft, const PointF &bottomRight) : RectBase(topLeft, bottomRight) {}
+	constexpr RectF(const PointF &topLeft, float w, float h) : RectBase(topLeft, w, h) {}
+	RectF(float x1, float y1, float x2, float y2) : RectBase(x1, y1, x2, y2) {}
+	Math::Vector2d size() const {
+		return Math::Vector2d(width(), height());
+	}
+	Math::Vector2d topLeft() const {
+		return Math::Vector2d(top, left);
+	}
+};
+static inline RectF operator/(const RectF &r, const PointF &p) {
+	return RectF(PointF(r.left / p.x, r.right / p.y), r.width() / p.x, r.height() / p.y);
 }
 } // namespace Myst3
 

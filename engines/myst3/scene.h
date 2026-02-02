@@ -44,7 +44,7 @@ public:
 	 * Transform a point from screen coordinates to scaled window coordinates
 	 */
 	//TODO: Testing use of the base implementation in Window. Is an override needed here? If so, the implemented logic must be fixed. 
-	//Point scalePoint(const Point &screen) const override;
+	Point scalePoint(const Point &screen) const override;
 
 	// Window API
 	Rect getPosition() const override;
