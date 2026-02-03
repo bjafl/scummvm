@@ -137,18 +137,16 @@ void OpenGLRenderer::drawRect2D(const RectF &screenRect, uint8 a, uint8 r, uint8
 
 void OpenGLRenderer::drawTexturedRect2D(const RectF &screenRect, const RectF &textureRect, Texture *texture,
 	                        			float transparency, bool additiveBlending) {
-	
-    //debugC(kDebugGraphics, "OpenGL drawTexturedRect2D - screen [%dx%d], texture [%dx%d]", screenRect.width(), screenRect.height(), textureRect.width(), textureRect.height());
+
+	//debugC(kDebugGraphics, "OpenGL drawTexturedRect2D - screen [%dx%d], texture [%dx%d]", screenRect.width(), screenRect.height(), textureRect.width(), textureRect.height());
 	OpenGLTexture *glTexture = static_cast<OpenGLTexture *>(texture);
 
-	// const float tLeft   = textureRect.left   * glTexture->width  / (float)glTexture->internalWidth;
-	// const float tWidth  = textureRect.width()  * glTexture->width  / (float)glTexture->internalWidth;
-	// const float tTop    = textureRect.top    * glTexture->height / (float)glTexture->internalHeight;
-	// const float tHeight = textureRect.height() * glTexture->height / (float)glTexture->internalHeight;
-	const float tLeft   = textureRect.left;
-	const float tWidth  = textureRect.width();
-	const float tTop    = textureRect.top;
-	const float tHeight = textureRect.height();
+	// Normalize texture coordinates to [0, 1] range
+	// textureRect is in pixel coords, divide by internal texture size
+	const float tLeft   = textureRect.left / (float)glTexture->internalWidth;
+	const float tWidth  = textureRect.width() / (float)glTexture->internalWidth;
+	const float tTop    = textureRect.top / (float)glTexture->internalHeight;
+	const float tHeight = textureRect.height() / (float)glTexture->internalHeight;
 
 	float sLeft   = screenRect.left;
 	float sTop    = screenRect.top;

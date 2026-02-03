@@ -182,24 +182,22 @@ float Renderer::getScale() const { // TODO!
 // 	return Rect(_screenViewport.width(), kTopBorderHeight * scale.y);
 // }
 RectF Renderer::topBorder() const {
-	return RectF(_screenViewport.width(), kTopBorderHeightRelative);
+	return RectF(_screenViewport.width(), _screenViewport.height() * kTopBorderHeightRelative);
 }
-// Rect Renderer::bottomBorder() const {
-// 	PointF scale = getScale();
-// 	return Rect(_screenViewport.width(), kBottomBorderHeight * scale.y);
-// }
+
 RectF Renderer::bottomBorder() const {
-	return RectF(_screenViewport.width(), kBottomBorderHeightRelative);
+	return RectF(_screenViewport.width(), _screenViewport.height() * kBottomBorderHeightRelative);
 }
 
 RectF Renderer::frameViewport() const {
+	float topBorder = _screenViewport.height() * kTopBorderHeightRelative;
+	float bottomBorder = _screenViewport.height() * kBottomBorderHeightRelative;
 	return RectF(
-		_screenViewport.left, 
-		_screenViewport.top + kTopBorderHeightRelative, 
-		_screenViewport.right, 
-		_screenViewport.bottom - kTopBorderHeightRelative - kBottomBorderHeightRelative
+		_screenViewport.left,
+		_screenViewport.top + topBorder,
+		_screenViewport.right,
+		_screenViewport.bottom - bottomBorder
 	);
-
 }
 
 // RectF Renderer::origAspectRatioViewportRelative() const {

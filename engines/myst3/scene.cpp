@@ -99,7 +99,8 @@ void Scene::updateCamera(const PointF &mouse) {
 }
 
 void Scene::drawSunspotFlare(const SunSpot &s) {
-	RectF frame = _vm->_gfx->frameViewport();
+	// Use viewport-relative coordinates (0,0 to width,height)
+	RectF frame(getPosition().width(), getPosition().height());
 
 	uint8 a = (uint8)(s.intensity * s.radius);
 	uint8 r = (s.color >> 16) & 0xFF;

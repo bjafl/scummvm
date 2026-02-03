@@ -235,11 +235,15 @@ void ShaderRenderer::selectTargetWindow(Window *window, bool is3D, bool scaled) 
 }
 
 void ShaderRenderer::drawRect2D(const RectF &screenRect,  uint8 a, uint8 r, uint8 g, uint8 b) {
+	// Normalize screen coordinates to [0,1] range (shader expects normalized coords)
+	float vpWidth = _currentViewport.width();
+	float vpHeight = _currentViewport.height();
+
 	_boxShader->use();
 	_boxShader->setUniform("textured", false);
 	_boxShader->setUniform("color", Math::Vector4d(r / 255.0, g / 255.0, b / 255.0, a / 255.0));
-	_boxShader->setUniform("verOffsetXY", Math::Vector2d(screenRect.left, screenRect.top));
-	_boxShader->setUniform("verSizeWH", Math::Vector2d(screenRect.width(), screenRect.height()));
+	_boxShader->setUniform("verOffsetXY", Math::Vector2d(screenRect.left / vpWidth, screenRect.top / vpHeight));
+	_boxShader->setUniform("verSizeWH", Math::Vector2d(screenRect.width() / vpWidth, screenRect.height() / vpHeight));
 	_boxShader->setUniform("flipY", false);
 
 	glDepthMask(GL_FALSE);
@@ -259,8 +263,13 @@ void ShaderRenderer::drawTexturedRect2D(const RectF &screenRect, const RectF &te
 	                        			float transparency, bool additiveBlending) {
 	OpenGLTexture *glTexture = static_cast<OpenGLTexture *>(texture);
 
-	// RectF sRectRel = scaleRectRelative(screenRect);
-	// RectF tRectRel = scaleRectRelative(textureRect);
+	// Normalize screen coordinates to [0,1] range (shader expects normalized coords)
+	float vpWidth = _currentViewport.width();
+	float vpHeight = _currentViewport.height();
+
+	// Normalize texture coordinates to [0,1] range
+	float texWidth = (float)glTexture->internalWidth;
+	float texHeight = (float)glTexture->internalHeight;
 
 	if (transparency >= 0.0) {
 		if (additiveBlending) {
@@ -276,13 +285,10 @@ void ShaderRenderer::drawTexturedRect2D(const RectF &screenRect, const RectF &te
 	_boxShader->use();
 	_boxShader->setUniform("textured", true);
 	_boxShader->setUniform("color", Math::Vector4d(1.0f, 1.0f, 1.0f, transparency));
-	_boxShader->setUniform("verOffsetXY", Math::Vector2d());
-	_boxShader->setUniform("verSizeWH", screenRect.size());
-	_boxShader->setUniform("texOffsetXY", textureRect.topLeft());
-	_boxShader->setUniform("texSizeWH", textureRect.size());
-	// _boxShader->setUniform("verSizeWH", Math::Vector2d(1.0f, 1.0f));
-	// _boxShader->setUniform("texOffsetXY", Math::Vector2d());
-	// _boxShader->setUniform("texSizeWH", Math::Vector2d(1.0f, 1.0f));
+	_boxShader->setUniform("verOffsetXY", Math::Vector2d(screenRect.left / vpWidth, screenRect.top / vpHeight));
+	_boxShader->setUniform("verSizeWH", Math::Vector2d(screenRect.width() / vpWidth, screenRect.height() / vpHeight));
+	_boxShader->setUniform("texOffsetXY", Math::Vector2d(textureRect.left / texWidth, textureRect.top / texHeight));
+	_boxShader->setUniform("texSizeWH", Math::Vector2d(textureRect.width() / texWidth, textureRect.height() / texHeight));
 	_boxShader->setUniform("flipY", glTexture->upsideDown);
 
 	glDepthMask(GL_FALSE);

@@ -75,7 +75,7 @@ struct RectF  : public Common::RectBase<float, RectF , PointF> {
 		return Math::Vector2d(width(), height());
 	}
 	Math::Vector2d topLeft() const {
-		return Math::Vector2d(top, left);
+		return Math::Vector2d(left, top);
 	}
 	
 	RectF centerIn(const RectF &rect) const {

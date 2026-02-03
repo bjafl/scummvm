@@ -177,8 +177,9 @@ void Cursor::draw() {
 			error("No texture for cursor with id %d", cursor.nodeID);
 		}
 
-		// Draw at center of screen
-		PointF center = _vm->_scene->getCenter();
+		// Draw at center of viewport (viewport-relative coordinates)
+		RectF scenePos = _vm->_scene->getPosition();
+		PointF center(scenePos.width() / 2.0f, scenePos.height() / 2.0f);
 		RectF cursorRect = texture->size();
 		cursorRect.translate(center.x - cursorHotspot.x, center.y - cursorHotspot.y);
 
