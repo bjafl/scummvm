@@ -127,7 +127,7 @@ void Transition::draw(TransitionType type) {
 }
 
 void Transition::drawStep(Texture *targetTexture, Texture *sourceTexture, uint completion) {
-	Rect viewport = _vm->_gfx->viewport();
+	RectF viewport = _vm->_gfx->viewport();
 
 	switch (_type) {
 	case kTransitionNone:
@@ -135,20 +135,20 @@ void Transition::drawStep(Texture *targetTexture, Texture *sourceTexture, uint c
 
 	case kTransitionFade:
 	case kTransitionZip: {
-			Rect textureRect = Rect(sourceTexture->width, sourceTexture->height);
+			RectF textureRect = RectF(sourceTexture->width, sourceTexture->height);
 			_vm->_gfx->drawTexturedRect2D(viewport, textureRect, sourceTexture);
 			_vm->_gfx->drawTexturedRect2D(viewport, textureRect, targetTexture, completion / 100.0);
 		}
 		break;
 
 	case kTransitionLeftToRight: {
-			int16 transitionX = (viewport.width() * (100 - completion)) / 100;
-			Rect sourceTextureRect(0, 0, transitionX, sourceTexture->height);
-			Rect sourceScreenRect(sourceTextureRect.width(), sourceTextureRect.height());
+			float transitionX = (viewport.width() * (100 - completion)) / 100;
+			RectF sourceTextureRect(0, 0, transitionX, sourceTexture->height);
+			RectF sourceScreenRect(sourceTextureRect.width(), sourceTextureRect.height());
 			sourceScreenRect.translate(viewport.left, viewport.top);
 
-			Rect targetTextureRect(transitionX, 0, targetTexture->width, targetTexture->height);
-			Rect targetScreenRect(targetTextureRect.width(), targetTextureRect.height());
+			RectF targetTextureRect(transitionX, 0, targetTexture->width, targetTexture->height);
+			RectF targetScreenRect(targetTextureRect.width(), targetTextureRect.height());
 			targetScreenRect.translate(viewport.left + transitionX, viewport.top);
 
 			_vm->_gfx->drawTexturedRect2D(sourceScreenRect, sourceTextureRect, sourceTexture);
@@ -157,13 +157,13 @@ void Transition::drawStep(Texture *targetTexture, Texture *sourceTexture, uint c
 		break;
 
 	case kTransitionRightToLeft: {
-			int16 transitionX = viewport.width() * completion / 100;
-			Rect sourceTextureRect(transitionX, 0, sourceTexture->width, sourceTexture->height);
-			Rect sourceScreenRect(sourceTextureRect.width(), sourceTextureRect.height());
+			float transitionX = viewport.width() * completion / 100;
+			RectF sourceTextureRect(transitionX, 0, sourceTexture->width, sourceTexture->height);
+			RectF sourceScreenRect(sourceTextureRect.width(), sourceTextureRect.height());
 			sourceScreenRect.translate(viewport.left + transitionX, viewport.top);
 
-			Rect targetTextureRect(0, 0, transitionX, targetTexture->height);
-			Rect targetScreenRect(targetTextureRect.width(), targetTextureRect.height());
+			RectF targetTextureRect(0, 0, transitionX, targetTexture->height);
+			RectF targetScreenRect(targetTextureRect.width(), targetTextureRect.height());
 			targetScreenRect.translate(viewport.left, viewport.top);
 
 			_vm->_gfx->drawTexturedRect2D(sourceScreenRect, sourceTextureRect, sourceTexture);

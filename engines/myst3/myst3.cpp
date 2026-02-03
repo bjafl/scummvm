@@ -458,9 +458,7 @@ HotSpot *Myst3Engine::getHoveredHotspot(NodePtr nodeData, uint16 var) {
 			}
 		}
 	} else {
-		// get the mouse position in original game window coordinates
-		Point mouse = _cursor->getPosition();
-		mouse = _scene->scalePoint(mouse);
+		Point mouse = _cursor->getOriginalGamePosition();
 
 		for (uint j = 0; j < nodeData->hotspots.size(); j++) {
 			int32 hitRect = nodeData->hotspots[j].isPointInRectsFrame(_state, mouse);

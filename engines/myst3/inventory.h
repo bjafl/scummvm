@@ -44,9 +44,9 @@ public:
 	virtual ~Inventory();
 
 	// Window API
-	Rect getPosition() const override;
-	Rect getOriginalPosition() const override;
-	Rect getBottomBorder() const;
+	RectF getPosition() const override;
+	RectF getOriginalPosition() const override;
+	RectF getBottomBorder() const;
 
 	void loadFromState();
 	void updateState();
@@ -116,9 +116,9 @@ private:
 
 	uint16 _frame;
 	Texture *_texture;
-	Rect _screenSize;
+	RectF _screenSize;
 
-	Rect getPosition();
+	RectF getPosition();
 };
 
 } // End of namespace Myst3

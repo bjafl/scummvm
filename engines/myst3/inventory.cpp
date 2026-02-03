@@ -59,19 +59,19 @@ void Inventory::initializeTexture() {
 }
 
 bool Inventory::isMouseInside() {
-	Point mouse = _vm->_cursor->getPosition();
+	PointF mouse = _vm->_cursor->getPosition();
 	return getPosition().contains(mouse);
 }
 
-Rect Inventory::getBottomBorder() const {
-	Rect screen = _vm->_gfx->viewport();
-	float heightScale = screen.height() / (float) Renderer::kOriginalHeight;
-	Rect bottomBorder(screen.width(), screen.height() * heightScale);
-	bottomBorder.translate(0, screen.height() - bottomBorder.height());
-	return bottomBorder;
-}
+// Rect Inventory::getBottomBorder() const {
+// 	Rect screen = _vm->_gfx->viewport();
+// 	float heightScale = screen.height() / (float) Renderer::kOriginalHeight;
+// 	Rect bottomBorder(screen.width(), screen.height() * heightScale);
+// 	bottomBorder.translate(0, screen.height() - bottomBorder.height());
+// 	return bottomBorder;
+// }
 void Inventory::draw() {
-	Rect windowPos = getPosition();
+	RectF windowPos = getPosition();
 
 	if (_vm->isWideScreenModEnabled()) {
 		// Draw a black background to cover the main game frame
@@ -172,22 +172,21 @@ const Inventory::ItemData &Inventory::getData(uint16 var) {
 void Inventory::reflow() {
 	uint16 itemCount = 0;
 	uint16 totalWidth = 0;
-	Rect windowPos = getPosition();
-	Rect originalPos = getOriginalPosition();
+	RectF windowPos = getPosition();
+	// RectF originalPos = getOriginalPosition();
 
 	// Scale factor from original to viewport
-	PointF scale(windowPos.width() / (float)originalPos.width(),
-	             windowPos.height() / (float)originalPos.height());
+	float scale = _vm->_gfx->getScale();
 
 	for (uint i = 0; _availableItems[i].var; i++) {
 		if (hasItem(_availableItems[i].var)) {
-			totalWidth += _availableItems[i].textureWidth * scale.x;
+			totalWidth += _availableItems[i].textureWidth * scale;
 			itemCount++;
 		}
 	}
 
 	if (itemCount >= 2)
-		totalWidth += 9 * scale.x * (itemCount - 1);
+		totalWidth += 9 * scale * (itemCount - 1);
 
 	// Center items horizontally, position relative to window (0,0 is top-left)
 	uint left = (windowPos.width() - totalWidth) / 2;
@@ -195,7 +194,7 @@ void Inventory::reflow() {
 	for (ItemList::iterator it = _inventory.begin(); it != _inventory.end(); it++) {
 		const ItemData &item = getData(it->var);
 
-		PointF itemSize(item.textureWidth * scale.x, item.textureHeight * scale.y);
+		PointF itemSize(item.textureWidth * scale, item.textureHeight * scale);
 		uint16 top = (windowPos.height() - itemSize.y) / 2;
 
 		// Rect is relative to the window viewport, in viewport pixels
@@ -204,13 +203,13 @@ void Inventory::reflow() {
 		left += itemSize.x;
 
 		if (itemCount >= 2)
-			left += 9 * scale.x;
+			left += 9 * scale;
 	}
 }
 
 uint16 Inventory::hoveredItem() {
-	Point mouse = _vm->_cursor->getPosition();
-	mouse = scalePoint(mouse);
+	PointF mouse = _vm->_cursor->getPosition();
+	mouse = screenPosToWindowPos(mouse);
 
 	for (ItemList::const_iterator it = _inventory.begin(); it != _inventory.end(); it++) {
 		if(it->rect.contains(mouse.x, mouse.y))
@@ -303,27 +302,27 @@ void Inventory::updateState() {
 	_vm->_state->updateInventory(items);
 }
 
-Rect Inventory::getPosition() const {
-	Rect screen = _vm->_gfx->viewport();
+RectF Inventory::getPosition() const {
+	RectF screen = _vm->_gfx->viewport();
 
-	Rect frame;
+	RectF frame;
 	if (_vm->isWideScreenModEnabled()) {
-		frame = Rect(screen.width(), Renderer::kBottomBorderHeight);
+		frame = RectF(screen.width(), Renderer::kBottomBorderHeight);
 
-		Rect scenePosition = _vm->_scene->getPosition();
+		RectF scenePosition = _vm->_scene->getPosition();
 		int16 top = CLIP<int16>(screen.height() - frame.height(), 0, scenePosition.bottom);
 
 		frame.translate(0, top);
 	} else {
-		frame = Rect(screen.width(), screen.height() * Renderer::kBottomBorderHeight / Renderer::kOriginalHeight);
-		frame.translate(screen.left, screen.top + screen.height() * (Renderer::kTopBorderHeight + Renderer::kFrameHeight) / Renderer::kOriginalHeight);
+		frame = RectF(screen.width(), screen.height() * Renderer::kBottomBorderHeightRelative);
+		frame.translate(screen.left, screen.top + screen.height() * (Renderer::kTopBorderHeightRelative + Renderer::kFrameHeightRelative));
 	}
 
 	return frame;
 }
 
-Rect Inventory::getOriginalPosition() const {
-	Rect originalPosition = Rect(Renderer::kOriginalWidth, Renderer::kBottomBorderHeight);
+RectF Inventory::getOriginalPosition() const {
+	RectF originalPosition = RectF(Renderer::kOriginalWidth, Renderer::kBottomBorderHeight);
 	originalPosition.translate(0, Renderer::kTopBorderHeight + Renderer::kFrameHeight);
 	return originalPosition;
 }
@@ -376,7 +375,7 @@ DragItem::~DragItem() {
 }
 
 void DragItem::drawOverlay() {
-	Rect itemRect = getPosition();
+	RectF itemRect = getPosition();
 
 	// _vm->_gfx->setViewport(viewport, false);
 	_vm->_gfx->drawTexturedRect2D(itemRect, Rect(_texture->width, _texture->height), _texture, 0.99f);
@@ -391,12 +390,12 @@ void DragItem::setFrame(uint16 frame) {
 	}
 }
 
-Rect DragItem::getPosition() {
-	Point mouse = _vm->_cursor->getPosition();
-	Rect viewport = _vm->_gfx->viewport();
-	PointF scale = _vm->_gfx->getScale();
+RectF DragItem::getPosition() {
+	PointF mouse = _vm->_cursor->getPosition();
+	RectF viewport = _vm->_gfx->viewport();
+	float scale = _vm->_gfx->getScale();
 
-	Rect itemSize = Rect(_screenSize.width() * scale.x, _screenSize.height() * scale.y);
+	Rect itemSize = Rect(_screenSize.width() * scale, _screenSize.height() * scale);
 	        
 
 	Point itemTargetCenter(

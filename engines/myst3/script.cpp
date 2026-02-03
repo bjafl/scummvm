@@ -1658,8 +1658,7 @@ void Script::ifMouseIsInRect(Context &c, const Opcode &cmd) {
 	Rect r = Rect(cmd.args[2], cmd.args[3]);
 	r.translate(cmd.args[0], cmd.args[1]);
 
-	Point mouse = _vm->_cursor->getPosition();
-	mouse = _vm->_scene->scalePoint(mouse);
+	Point mouse = _vm->_cursor->getOriginalGamePosition();
 
 	if (r.contains(mouse))
 		return;
@@ -1695,8 +1694,7 @@ void Script::leverDrag(Context &c, const Opcode &cmd) {
 
 			ratioPosition = distanceToMax < amplitude ? distanceToMin / amplitude : 0.0;
 		} else {
-			Point mouse = _vm->_cursor->getPosition();
-			mouse = _vm->_scene->scalePoint(mouse);
+			Point mouse = _vm->_cursor->getOriginalGamePosition();
 			int16 amplitude;
 			int16 pixelPosition;
 
@@ -1834,15 +1832,13 @@ void Script::leverDragXY(Context &c, const Opcode &cmd) {
 	uint16 maxLeverPosition = cmd.args[3];
 	uint16 script = _vm->_state->valueOrVarValue(cmd.args[4]);
 
-	Point mouseInit = _vm->_cursor->getPosition();
-	mouseInit = _vm->_scene->scalePoint(mouseInit);
+	Point mouseInit = _vm->_cursor->getOriginalGamePosition();
 
 	_vm->_cursor->changeCursor(2);
 
 	bool mousePressed = true;
 	do {
-		Point mouse = _vm->_cursor->getPosition();
-		mouse = _vm->_scene->scalePoint(mouse);
+		Point mouse = _vm->_cursor->getOriginalGamePosition();
 		int16 distanceX = (mouseInit.x - mouse.x) / scale;
 		int16 distanceY = (mouseInit.y - mouse.y) / scale;
 
@@ -1897,8 +1893,7 @@ void Script::runScriptWhileDragging(Context &c, const Opcode &cmd) {
 
 		if (!dragWithDirectionKeys) {
 			// Distance between the mouse and the lever
-			Point mouse = _vm->_cursor->getPosition();
-			mouse = _vm->_scene->scalePoint(mouse);
+			Point mouse = _vm->_cursor->getOriginalGamePosition();
 			int16 distanceX = mouse.x - leverWidth / 2 - _vm->_state->getVar(cmd.args[0]);
 			int16 distanceY = mouse.y - leverHeight / 2 - _vm->_state->getVar(cmd.args[1]);
 			float distance = sqrt((float) distanceX * distanceX + distanceY * distanceY);
@@ -1916,8 +1911,7 @@ void Script::runScriptWhileDragging(Context &c, const Opcode &cmd) {
 					_vm->_state->setVar(cmd.args[4], i);
 					_vm->runScriptsFromNode(script);
 
-					mouse = _vm->_cursor->getPosition();
-					mouse = _vm->_scene->scalePoint(mouse);
+					mouse = _vm->_cursor->getOriginalGamePosition();
 					distanceX = mouse.x - leverWidth / 2 - _vm->_state->getVar(cmd.args[0]);
 					distanceY = mouse.y - leverHeight / 2 - _vm->_state->getVar(cmd.args[1]);
 					distance = sqrt((float) distanceX * distanceX + distanceY * distanceY);

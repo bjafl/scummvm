@@ -143,7 +143,7 @@ void Cursor::lockPosition(bool lock) {
 
 	g_system->lockMouse(lock);
 
-	Point center = _vm->_scene->getCenter();
+	PointF center = _vm->_scene->getCenter();
 	if (_lockedAtCenter) {
 		// Locking - hide system cursor, we'll draw manually at center
 		_position = center;
@@ -156,7 +156,7 @@ void Cursor::lockPosition(bool lock) {
 	}
 }
 
-void Cursor::updatePosition(const Point &mouse) {
+void Cursor::updatePosition(const PointF &mouse) {
 	if (!_lockedAtCenter) {
 		_position = mouse;
 	} else {
@@ -178,8 +178,8 @@ void Cursor::draw() {
 		}
 
 		// Draw at center of screen
-		Point center = _vm->_scene->getCenter();
-		Rect cursorRect = texture->size();
+		PointF center = _vm->_scene->getCenter();
+		RectF cursorRect = texture->size();
 		cursorRect.translate(center.x - cursorHotspot.x, center.y - cursorHotspot.y);
 
 		float transparency = 1.0f;
@@ -225,6 +225,16 @@ void Cursor::getDirection(float &pitch, float &heading) {
 	} else {
 		_vm->_scene->screenPosToDirection(_position, pitch, heading);
 	}
+}
+
+PointF Cursor::getScreenPosition() const {
+	RectF screen = _vm->_gfx->viewport();
+	
+	return _position - screen.origin();
+}
+Point Cursor::getOriginalGamePosition() const { //TODO
+	PointF p = getScreenPosition(); 
+	return Point(p.x, p.y);
 }
 
 } // End of namespace Myst3

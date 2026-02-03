@@ -109,10 +109,10 @@ int32 HotSpot::isPointInRectsCube(float pitch, float heading) {
 
 int32 HotSpot::isPointInRectsFrame(GameState *state, const Point &p) {
 	for (uint j = 0; j < rects.size(); j++) {
-		int16 x = rects[j].centerPitch;
-		int16 y = rects[j].centerHeading;
-		int16 w = rects[j].width;
-		int16 h = rects[j].height;
+		float x = rects[j].centerPitch;
+		float y = rects[j].centerHeading;
+		float w = rects[j].width;
+		float h = rects[j].height;
 
 		if (y < 0) {
 			x = state->getVar(x);
@@ -120,7 +120,7 @@ int32 HotSpot::isPointInRectsFrame(GameState *state, const Point &p) {
 			h = -h;
 		}
 
-		Rect rect = Rect(w, h);
+		Rect rect(w, h);
 		rect.translate(x, y);
 		if (rect.contains(p))
 			return j;

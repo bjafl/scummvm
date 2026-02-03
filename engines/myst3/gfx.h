@@ -70,27 +70,28 @@ public:
 	/**
 	 * Get the window position in screen coordinates
 	 */
-	virtual Rect getPosition() const = 0;
+	virtual RectF getPosition() const = 0;
+	// virtual RectF getRelativePosition() const = 0;
 
 	/**
 	 * Get the window position in original (640x480) screen coordinates
 	 */
-	virtual Rect getOriginalPosition() const = 0;
+	virtual RectF getOriginalPosition() const;
 
 	/**
 	 * Get the window center in screen coordinates
 	 */
-	Point getCenter() const;
+	PointF getCenter() const;
 
 	/**
 	 * Convert screen coordinates to window coordinates
 	 */
-	Point screenPosToWindowPos(const Point &screen, bool clip = false) const;
+	PointF screenPosToWindowPos(const PointF &screen, bool clip = false) const;
 
 	/**
 	 * Transform a point from screen coordinates to scaled window coordinates
 	 */
-	virtual Point scalePoint(const Point &screen) const;
+	// virtual Point scalePoint(const Point &screen) const;
 
 };
 
@@ -98,11 +99,11 @@ class Texture {
 public:
 	virtual ~Texture() {}
 
-	uint width;
-	uint height;
+	float width;
+	float height;
 	Graphics::PixelFormat format;
 
-	Rect size() const { return Rect(width, height); }
+	RectF size() const { return RectF(width, height); }
 
 	virtual void update(const Graphics::Surface *surface) = 0;
 	virtual void updatePartial(const Graphics::Surface *surface, const Rect &rect) = 0;
@@ -144,9 +145,9 @@ public:
 	 */
 	virtual bool supportsCompressedTextures() const { return false; }
 
-	virtual void drawRect2D(const Rect &screenRect, uint8 a, uint8 r, uint8 g, uint8 b) = 0;
+	virtual void drawRect2D(const RectF &screenRect, uint8 a, uint8 r, uint8 g, uint8 b) = 0;
 
-	virtual void drawTexturedRect2D(const Rect &screenRect, const Rect &textureRect, Texture *texture,
+	virtual void drawTexturedRect2D(const RectF &screenRect, const RectF &textureRect, Texture *texture,
 									float transparency = -1.0, bool additiveBlending = false) = 0;
 
 	virtual void drawTexturedRect3D(const Math::Vector3d &topLeft, const Math::Vector3d &bottomLeft,
@@ -156,7 +157,7 @@ public:
 	virtual void drawCube(Texture **textures) = 0;
 	virtual void drawCubeWithEffects(Texture **textures, Texture **effectMasks, Texture *shieldPattern,
 	                                 const Common::Array<Effect *> &effects, GameState *state) {}
-	virtual void draw2DText(const Common::String &text, const Point &position) = 0;
+	virtual void draw2DText(const Common::String &text, const PointF &position) = 0;
 
 	/** Check if GPU-based effects are supported */
 	virtual bool supportsShaderEffects() const { return false; }
@@ -176,11 +177,12 @@ public:
 	/** Render the main Drawable overlay of a Window */
 	void renderWindowOverlay(Window *window);
 
-	Rect viewport() const;
-	Rect frameViewport() const;
-	Rect origAspectRatioViewport() const;
-	Rect topBorder() const;
-	Rect bottomBorder() const;
+	RectF viewport() const;
+	RectF frameViewport() const;
+	RectF origAspectRatioViewport() const;
+	// RectF origAspectRatioViewportRelative() const;
+	RectF topBorder() const;
+	RectF bottomBorder() const;
 
 	/**
 	 * Select the window where to render
@@ -199,25 +201,30 @@ public:
 
 	void flipVertical(Graphics::Surface *s);
 
-	static const int kOriginalWidth = 640;
-	static const int kOriginalHeight = 480;
-	static const int kTopBorderHeight = 30;
-	static const int kBottomBorderHeight = 90;
-	static const int kFrameHeight = 360;
+	static constexpr float kOriginalWidth = 640.0f;
+	static constexpr float kOriginalHeight = 480.0f;
+	static constexpr float kTopBorderHeight = 30.0f;
+	static constexpr float kBottomBorderHeight = 90.0f;
+	static constexpr float kFrameHeight = 360.0f;
 
+	static constexpr float kTopBorderHeightRelative = 0.0625f;
+	static constexpr float kBottomBorderHeightRelative = 0.1875f;
+	static constexpr float kFrameHeightRelative = 0.75f;
+	static constexpr float kOriginalAspectRatio = 1.333333333333333f;
 	void computeScreenViewport();
 
-	PointF getScale() const;
-	Rect scaleRect(const Rect &rect);
-	RectF scaleRectRelative(const Rect &rect);
-	Rect createScaledRect(int16 w, int16 h, bool centerOnViewport = false, bool useFrameViewport = false);
-	Rect centerOnViewport(const Rect &rect, bool useFrameViewport = false);
+	float getScale() const;
+	// PointF getScale() const;
+	// Rect scaleRect(const Rect &rect);
+	// RectF scaleRectRelative(const Rect &rect);
+	// Rect createScaledRect(int16 w, int16 h, bool centerOnViewport = false, bool useFrameViewport = false);
+	// Rect centerOnViewport(const Rect &rect, bool useFrameViewport = false);
 
 protected:
 	OSystem *_system;
 	Texture *_font;
 
-	Rect _screenViewport;
+	RectF _screenViewport;
 
 	Math::Matrix4 _projectionMatrix;
 	Math::Matrix4 _modelViewMatrix;
@@ -226,6 +233,7 @@ protected:
 	Math::Frustum _frustum;
 
 	static const float cubeVertices[5 * 6 * 4];
+	// static const float cubeVerticesNorm[5 * 6 * 4];
 	Math::AABB _cubeFacesAABB[6];
 
 	Rect getFontCharacterRect(uint8 character);

@@ -64,10 +64,10 @@ Renderer *CreateGfxOpenGLShader(OSystem *system) {
 
 static const GLfloat boxVertices[] = {
 	// XS   YT
-	0.0, 0.0,
-	1.0, 0.0,
-	0.0, 1.0,
-	1.0, 1.0,
+	0.0f, 0.0f,
+	320.0f, 0.0f,
+	0.0, 320.0f,
+	320.0f, 320.0f,
 };
 
 void ShaderRenderer::setupQuadEBO() {
@@ -121,7 +121,7 @@ ShaderRenderer::~ShaderRenderer() {
 	delete _textShader;
 }
 
-// void ShaderRenderer::setViewport(const Rect &viewport, bool is3d) {
+// void ShaderRenderer::setViewport(const RectF &viewport, bool is3d) {
 // 	int32 screenHeight = _system->getHeight();
 // 	glViewport(viewport.left, screenHeight - viewport.bottom(), viewport.width(), viewport.height());
 // }
@@ -164,7 +164,7 @@ void ShaderRenderer::init() {
 	computeScreenViewport();
 
 	glEnable(GL_DEPTH_TEST);
-
+	
 	static const char* attributes[] = { "position", "texcoord", nullptr };
 	_boxShader = OpenGL::Shader::fromFiles("myst3_box", attributes);
 	_boxVBO = OpenGL::Shader::createBuffer(GL_ARRAY_BUFFER, sizeof(boxVertices), boxVertices);
@@ -205,14 +205,14 @@ void ShaderRenderer::clear() {
 
 void ShaderRenderer::selectTargetWindow(Window *window, bool is3D, bool scaled) {
 	// Determine viewport (screen pixel area to render into)
-	Rect vp;// = Rect(_system->getWidth(), _system->getHeight());
+	RectF vp;// = RectF(_system->getWidth(), _system->getHeight());
 	if (!window) {
 		if (scaled) {
 			// No window, scaled mode: draw in the game viewport area
 			vp = viewport();
 		} else {
 			// No window, unscaled: draw on the whole screen (used by Transition)
-			vp = Rect(_system->getWidth(), _system->getHeight());
+			vp = RectF(_system->getWidth(), _system->getHeight());
 		}
 	} else {
 		// With a window: draw inside the window's screen position
@@ -231,10 +231,10 @@ void ShaderRenderer::selectTargetWindow(Window *window, bool is3D, bool scaled) 
 
 	// Store viewport size for shader coordinate calculations
 	// Draw coordinates are in screen pixels relative to the viewport
-	_currentViewport = Rect(vp.width(), vp.height());
+	_currentViewport = RectF(vp.width(), vp.height());
 }
 
-void ShaderRenderer::drawRect2D(const Rect &screenRect,  uint8 a, uint8 r, uint8 g, uint8 b) {
+void ShaderRenderer::drawRect2D(const RectF &screenRect,  uint8 a, uint8 r, uint8 g, uint8 b) {
 	_boxShader->use();
 	_boxShader->setUniform("textured", false);
 	_boxShader->setUniform("color", Math::Vector4d(r / 255.0, g / 255.0, b / 255.0, a / 255.0));
@@ -255,12 +255,12 @@ void ShaderRenderer::drawRect2D(const Rect &screenRect,  uint8 a, uint8 r, uint8
 	glDepthMask(GL_TRUE);
 }
 
-void ShaderRenderer::drawTexturedRect2D(const Rect &screenRect, const Rect &textureRect, Texture *texture,
+void ShaderRenderer::drawTexturedRect2D(const RectF &screenRect, const RectF &textureRect, Texture *texture,
 	                        			float transparency, bool additiveBlending) {
 	OpenGLTexture *glTexture = static_cast<OpenGLTexture *>(texture);
 
-	RectF sRectRel = scaleRectRelative(screenRect);
-	RectF tRectRel = scaleRectRelative(textureRect);
+	// RectF sRectRel = scaleRectRelative(screenRect);
+	// RectF tRectRel = scaleRectRelative(textureRect);
 
 	if (transparency >= 0.0) {
 		if (additiveBlending) {
@@ -277,11 +277,12 @@ void ShaderRenderer::drawTexturedRect2D(const Rect &screenRect, const Rect &text
 	_boxShader->setUniform("textured", true);
 	_boxShader->setUniform("color", Math::Vector4d(1.0f, 1.0f, 1.0f, transparency));
 	_boxShader->setUniform("verOffsetXY", Math::Vector2d());
-	_boxShader->setUniform("verSizeWH", sRectRel.size());
-	_boxShader->setUniform("texOffsetXY", tRectRel.topLeft());
-	_boxShader->setUniform("texSizeWH", tRectRel.size());
-	_boxShader->setUniform("texOffsetXY", tRectRel.topLeft());
-	_boxShader->setUniform("texSizeWH", tRectRel.size());
+	_boxShader->setUniform("verSizeWH", screenRect.size());
+	_boxShader->setUniform("texOffsetXY", textureRect.topLeft());
+	_boxShader->setUniform("texSizeWH", textureRect.size());
+	// _boxShader->setUniform("verSizeWH", Math::Vector2d(1.0f, 1.0f));
+	// _boxShader->setUniform("texOffsetXY", Math::Vector2d());
+	// _boxShader->setUniform("texSizeWH", Math::Vector2d(1.0f, 1.0f));
 	_boxShader->setUniform("flipY", glTexture->upsideDown);
 
 	glDepthMask(GL_FALSE);
@@ -294,7 +295,7 @@ void ShaderRenderer::drawTexturedRect2D(const Rect &screenRect, const Rect &text
 	glDepthMask(GL_TRUE);
 }
 
-void ShaderRenderer::draw2DText(const Common::String &text, const Point &position) {
+void ShaderRenderer::draw2DText(const Common::String &text, const PointF &position) {
 	OpenGLTexture *glFont = static_cast<OpenGLTexture *>(_font);
 
 	// The font only has uppercase letters
@@ -318,7 +319,7 @@ void ShaderRenderer::draw2DText(const Common::String &text, const Point &positio
 		float *cur = bufData;
 
 		for (uint i = 0; i < textToDraw.size(); i++) {
-			Rect textureRect = getFontCharacterRect(textToDraw[i]);
+			RectF textureRect = getFontCharacterRect(textToDraw[i]);
 			float w = textureRect.width() / (float) _currentViewport.width();
 			float h = textureRect.height() / (float) _currentViewport.height();
 
@@ -550,7 +551,7 @@ void ShaderRenderer::drawTexturedRect3D(const Math::Vector3d &topLeft, const Mat
 }
 
 Graphics::Surface *ShaderRenderer::getScreenshot() {
-	Rect screen = viewport();
+	RectF screen = viewport();
 
 	Graphics::Surface *s = new Graphics::Surface();
 	s->create(screen.width(), screen.height(), Texture::getRGBAPixelFormat());
@@ -566,7 +567,7 @@ Graphics::Surface *ShaderRenderer::getScreenshot() {
 Texture *ShaderRenderer::copyScreenshotToTexture() {
 	OpenGLTexture *texture = new OpenGLTexture();
 
-	Rect screen = viewport();
+	RectF screen = viewport();
 	texture->copyFromFramebuffer(screen);
 
 	return texture;

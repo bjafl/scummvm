@@ -38,7 +38,7 @@ Scene::Scene(Myst3Engine *vm) : Window(),
 	updateMouseSpeed();
 }
 
-void Scene::updateCamera(const Point &mouse) {
+void Scene::updateCamera(const PointF &mouse) {
 	float pitch = _vm->_state->getLookAtPitch();
 	float heading = _vm->_state->getLookAtHeading();
 
@@ -46,7 +46,7 @@ void Scene::updateCamera(const Point &mouse) {
 		float speed = 25 / (float)(200 - _mouseSpeed);
 
 		// Adjust the speed according to the resolution
-		float scale = _vm->_gfx->getScale().x;
+		float scale = _vm->_gfx->getScale();
 		speed /= scale;
 
 		if (ConfMan.getBool("mouse_inverted")) {
@@ -99,7 +99,7 @@ void Scene::updateCamera(const Point &mouse) {
 }
 
 void Scene::drawSunspotFlare(const SunSpot &s) {
-	Rect frame = _vm->_gfx->frameViewport();
+	RectF frame = _vm->_gfx->frameViewport();
 
 	uint8 a = (uint8)(s.intensity * s.radius);
 	uint8 r = (s.color >> 16) & 0xFF;
@@ -136,32 +136,38 @@ void Scene::updateMouseSpeed() {
 	_mouseSpeed = ConfMan.getInt("mouse_speed");
 }
 
-Rect Scene::getPosition() const {
+RectF Scene::getPosition() const {
 	ViewType viewType = _vm->_state->getViewType();
-	Rect frame = viewType == kMenu ? _vm->_gfx->origAspectRatioViewport() : _vm->_gfx->frameViewport();
+	RectF frame = viewType == kMenu ? _vm->_gfx->origAspectRatioViewport() : _vm->_gfx->frameViewport();
 	debugC(kDebugGraphics, "Scene (type: %d) frame x1,y1,x2,y2: %d,%d,%d,%d (WxH: %dx%d)", viewType, frame.top, frame.left, frame.bottom, frame.right, frame.width(), frame.height());
 	return frame;
 }
+// RectF Scene::getRelativePosition() const {
+// 	ViewType viewType = _vm->_state->getViewType();
+// 	RectF frame = viewType == kMenu ? RectF(1.0f, 1.0f) : _vm->_gfx->frameViewport();
+// 	debugC(kDebugGraphics, "Scene (type: %d) frame x1,y1,x2,y2: %d,%d,%d,%d (WxH: %dx%d)", viewType, frame.top, frame.left, frame.bottom, frame.right, frame.width(), frame.height());
+// 	return frame;
+// }
 
-Rect Scene::getOriginalPosition() const {
-	Rect originalPosition;
+// RectF Scene::getOriginalPosition() const {
+// 	RectF originalPosition;
 
-	if (_vm->_state->getViewType() != kMenu) {
-		originalPosition = Rect(Renderer::kOriginalWidth, Renderer::kFrameHeight);
-		originalPosition.translate(0, Renderer::kTopBorderHeight);
-	} else {
-		originalPosition = Rect(Renderer::kOriginalWidth, Renderer::kOriginalHeight);
-	}
+// 	if (_vm->_state->getViewType() != kMenu) {
+// 		originalPosition = RectF(Renderer::kOriginalWidth, Renderer::kFrameHeight);
+// 		originalPosition.translate(0, Renderer::kTopBorderHeight);
+// 	} else {
+// 		originalPosition = RectF(Renderer::kOriginalWidth, Renderer::kOriginalHeight);
+// 	}
 
-	return originalPosition;
-}
+// 	return originalPosition;
+// }
 
-void Scene::screenPosToDirection(const Point &screen, float &pitch, float &heading) const {
+void Scene::screenPosToDirection(const PointF &screen, float &pitch, float &heading) const {
 	// Rect frame = getPosition();
-	Rect frame = _vm->_gfx->frameViewport();
+	RectF frame = _vm->_gfx->frameViewport();
 
 	// Screen coords to window coords
-	Point pos = screenPosToWindowPos(screen);
+	PointF pos = screenPosToWindowPos(screen);
 
 	// Window coords to normalized coords
 	Math::Vector4d in;
@@ -190,27 +196,27 @@ void Scene::screenPosToDirection(const Point &screen, float &pitch, float &headi
 }
 
 // TODO: below ported from residualvm. Check if it may / should be used, or remove. Compare with func in base class..
-Point Scene::scalePoint(const Point &screen) const {
-	Rect viewport;
-	Rect originalSize;
-	if (_vm->_state->getViewType() == kMenu) {
-		viewport = _vm->_gfx->origAspectRatioViewport(); // TODO?viewport();
-		originalSize = Rect(Renderer::kOriginalWidth, Renderer::kOriginalHeight);
-	} else {
-		viewport = _vm->_gfx->frameViewport();
-		originalSize = Rect(Renderer::kOriginalWidth, Renderer::kFrameHeight);
-	}
+// PointF Scene::scalePoint(const Point &screen) const {
+// 	Rect viewport;
+// 	Rect originalSize;
+// 	if (_vm->_state->getViewType() == kMenu) {
+// 		viewport = _vm->_gfx->origAspectRatioViewport(); // TODO?viewport();
+// 		originalSize = Rect(Renderer::kOriginalWidth, Renderer::kOriginalHeight);
+// 	} else {
+// 		viewport = _vm->_gfx->frameViewport();
+// 		originalSize = Rect(Renderer::kOriginalWidth, Renderer::kFrameHeight);
+// 	}
 
-	Point scaledPosition = screen;
-	scaledPosition.x -= viewport.left;
-	scaledPosition.y -= viewport.top;
-	scaledPosition.x = CLIP<int16>(scaledPosition.x, 0, viewport.width());
-	scaledPosition.y = CLIP<int16>(scaledPosition.y, 0, viewport.height());
+// 	Point scaledPosition = screen;
+// 	scaledPosition.x -= viewport.left;
+// 	scaledPosition.y -= viewport.top;
+// 	scaledPosition.x = CLIP<int16>(scaledPosition.x, 0, viewport.width());
+// 	scaledPosition.y = CLIP<int16>(scaledPosition.y, 0, viewport.height());
 
-	scaledPosition.x *= originalSize.width() / (float)viewport.width();
-	scaledPosition.y *= originalSize.height() / (float)viewport.height();
+// 	scaledPosition.x *= originalSize.width() / (float)viewport.width();
+// 	scaledPosition.y *= originalSize.height() / (float)viewport.height();
 
-	return scaledPosition;
-}
+// 	return scaledPosition;
+// }
 
 } // end of namespace Myst3

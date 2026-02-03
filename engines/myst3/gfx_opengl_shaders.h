@@ -51,8 +51,8 @@ public:
 	Texture *createTextureFromDDS(const DDS &dds) override;
 	bool supportsCompressedTextures() const override;
 
-	void drawRect2D(const Rect &screenRect, uint8 a, uint8 r, uint8 g, uint8 b) override;
-	virtual void drawTexturedRect2D(const Rect &screenRect, const Rect &textureRect, Texture *texture,
+	void drawRect2D(const RectF &screenRect, uint8 a, uint8 r, uint8 g, uint8 b) override;
+	virtual void drawTexturedRect2D(const RectF &screenRect, const RectF &textureRect, Texture *texture,
 	                        		float transparency = -1.0, bool additiveBlending = false) override;
 	virtual void drawTexturedRect3D(const Math::Vector3d &topLeft, const Math::Vector3d &bottomLeft,
 	                                const Math::Vector3d &topRight, const Math::Vector3d &bottomRight,
@@ -61,7 +61,7 @@ public:
 	void drawCube(Texture **textures) override;
 	void drawCubeWithEffects(Texture **textures, Texture **effectMasks, Texture *shieldPattern,
 	                         const Common::Array<Effect *> &effects, GameState *state);
-	void draw2DText(const Common::String &text, const Point &position) override;
+	void draw2DText(const Common::String &text, const PointF &position) override;
 
 	Graphics::Surface *getScreenshot() override;
 	Texture *copyScreenshotToTexture() override;
@@ -88,10 +88,10 @@ private:
 	GLuint _textVBO;
 	GLuint _quadEBO;
 
-	Rect _currentViewport;
+	RectF _currentViewport;
 
 	Common::String _prevText;
-	Point _prevTextPosition;
+	PointF _prevTextPosition;
 };
 
 } // End of namespace Myst3

@@ -44,17 +44,16 @@ public:
 	 * Transform a point from screen coordinates to scaled window coordinates
 	 */
 	//TODO: Testing use of the base implementation in Window. Is an override needed here? If so, the implemented logic must be fixed. 
-	Point scalePoint(const Point &screen) const override;
+	//PointF scalePoint(const PointF &screen) const override;
 
 	// Window API
-	Rect getPosition() const override;
-	Rect getOriginalPosition() const override;
+	RectF getPosition() const override;
 
-	void updateCamera(const Point &mouse);
+	void updateCamera(const PointF &mouse);
 
 	void updateMouseSpeed();
 
-	void screenPosToDirection(const Point &screen, float &pitch, float &heading) const;
+	void screenPosToDirection(const PointF &screen, float &pitch, float &heading) const;
 	static Math::Vector3d directionToVector(float pitch, float heading);
 
 	void drawSunspotFlare(const SunSpot &s);

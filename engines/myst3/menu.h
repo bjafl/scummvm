@@ -177,12 +177,12 @@ public:
 	virtual int16 update() = 0;
 
 protected:
-	Rect getPosition() const;
+	RectF getPosition() const;
 
 	Myst3Engine *_vm;
 	Video::BinkDecoder _bink;
 	Texture *_texture;
-	Rect _screenSize;
+	RectF _screenSize;
 
 	uint _buttonCount;
 };
@@ -196,12 +196,12 @@ public:
 	int16 update() override;
 
 private:
-	Point getRelativeMousePosition() const;
+	PointF getRelativeMousePosition() const;
 
 	uint16 _previousframe;
 	uint16 _frameToDisplay;
 
-	Rect _buttons[3];
+	RectF _buttons[3];
 
 	void loadButtons();
 };

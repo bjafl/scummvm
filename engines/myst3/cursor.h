@@ -89,15 +89,17 @@ public:
 	virtual ~Cursor();
 
 	void changeCursor(uint32 index);
-	bool isPositionLocked() { return _lockedAtCenter; }
+	bool isPositionLocked() { return _lockedAtCenter; };
 	void lockPosition(bool lock);
 
 	/** Get the mouse cursor position */
-	Point getPosition() const {
+	PointF getPosition() const {
 		return _position;
 	}
+	PointF getScreenPosition() const;
+	Point getOriginalGamePosition() const;
 
-	void updatePosition(const Point &mouse);
+	void updatePosition(const PointF &mouse);
 
 	void getDirection(float &pitch, float &heading);
 
@@ -112,7 +114,7 @@ private:
 	int32 _hideLevel;
 
 	/** Position of the cursor */
-	Point _position;
+	PointF _position;
 
 	// Surfaces for hardware cursor (CursorMan)
 	typedef Common::HashMap<uint32, Graphics::Surface *> SurfaceMap;

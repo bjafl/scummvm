@@ -88,15 +88,15 @@ Dialog::~Dialog() {
 }
 
 void Dialog::draw() {
-	Rect textureRect(_texture->width, _texture->height);
-	Rect screenRect = getPosition();
+	RectF textureRect(_texture->width, _texture->height);
+	RectF screenRect = _vm->_gfx->viewport();
 	_vm->_gfx->drawTexturedRect2D(screenRect, textureRect, _texture);
     debugC(kDebugGraphics, "Dialog drawTexturedRect2D - screen [%dx%d], texture [%dx%d]", screenRect.width(), screenRect.height(), textureRect.width(), textureRect.height());
 }
 
-Rect Dialog::getPosition() const {
+RectF Dialog::getPosition() const {
 	//TODO?: _scaled check (orig game width height)
-	Rect screenRect = _vm->_gfx->createScaledRect(_texture->width, _texture->height, true);
+	RectF screenRect = _vm->_gfx->origAspectRatioViewport();
 	return screenRect;
 }
 
@@ -152,18 +152,18 @@ int16 ButtonsDialog::update() {
 		if (event.type == Common::EVENT_MOUSEMOVE) {
 			// Compute local mouse coordinates
 			_vm->_cursor->updatePosition(event.mouse);
-			Point localMouse = getRelativeMousePosition();
+			PointF localMouse = getRelativeMousePosition();
 
 			// No hovered button
 			_frameToDisplay = 0;
 
+			float scale = _vm->_gfx->getScale();
 			// Display the frame corresponding to the hovered button
 			for (uint i = 0; i < _buttonCount; i++) {
-				Rect button = _buttons[i];
-				Rect buttonRect(button.left, button.top, button.right, button.bottom);
-				buttonRect = _vm->_gfx->scaleRect(buttonRect);
+				RectF button = _buttons[i];
+				RectF buttonRect(button.left * scale, button.top * scale, button.right * scale, button.bottom * scale);
 
-				if (buttonRect.contains(Point(localMouse.x, localMouse.y))) {
+				if (buttonRect.contains(localMouse)) {
 					_frameToDisplay = i + 1;
 					debugC(kDebugModding, "Hovering button#%d", i);
 					break;
@@ -188,16 +188,14 @@ int16 ButtonsDialog::update() {
 	return -2;
 }
 
-Point ButtonsDialog::getRelativeMousePosition() const {
+PointF ButtonsDialog::getRelativeMousePosition() const {
 	// Convert cursor screen position to viewport-relative, then to dialog-relative
-	Rect viewport = _vm->_gfx->viewport();
-	Rect dialogPos = getPosition();
+	RectF viewport = _vm->_gfx->viewport();
+	RectF dialogPos = getPosition();
 
-	Point cursorPos = _vm->_cursor->getPosition();
-	// Cursor is in screen coords, convert to viewport-relative
-	Point viewportRelative(cursorPos.x - viewport.left, cursorPos.y - viewport.top);
+	PointF cursorPos = _vm->_cursor->getScreenPosition();
 	// Then to dialog-relative
-	return Point(viewportRelative.x - dialogPos.left, viewportRelative.y - dialogPos.top);
+	return PointF(cursorPos.x - dialogPos.left, cursorPos.y - dialogPos.top);
 }
 
 GamepadDialog::GamepadDialog(Myst3Engine *vm, uint id):
@@ -446,8 +444,8 @@ Graphics::Surface *Menu::createThumbnail(Graphics::Surface *big) {
 	small->create(GameState::kThumbnailWidth, GameState::kThumbnailHeight, Texture::getRGBAPixelFormat());
 
 	// The portion of the screenshot to keep
-	Rect frame = _vm->_scene->getPosition();
-	Graphics::Surface frameSurface = big->getSubArea(frame);
+	RectF frame = _vm->_scene->getPosition();
+	Graphics::Surface frameSurface = big->getSubArea(Rect(frame.left, frame.top, frame.right, frame.bottom)); //TODO
 
 	uint32 *dst = (uint32 *)small->getPixels();
 	for (int i = 0; i < small->h; i++) {
@@ -727,12 +725,12 @@ void PagingMenu::draw() {
 		PolarRect rect = nodeData->hotspots[i + 1].rects[0];
 
 		Common::String display = prepareSaveNameForDisplay(_saveLoadFiles[itemToDisplay]);
-		_vm->_gfx->draw2DText(display, Point(rect.centerPitch, rect.centerHeading));
+		_vm->_gfx->draw2DText(display, PointF(rect.centerPitch, rect.centerHeading));
 	}
 
 	if (!_saveLoadAgeName.empty()) {
 		PolarRect rect = nodeData->hotspots[8].rects[0];
-		_vm->_gfx->draw2DText(_saveLoadAgeName, Point(rect.centerPitch, rect.centerHeading));
+		_vm->_gfx->draw2DText(_saveLoadAgeName, PointF(rect.centerPitch, rect.centerHeading));
 	}
 
 	// Save screen specific
@@ -753,7 +751,7 @@ void PagingMenu::draw() {
 		}
 
 		PolarRect rect = nodeData->hotspots[9].rects[0];
-		_vm->_gfx->draw2DText(display, Point(rect.centerPitch, rect.centerHeading));
+		_vm->_gfx->draw2DText(display, PointF(rect.centerPitch, rect.centerHeading));
 	}
 }
 
@@ -829,12 +827,12 @@ void AlbumMenu::draw() {
 		return;
 
 	if (!_saveLoadAgeName.empty()) {
-		Point p(184 - (13 * _saveLoadAgeName.size()) / 2, 305);
+		PointF p(184 - (13 * _saveLoadAgeName.size()) / 2, 305);
 		_vm->_gfx->draw2DText(_saveLoadAgeName, p);
 	}
 
 	if (!_saveLoadTime.empty()) {
-		Point p(184 - (13 * _saveLoadTime.size()) / 2, 323);
+		PointF p(184 - (13 * _saveLoadTime.size()) / 2, 323);
 		_vm->_gfx->draw2DText(_saveLoadTime, p);
 	}
 }

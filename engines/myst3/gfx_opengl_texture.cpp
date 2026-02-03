@@ -92,7 +92,7 @@ OpenGLTexture::OpenGLTexture(const Graphics::Surface *surface) {
 	update(surface);
 }
 
-OpenGLTexture::OpenGLTexture(uint w, uint h, GLuint internalFmt, const byte *data, uint dataSize) {
+OpenGLTexture::OpenGLTexture(float w, float h, GLuint internalFmt, const byte *data, uint dataSize) {
 	width = w;
 	height = h;
 	internalWidth = w;
@@ -141,7 +141,7 @@ void OpenGLTexture::updatePartial(const Graphics::Surface *surface, const Rect &
 	updateTexture(surface, rect);
 }
 
-void OpenGLTexture::copyFromFramebuffer(const Rect &screen) {
+void OpenGLTexture::copyFromFramebuffer(const RectF &screen) {
 	internalFormat = GL_RGB;
 	width  = screen.width();
 	height = screen.height();

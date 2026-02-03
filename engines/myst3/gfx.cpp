@@ -66,6 +66,34 @@ const float Renderer::cubeVertices[] = {
 	0.0f, 0.0f, 320.0f, 320.0f, -320.0f,
 	1.0f, 0.0f, -320.0f, 320.0f, -320.0f};
 
+// const float Renderer::cubeVertices[] = {
+// 	// S     T      X      Y      Z
+// 	0.0f,  1.0f, -1.0f, -1.0f, -1.0f,
+// 	1.0f,  1.0f,  1.0f, -1.0f, -1.0f,
+// 	0.0f,  0.0f, -1.0f,  1.0f, -1.0f,
+// 	1.0f,  0.0f,  1.0f,  1.0f, -1.0f,
+// 	0.0f,  1.0f,  1.0f, -1.0f, -1.0f,
+// 	1.0f,  1.0f, -1.0f, -1.0f, -1.0f,
+// 	0.0f,  0.0f,  1.0f, -1.0f,  1.0f,
+// 	1.0f,  0.0f, -1.0f, -1.0f,  1.0f,
+// 	0.0f,  1.0f,  1.0f, -1.0f,  1.0f,
+// 	1.0f,  1.0f, -1.0f, -1.0f,  1.0f,
+// 	0.0f,  0.0f,  1.0f,  1.0f,  1.0f,
+// 	1.0f,  0.0f, -1.0f,  1.0f,  1.0f,
+// 	0.0f,  1.0f,  1.0f, -1.0f, -1.0f,
+// 	1.0f,  1.0f,  1.0f, -1.0f,  1.0f,
+// 	0.0f,  0.0f,  1.0f,  1.0f, -1.0f,
+// 	1.0f,  0.0f,  1.0f,  1.0f,  1.0f,
+// 	0.0f,  1.0f, -1.0f, -1.0f,  1.0f,
+// 	1.0f,  1.0f, -1.0f, -1.0f, -1.0f,
+// 	0.0f,  0.0f, -1.0f,  1.0f,  1.0f,
+// 	1.0f,  0.0f, -1.0f,  1.0f, -1.0f,
+// 	0.0f,  1.0f,  1.0f,  1.0f,  1.0f,
+// 	1.0f,  1.0f, -1.0f,  1.0f,  1.0f,
+// 	0.0f,  0.0f,  1.0f,  1.0f, -1.0f,
+// 	1.0f,  0.0f, -1.0f,  1.0f, -1.0f
+// };
+
 Renderer::Renderer(OSystem *system)
 	: _system(system),
 	  _font(nullptr) {
@@ -140,43 +168,68 @@ Rect Renderer::getFontCharacterRect(uint8 character) {
 	return Rect(16 * index, 0, 16 * (index + 1), 32);
 }
 
-Rect Renderer::viewport() const {
+RectF Renderer::viewport() const {
 	return _screenViewport;
 }
 
-Rect Renderer::topBorder() const {
-	PointF scale = getScale();
-	return Rect(_screenViewport.width(), kTopBorderHeight * scale.y);
-}
-Rect Renderer::bottomBorder() const {
-	PointF scale = getScale();
-	return Rect(_screenViewport.width(), kBottomBorderHeight * scale.y);
+float Renderer::getScale() const { // TODO!
+	return g_system->getWidth() / kOriginalWidth;
 }
 
-Rect Renderer::frameViewport() const {
-	PointF scale = getScale();
-	int topBorderHeight = kTopBorderHeight * scale.y;
-	int bottomBorderHeight = kBottomBorderHeight * scale.y;
-	Rect frame(_screenViewport.width(), _screenViewport.height() - topBorderHeight - bottomBorderHeight);
-	frame.translate(0, topBorderHeight);
-	return frame;
+
+// Rect Renderer::topBorder() const {
+// 	PointF scale = getScale();
+// 	return Rect(_screenViewport.width(), kTopBorderHeight * scale.y);
+// }
+RectF Renderer::topBorder() const {
+	return RectF(_screenViewport.width(), kTopBorderHeightRelative);
+}
+// Rect Renderer::bottomBorder() const {
+// 	PointF scale = getScale();
+// 	return Rect(_screenViewport.width(), kBottomBorderHeight * scale.y);
+// }
+RectF Renderer::bottomBorder() const {
+	return RectF(_screenViewport.width(), kBottomBorderHeightRelative);
 }
 
-Rect Renderer::origAspectRatioViewport() const {
-	Rect screen(_system->getWidth(), _system->getHeight());
-	Rect origFrame(kOriginalWidth, kOriginalHeight);
-	Rect scaledFrame = origFrame.fitInside(screen);
-	debugC(kDebugGraphics, "OrigAspectRatioViewport - screen (%dx%d), orig (%dx%d), scaled (%dx%d)", screen.width(), screen.height(), origFrame.width(), origFrame.height(), scaledFrame.width(), scaledFrame.height());
-	return scaledFrame;
+RectF Renderer::frameViewport() const {
+	return RectF(
+		_screenViewport.left, 
+		_screenViewport.top + kTopBorderHeightRelative, 
+		_screenViewport.right, 
+		_screenViewport.bottom - kTopBorderHeightRelative - kBottomBorderHeightRelative
+	);
+
+}
+
+// RectF Renderer::origAspectRatioViewportRelative() const {
+// 	float currentAspectRatio = _screenViewport.width() / _screenViewport.height();
+// 	float width = CLIP<float>(currentAspectRatio / kOriginalAspectRatio, 0.0f, 1.0f);
+// 	float height = CLIP<float>(kOriginalAspectRatio / currentAspectRatio, 0.0f, 1.0f);
+// 	float left = (1.0f - width) / 2;
+// 	float top = (1.0f - height) / 2;
+// 	return RectF(left, top, left + width, top + height);
+// }
+
+// Rect Renderer::origAspectRatioViewport() const {
+// 	Rect screen(_system->getWidth(), _system->getHeight());
+// 	Rect origFrame(kOriginalWidth, kOriginalHeight);
+// 	Rect scaledFrame = origFrame.fitInside(screen);
+// 	debugC(kDebugGraphics, "OrigAspectRatioViewport - screen (%dx%d), orig (%dx%d), scaled (%dx%d)", screen.width(), screen.height(), origFrame.width(), origFrame.height(), scaledFrame.width(), scaledFrame.height());
+// 	return scaledFrame;
+// }
+RectF Renderer::origAspectRatioViewport() const {
+	return RectF(kOriginalWidth, kOriginalHeight).fitInside(_screenViewport);
 }
 
 void Renderer::computeScreenViewport() {
+	int16 screenWidth = _system->getWidth();
+	int16 screenHeight = _system->getHeight();
+	RectF screen(screenWidth, screenHeight);
 	if (ConfMan.getBool("widescreen_mod")) {
-		int32 screenWidth = _system->getWidth();
-		int32 screenHeight = _system->getHeight();
-		_screenViewport = Rect(screenWidth, screenHeight);
+		_screenViewport = screen;
 	} else {
-		_screenViewport = origAspectRatioViewport();
+		_screenViewport = RectF(kOriginalWidth, kOriginalHeight).fitInside(screen);
 	}
 }
 
@@ -184,7 +237,7 @@ Math::Matrix4 Renderer::makeProjectionMatrix(float fov) const {
 	static const float nearClipPlane = 1.0;
 	static const float farClipPlane = 10000.0;
 
-	float aspectRatio = kOriginalWidth / (float)kFrameHeight;
+	float aspectRatio = kOriginalWidth / kFrameHeight;
 
 	float xmaxValue = nearClipPlane * tan(fov * M_PI / 360.0);
 	float ymaxValue = xmaxValue / aspectRatio;
@@ -304,67 +357,73 @@ void Renderer::renderWindowOverlay(Window *window) {
 	renderDrawableOverlay(window, window);
 }
 
-PointF Renderer::getScale() const {
-	return PointF(
-		_screenViewport.width() / (float)kOriginalWidth,
-		_screenViewport.height() / (float)kOriginalHeight);
-}
 
-Rect Renderer::scaleRect(const Rect &rect) {
-	PointF scale = getScale();
-	return rect * scale;
-}
 
-RectF Renderer::scaleRectRelative(const Rect &rect) {
-	PointF vpSize(g_system->getWidth(), g_system->getHeight());
-	return RectF(rect) / vpSize;
-}
+// PointF Renderer::getScale() const {
+// 	return PointF(
+// 		_screenViewport.width() / (float)kOriginalWidth,
+// 		_screenViewport.height() / (float)kOriginalHeight);
+// }
 
-Rect Renderer::centerOnViewport(const Rect &rect, bool useFrameViewport) {
-	Rect screenViewport = useFrameViewport ? frameViewport() : viewport();
-	// Return rect centered within viewport, with position relative to viewport origin (0,0)
-	Rect r(rect.width(), rect.height());
-	r.translate((screenViewport.width() - rect.width()) / 2,
-				(screenViewport.height() - rect.height()) / 2);
-	return r;
-}
+// Rect Renderer::scaleRect(const Rect &rect) {
+// 	PointF scale = getScale();
+// 	return rect * scale;
+// }
 
-Rect Renderer::createScaledRect(int16 w, int16 h, bool centerOnViewport, bool useFrameViewport) {
-	Rect rect = Rect(w, h) * getScale();
-	if (centerOnViewport) {
-		rect = Renderer::centerOnViewport(rect, useFrameViewport);
-	}
-	return rect;
-}
+// RectF Renderer::scaleRectRelative(const Rect &rect) {
+// 	PointF vpSize(g_system->getWidth(), g_system->getHeight());
+// 	return RectF(rect) / vpSize;
+// }
+
+// Rect Renderer::centerOnViewport(const Rect &rect, bool useFrameViewport) {
+// 	Rect screenViewport = useFrameViewport ? frameViewport() : viewport();
+// 	// Return rect centered within viewport, with position relative to viewport origin (0,0)
+// 	Rect r(rect.width(), rect.height());
+// 	r.translate((screenViewport.width() - rect.width()) / 2,
+// 				(screenViewport.height() - rect.height()) / 2);
+// 	return r;
+// }
+
+// Rect Renderer::createScaledRect(int16 w, int16 h, bool centerOnViewport, bool useFrameViewport) {
+// 	Rect rect = Rect(w, h) * getScale();
+// 	if (centerOnViewport) {
+// 		rect = Renderer::centerOnViewport(rect, useFrameViewport);
+// 	}
+// 	return rect;
+// }
 
 Drawable::Drawable() : _isConstrainedToWindow(true),
 					   _is3D(false) {
 }
 
-Point Window::getCenter() const {
-	Rect frame = getPosition();
+PointF Window::getCenter() const {
+	RectF frame = getPosition();
 	return frame.center();
 }
 
-Point Window::screenPosToWindowPos(const Point &screen, bool clip) const {
-	Rect frame = getPosition();
+PointF Window::screenPosToWindowPos(const PointF &screen, bool clip) const {
+	RectF frame = getPosition();
 
-	Point translated = screen - frame.origin();
+	PointF translated = screen - frame.origin();
 	if (clip) {
-		translated.x = CLIP<int16>(translated.x, 0, frame.width());
-		translated.y = CLIP<int16>(translated.y, 0, frame.height());
+		translated.x = CLIP<float>(translated.x, 0, frame.width());
+		translated.y = CLIP<float>(translated.y, 0, frame.height());
 	}
 	return translated;
 }
 
-Point Window::scalePoint(const Point &screen) const {
-	return screenPosToWindowPos(screen, true);
-	// // Convert screen coordinates to original game coords
-	// Point windowPos = screenPosToWindowPos(screen, true);
-	// PointF relPos = windowPos / PointF(g_system->getWidth(), g_system->getHeight());
-	// Point origPos = relPos * Point(Renderer::kOriginalWidth, Renderer::kOriginalHeight);
-	// return origPos;
-}	
+RectF Window::getOriginalPosition() const { //TODO!
+	return getPosition();
+}
+
+// Point Window::scalePoint(const Point &screen) const {
+// 	return screenPosToWindowPos(screen, true);
+// 	// // Convert screen coordinates to original game coords
+// 	// Point windowPos = screenPosToWindowPos(screen, true);
+// 	// PointF relPos = windowPos / PointF(g_system->getWidth(), g_system->getHeight());
+// 	// Point origPos = relPos * Point(Renderer::kOriginalWidth, Renderer::kOriginalHeight);
+// 	// return origPos;
+// }	
 
 const Graphics::PixelFormat Texture::getRGBAPixelFormat() {
 	return Graphics::PixelFormat::createFormatRGBA32();

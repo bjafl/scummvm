@@ -44,12 +44,12 @@ public:
 	 * @param data Pointer to the compressed data
 	 * @param dataSize Size of the compressed data in bytes
 	 */
-	OpenGLTexture(uint w, uint h, GLuint internalFmt, const byte *data, uint dataSize);
+	OpenGLTexture(float w, float h, GLuint internalFmt, const byte *data, uint dataSize);
 
 	void update(const Graphics::Surface *surface) override;
 	void updatePartial(const Graphics::Surface *surface, const Rect &rect) override;
 
-	void copyFromFramebuffer(const Rect &screen);
+	void copyFromFramebuffer(const RectF &screen);
 
 	GLuint id;
 	GLuint internalFormat;

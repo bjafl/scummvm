@@ -40,16 +40,16 @@ NodeFrame::~NodeFrame() {
 
 void NodeFrame::draw() {
 	// Get the window position from the scene (viewport is set up by renderDrawable)
-	Rect windowPos = _vm->_scene->getPosition();
+	RectF windowPos = _vm->_scene->getPosition();
 
 	// Draw rect is relative to viewport (0,0 is top-left of the window)
-	Rect screenRect(windowPos.width(), windowPos.height());
+	RectF screenRect(windowPos.width(), windowPos.height());
 
 	// Update the OpenGL texture if needed
 	_faces[0]->uploadTexture();
 
 	// Used fragment of texture (full texture)
-	Rect textureRect = Rect(_faces[0]->_texture->width, _faces[0]->_texture->height);
+	RectF textureRect = RectF(_faces[0]->_texture->width, _faces[0]->_texture->height);
 
 	// Draw
 	_vm->_gfx->drawTexturedRect2D(screenRect, textureRect, _faces[0]->_texture);

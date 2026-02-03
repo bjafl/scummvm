@@ -77,6 +77,26 @@ struct RectF  : public Common::RectBase<float, RectF , PointF> {
 	Math::Vector2d topLeft() const {
 		return Math::Vector2d(top, left);
 	}
+	
+	RectF centerIn(const RectF &rect) const {
+		RectF r(rect);
+		PointF centerDiff = center() - rect.center();
+		r.translate(centerDiff.x / 2, centerDiff.y / 2);
+		return r;
+	}
+	RectF fitInside(const RectF &rect, bool center = true) const {
+		float aspectRatio = width() / (float)height();
+		float w = rect.width();
+		float h = rect.height();
+		float newW = MIN<float>(w, h * aspectRatio);
+		float newH = MIN<float>(h, w / aspectRatio);
+		RectF r(left, top, left + newW, top + newH);
+		r.translate(rect.left, rect.top);
+		if (center) {
+			r.centerIn(rect);
+		}
+		return r;
+	}
 };
 static inline RectF operator/(const RectF &r, const PointF &p) {
 	return RectF(PointF(r.left / p.x, r.right / p.y), r.width() / p.x, r.height() / p.y);

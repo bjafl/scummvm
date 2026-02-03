@@ -52,7 +52,7 @@ private:
 
 	const Graphics::Font *_font;
 	Graphics::Surface *_surface;
-	PointF _scale;
+	float _scale;
 	uint8 *_charset;
 };
 
@@ -60,7 +60,7 @@ FontSubtitles::FontSubtitles(Myst3Engine *vm) :
 	Subtitles(vm),
 	_font(nullptr),
 	_surface(nullptr),
-	_scale(PointF(1, 1)),
+	_scale(1.0f),
 	_charset(nullptr) {
 }
 
@@ -97,7 +97,7 @@ void FontSubtitles::loadResources() {
 
 	Common::SeekableReadStream *s = SearchMan.createReadStreamForMember(ttfFile);
 	if (s) {
-		_font = Graphics::loadTTFFont(s, DisposeAfterUse::YES, (int)(_fontSize * _scale.y));
+		_font = Graphics::loadTTFFont(s, DisposeAfterUse::YES, (int)(_fontSize * _scale));
 	} else {
 		warning("Unable to load the subtitles font '%s'", ttfFile);
 	}
@@ -228,7 +228,7 @@ void FontSubtitles::createTexture() {
 	// Use RGB 565 to allow use of BDF fonts
 	if (!_surface) {
 		uint16 width = screen.width();
-		uint16 height = _surfaceHeight * _scale.y;
+		uint16 height = _surfaceHeight * _scale;
 
 		// Make sure the width is even. Some graphics drivers have trouble reading from
 		// surfaces with an odd width (Mesa 18 on Intel).
@@ -283,11 +283,11 @@ void FontSubtitles::drawToTexture(const Phrase *phrase) {
 
 
 	if (_fontCharsetCode == 0) {
-		font->drawString(_surface, phrase->string, 0, _singleLineTop * _scale.y, _surface->w, 0xFFFFFFFF, Graphics::kTextAlignCenter, 0, false);
+		font->drawString(_surface, phrase->string, 0, _singleLineTop * _scale, _surface->w, 0xFFFFFFFF, Graphics::kTextAlignCenter, 0, false);
 	} else {
 		Common::CodePage encoding = getEncodingFromCharsetCode(_fontCharsetCode);
 		Common::U32String unicode = Common::U32String(phrase->string, encoding);
-		font->drawString(_surface, unicode, 0, _singleLineTop * _scale.y, _surface->w, 0xFFFFFFFF, Graphics::kTextAlignCenter, 0, false);
+		font->drawString(_surface, unicode, 0, _singleLineTop * _scale, _surface->w, 0xFFFFFFFF, Graphics::kTextAlignCenter, 0, false);
 	}
 
 	// Update the texture
@@ -472,31 +472,31 @@ void Subtitles::drawOverlay() {
 	if (!_texture) return;
 
 	// Get window position (viewport is set to this by renderDrawableOverlay)
-	Rect windowPos = getPosition();
+	RectF windowPos = getPosition();
 
 	// Draw rect covers the full window, relative to viewport (0,0)
-	Rect drawRect(windowPos.width(), windowPos.height());
+	RectF drawRect(windowPos.width(), windowPos.height());
 
 	if (_vm->isWideScreenModEnabled()) {
 		// Draw a black background at bottom of window
-		Rect blackRect(windowPos.width(), _texture->height);
+		RectF blackRect(windowPos.width(), _texture->height);
 		blackRect.translate(0, windowPos.height() - _texture->height);
 		_vm->_gfx->drawRect2D(blackRect, 0xFF, 0x00, 0x00, 0x00);
 
 		// Center the subtitles texture in the black area
-		Rect textureRect(_texture->width, _texture->height);
+		RectF textureRect(_texture->width, _texture->height);
 		textureRect.translate((windowPos.width() - _texture->width) / 2,
 		                      windowPos.height() - _texture->height);
 
-		_vm->_gfx->drawTexturedRect2D(textureRect, Rect(_texture->width, _texture->height), _texture);
+		_vm->_gfx->drawTexturedRect2D(textureRect, RectF(_texture->width, _texture->height), _texture);
 		debugC(kDebugGraphics, "Subtitles drawTexturedRect2D - screen [%dx%d], texture [%dx%d]", textureRect.width(), textureRect.height(), _texture->width, _texture->height);
 	} else {
 		// Center subtitles in the window
-		Rect textureRect(_texture->width, _texture->height);
+		RectF textureRect(_texture->width, _texture->height);
 		textureRect.translate((windowPos.width() - _texture->width) / 2,
 		                      (windowPos.height() - _texture->height) / 2);
 
-		_vm->_gfx->drawTexturedRect2D(textureRect, Rect(_texture->width, _texture->height), _texture);
+		_vm->_gfx->drawTexturedRect2D(textureRect, RectF(_texture->width, _texture->height), _texture);
 		debugC(kDebugGraphics, "Subtitles drawTexturedRect2D - screen [%dx%d], texture [%dx%d]", textureRect.width(), textureRect.height(), _texture->width, _texture->height);
 	}
 }
@@ -529,20 +529,20 @@ void Subtitles::freeTexture() {
 	}
 }
 
-Rect Subtitles::getPosition() const {
-	Rect screen = _vm->_gfx->viewport();
+RectF Subtitles::getPosition() const {
+	RectF screen = _vm->_gfx->viewport();
 
-	Rect frame;
+	RectF frame;
 
 	if (_vm->isWideScreenModEnabled()) {
-		frame = Rect(screen.width(), Renderer::kBottomBorderHeight);
+		frame = RectF(screen.width(), Renderer::kBottomBorderHeight);
 
-		Rect scenePosition = _vm->_scene->getPosition();
+		RectF scenePosition = _vm->_scene->getPosition();
 		int16 top = CLIP<int16>(screen.height() - frame.height(), 0, scenePosition.bottom);
 
 		frame.translate(0, top);
 	} else {
-		frame = Rect(screen.width(), screen.height() * Renderer::kBottomBorderHeight / Renderer::kOriginalHeight);
+		frame = RectF(screen.width(), screen.height() * Renderer::kBottomBorderHeight / Renderer::kOriginalHeight);
 		frame.translate(screen.left, screen.top + screen.height() * (Renderer::kTopBorderHeight + Renderer::kFrameHeight) / Renderer::kOriginalHeight);
 	}
 
@@ -551,7 +551,7 @@ Rect Subtitles::getPosition() const {
 
 
 //TODO: rem fun?
-Rect Subtitles::getOriginalPosition() const {
+RectF Subtitles::getOriginalPosition() const {
 	Rect originalPosition = Rect(Renderer::kOriginalWidth, Renderer::kBottomBorderHeight);
 	originalPosition.translate(0, Renderer::kTopBorderHeight + Renderer::kFrameHeight);
 	return originalPosition;

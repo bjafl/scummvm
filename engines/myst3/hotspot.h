@@ -40,10 +40,10 @@ struct CondScript {
 };
 
 struct PolarRect {
-	int16 centerPitch;
-	int16 centerHeading;
-	int16 height;
-	int16 width;
+	float centerPitch;
+	float centerHeading;
+	float height;
+	float width;
 };
 
 class HotSpot {

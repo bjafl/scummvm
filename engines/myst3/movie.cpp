@@ -145,19 +145,19 @@ void Movie::loadPosition(const ResourceDescription::VideoData &videoData) {
 
 void Movie::draw2d() {
 	// Get the scene window to determine scaling
-	Rect sceneViewport = _vm->_scene->getPosition();
-	Point sceneSize(sceneViewport.width(), sceneViewport.height());
-	Rect originalSize = _vm->_scene->getOriginalPosition();
+	RectF sceneViewport = _vm->_scene->getPosition();
+	PointF sceneSize(sceneViewport.width(), sceneViewport.height());
+	RectF originalSize = _vm->_scene->getOriginalPosition();
 	
 	
 	float relPosWidth = _posWidth / originalSize.width();
 	float relPosHeight = _posHeight / originalSize.height();
 	float relPosLeft = _posU / originalSize.width();
 	float relPosTop = _posV / originalSize.height();
-	Point newPosTopLeft = PointF(relPosLeft, relPosTop) * sceneSize;
+	PointF newPosTopLeft = PointF(relPosLeft, relPosTop) * sceneSize;
 	
-	Rect screenRect(newPosTopLeft, relPosWidth * sceneSize.x, relPosHeight * sceneSize.y);
-	Rect videoRect(_bink.getWidth(), _bink.getHeight());
+	RectF screenRect(newPosTopLeft, relPosWidth * sceneSize.x, relPosHeight * sceneSize.y);
+	RectF videoRect(_bink.getWidth(), _bink.getHeight());
 	 debugC(kDebugVideo, "Movie drawTexturedRect2D - sceneViewport [%dx%d], originalViewport [%dx%d], ", sceneViewport.width(), sceneViewport.height(), originalSize.width(), originalSize.height());
 	 debugC(kDebugVideo, "Movie drawTexturedRect2D - origPos (%d, %d)[%dx%d]", _posU, _posV, _posWidth, _posHeight);
 	 debugC(kDebugVideo, "Movie drawTexturedRect2D - screen (%d, %d) [%dx%d], video (%d, %d) [%dx%d]", screenRect.left, screenRect.top, screenRect.width(), screenRect.height(), videoRect.left, videoRect.top, videoRect.width(), videoRect.height());

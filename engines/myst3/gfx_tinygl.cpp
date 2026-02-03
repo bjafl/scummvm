@@ -137,7 +137,7 @@ void TinyGLRenderer::selectTargetWindow(Window *window, bool is3D, bool scaled) 
 	}
 }
 
-void TinyGLRenderer::drawRect2D(const Rect &screenRect, uint8 a, uint8 r, uint8 g, uint8 b) {
+void TinyGLRenderer::drawRect2D(const RectF &screenRect, uint8 a, uint8 r, uint8 g, uint8 b) {
 	tglDisable(TGL_TEXTURE_2D);
 	tglColor4ub(r, g, b, a);
 
@@ -159,7 +159,7 @@ void TinyGLRenderer::drawRect2D(const Rect &screenRect, uint8 a, uint8 r, uint8 
 // void TinyGLRenderer::drawTexturedRect2D(const Rect &screenRect, const Rect &textureRect,
 // 	                                Texture *texture, float transparency, bool additiveBlending) {
 
-void TinyGLRenderer::drawTexturedRect2D(const Rect &screenRect, const Rect &textureRect,
+void TinyGLRenderer::drawTexturedRect2D(const RectF &screenRect, const RectF &textureRect,
                                         Texture *texture, float transparency, bool additiveBlending) {
 	TinyGLTexture2D *glTexture = static_cast<TinyGLTexture2D *>(texture);
 
@@ -200,7 +200,7 @@ void TinyGLRenderer::drawTexturedRect2D(const Rect &screenRect, const Rect &text
 	tglDepthMask(TGL_TRUE);
 }
 
-void TinyGLRenderer::draw2DText(const Common::String &text, const Point &position) {
+void TinyGLRenderer::draw2DText(const Common::String &text, const PointF &position) {
 	TinyGLTexture2D *glFont = static_cast<TinyGLTexture2D *>(_font);
 
 	// The font only has uppercase letters
