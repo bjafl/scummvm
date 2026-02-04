@@ -48,6 +48,7 @@ public:
 
 	// Window API
 	RectF getPosition() const override;
+	RectF getOriginalPosition() const override;
 
 	void updateCamera(const PointF &mouse);
 

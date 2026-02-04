@@ -41,11 +41,11 @@ struct Rect : public Common::RectBase<int16, Rect, Point> {
 	operator Common::Rect() const {
 		return Common::Rect(left, top, right, bottom);
 	}
-	Rect centerIn(const Rect &rect) const {
-		Rect r(rect);
-		r.translate((width() - rect.width()) / 2,
-					(height() - rect.height()) / 2);
-		return r;
+	Rect centerIn(const Rect &container) const {
+		// Return this rect centered within container
+		int16 newLeft = container.left + (container.width() - width()) / 2;
+		int16 newTop = container.top + (container.height() - height()) / 2;
+		return Rect(newLeft, newTop, newLeft + width(), newTop + height());
 	}
 	Rect fitInside(const Rect &rect, bool center = true) const {
 		float aspectRatio = width() / (float)height();
@@ -78,22 +78,24 @@ struct RectF  : public Common::RectBase<float, RectF , PointF> {
 		return Math::Vector2d(left, top);
 	}
 	
-	RectF centerIn(const RectF &rect) const {
-		RectF r(rect);
-		PointF centerDiff = center() - rect.center();
-		r.translate(centerDiff.x / 2, centerDiff.y / 2);
-		return r;
+	RectF centerIn(const RectF &container) const {
+		// Return this rect centered within container
+		float newLeft = container.left + (container.width() - width()) / 2.0f;
+		float newTop = container.top + (container.height() - height()) / 2.0f;
+		return RectF(newLeft, newTop, newLeft + width(), newTop + height());
 	}
-	RectF fitInside(const RectF &rect, bool center = true) const {
+	RectF fitInside(const RectF &container, bool center = true) const {
+		// Compute a rect with aspect ratio of *this* that fits inside container
 		float aspectRatio = width() / (float)height();
-		float w = rect.width();
-		float h = rect.height();
+		float w = container.width();
+		float h = container.height();
 		float newW = MIN<float>(w, h * aspectRatio);
 		float newH = MIN<float>(h, w / aspectRatio);
-		RectF r(left, top, left + newW, top + newH);
-		r.translate(rect.left, rect.top);
+		RectF r(newW, newH);
 		if (center) {
-			r.centerIn(rect);
+			r = r.centerIn(container);
+		} else {
+			r.translate(container.left, container.top);
 		}
 		return r;
 	}

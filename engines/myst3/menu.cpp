@@ -158,11 +158,16 @@ int16 ButtonsDialog::update() {
 			// No hovered button
 			_frameToDisplay = 0;
 
-			float scale = _vm->_gfx->getScale();
+			// Scale button positions from original coords (640x480) to dialog viewport coords
+			RectF dialogPos = getPosition();
+			float scaleX = dialogPos.width() / (float)Renderer::kOriginalWidth;
+			float scaleY = dialogPos.height() / (float)Renderer::kOriginalHeight;
+
 			// Display the frame corresponding to the hovered button
 			for (uint i = 0; i < _buttonCount; i++) {
 				RectF button = _buttons[i];
-				RectF buttonRect(button.left * scale, button.top * scale, button.right * scale, button.bottom * scale);
+				RectF buttonRect(button.left * scaleX, button.top * scaleY,
+				                 button.right * scaleX, button.bottom * scaleY);
 
 				if (buttonRect.contains(localMouse)) {
 					_frameToDisplay = i + 1;
@@ -190,13 +195,16 @@ int16 ButtonsDialog::update() {
 }
 
 PointF ButtonsDialog::getRelativeMousePosition() const {
-	// Convert cursor screen position to viewport-relative, then to dialog-relative
-	RectF viewport = _vm->_gfx->viewport();
+	// cursor->getScreenPosition() returns position relative to _screenViewport
+	// dialogPos is in absolute screen coords - convert to screenViewport-relative first
+	RectF screenViewport = _vm->_gfx->viewport();
 	RectF dialogPos = getPosition();
 
 	PointF cursorPos = _vm->_cursor->getScreenPosition();
-	// Then to dialog-relative
-	return PointF(cursorPos.x - dialogPos.left, cursorPos.y - dialogPos.top);
+
+	// Convert dialogPos from absolute to screenViewport-relative, then get cursor relative to dialog
+	PointF dialogOffset(dialogPos.left - screenViewport.left, dialogPos.top - screenViewport.top);
+	return cursorPos - dialogOffset;
 }
 
 GamepadDialog::GamepadDialog(Myst3Engine *vm, uint id):

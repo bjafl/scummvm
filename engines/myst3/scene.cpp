@@ -150,18 +150,17 @@ RectF Scene::getPosition() const {
 // 	return frame;
 // }
 
-// RectF Scene::getOriginalPosition() const {
-// 	RectF originalPosition;
-
-// 	if (_vm->_state->getViewType() != kMenu) {
-// 		originalPosition = RectF(Renderer::kOriginalWidth, Renderer::kFrameHeight);
-// 		originalPosition.translate(0, Renderer::kTopBorderHeight);
-// 	} else {
-// 		originalPosition = RectF(Renderer::kOriginalWidth, Renderer::kOriginalHeight);
-// 	}
-
-// 	return originalPosition;
-// }
+RectF Scene::getOriginalPosition() const {
+	// Return the original game resolution for the current view type
+	// This is used by Movie::draw2d() to scale positions from original coords to viewport coords
+	if (_vm->_state->getViewType() != kMenu) {
+		RectF originalPosition(Renderer::kOriginalWidth, Renderer::kFrameHeight);
+		originalPosition.translate(0, Renderer::kTopBorderHeight);
+		return originalPosition;
+	} else {
+		return RectF(Renderer::kOriginalWidth, Renderer::kOriginalHeight);
+	}
+}
 
 void Scene::screenPosToDirection(const PointF &screen, float &pitch, float &heading) const {
 	// Rect frame = getPosition();
