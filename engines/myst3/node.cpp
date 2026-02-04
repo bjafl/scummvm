@@ -47,7 +47,7 @@ void Face::setTextureFromBitmap(const ResourceDescription *bitmap) {
 	}
 
 	// Set the whole texture as dirty
-	addTextureDirtyRect(Rect(_bitmap->w, _bitmap->h));
+	addTextureDirtyRect(RectF(_bitmap->w, _bitmap->h));
 }
 
 Face::Face(Myst3Engine *vm, bool is3D) :
@@ -59,7 +59,7 @@ Face::Face(Myst3Engine *vm, bool is3D) :
 		_finalBitmap(nullptr) {
 }
 
-void Face::addTextureDirtyRect(const Rect &rect) {
+void Face::addTextureDirtyRect(const RectF &rect) {
 	if (!_textureDirty) {
 		_textureDirtyRect = rect;
 	} else {
@@ -199,6 +199,9 @@ void Node::loadSpotItem(const Common::String &room, uint16 id, int16 condition, 
 	// Common::String roomName = _vm->getCurrentRoomName();
 	ResourceDescriptionArray resources = _vm->_resourceLoader->listSpotItemImages(room, id);
 	TextureLoader textureLoader(*_vm->_gfx);
+	//float scale = _vm->_gfx->getScale();
+	float scaleX = g_system->getWidth() / Renderer::kOriginalWidth;
+	float scaleY = g_system->getHeight() / Renderer::kOriginalHeight;
 	for (uint i = 0; i < resources.size(); i++) {
 		const ResourceDescription &image = resources[i];
 		ResourceDescription::SpotItemData spotItemData = image.getSpotItemData();
@@ -209,8 +212,10 @@ void Node::loadSpotItem(const Common::String &room, uint16 id, int16 condition, 
 		assert(i < 6 && "Node::loadSpotItem: face index out of bounds");
 		assert(_faces[i] && "Node::loadSpotItem: face is null");
 		assert(_faces[i]->_bitmap && "Node::loadSpotItem: face bitmap is null");
-
-		// uint16 faceIndex = image.getFace() - 1; // Faces are 1-indexed in archive, 0-indexed in _faces array
+		
+		float scaledX = spotItemData.u * scaleX;
+		float scaledY = spotItemData.v * scaleY;
+		debugC(kDebugNode, "  Scaled pos (%f, %f)", scaledX, scaledY);
 		SpotItemFace *spotItemFace = new SpotItemFace(_faces[i], spotItemData.u, spotItemData.v);
 
 		Graphics::Surface *bitmapSurface = textureLoader.loadSurface(image, TextureLoader::kImageFormatJPEG);
@@ -242,7 +247,7 @@ void Node::loadSpotItem(const Common::String &room, uint16 id, int16 condition, 
 	_spotItems.push_back(spotItem);
 }
 
-SpotItemFace *Node::loadMenuSpotItem(int16 condition, const Rect &rect) {
+SpotItemFace *Node::loadMenuSpotItem(int16 condition, const RectF &rect) {
 	SpotItem *spotItem = new SpotItem(_vm);
 
 	spotItem->setCondition(condition);
@@ -407,7 +412,7 @@ void SpotItem::updateDraw() {
 	}
 }
 
-SpotItemFace::SpotItemFace(Face *face, uint16 posX, uint16 posY):
+SpotItemFace::SpotItemFace(Face *face, float posX, float posY):
 		_face(face),
 		_posX(posX),
 		_posY(posY),
@@ -431,7 +436,7 @@ SpotItemFace::~SpotItemFace() {
 	}
 }
 
-void SpotItemFace::initBlack(uint16 width, uint16 height) {
+void SpotItemFace::initBlack(float width, float height) {
 	if (_bitmap) {
 		_bitmap->free();
 	}
@@ -473,7 +478,7 @@ void SpotItemFace::clear() {
 	_drawn = false;
 }
 
-void SpotItemFace::initNotDrawn(uint16 width, uint16 height) {
+void SpotItemFace::initNotDrawn(float width, float height) {
 	// Copy not drawn SpotItem image from face
 	_notDrawnBitmap = new Graphics::Surface();
 	_notDrawnBitmap->create(width, height, Texture::getRGBAPixelFormat());
@@ -483,10 +488,13 @@ void SpotItemFace::initNotDrawn(uint16 width, uint16 height) {
 	}
 }
 
-Rect SpotItemFace::getFaceRect() const {
+RectF SpotItemFace::getFaceRect() const {
 	assert(_bitmap);
 
-	Rect r = Rect(_bitmap->w, _bitmap->h);
+	RectF r = RectF(_bitmap->w, _bitmap->h);
+
+	// Scale from original game coordinates
+	
 	r.translate(_posX, _posY);
 	return r;
 }

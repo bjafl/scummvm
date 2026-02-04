@@ -43,7 +43,7 @@ void TinyGLTexture2D::update(const Graphics::Surface *surface) {
 	tglUploadBlitImage(_blitImage, *surface, 0, false);
 }
 
-void TinyGLTexture2D::updatePartial(const Graphics::Surface *surface, const Rect &rect) {
+void TinyGLTexture2D::updatePartial(const Graphics::Surface *surface, const RectF &rect) {
 	// FIXME: TinyGL does not support partial texture update
 	update(surface);
 }
@@ -88,7 +88,7 @@ void TinyGLTexture3D::update(const Graphics::Surface *surface) {
 	              internalFormat, sourceFormat, const_cast<void *>(surface->getPixels())); // TESTME: Not sure if it works.
 }
 
-void TinyGLTexture3D::updatePartial(const Graphics::Surface *surface, const Rect &rect) {
+void TinyGLTexture3D::updatePartial(const Graphics::Surface *surface, const RectF &rect) {
 	// FIXME: TinyGL does not support partial texture update
 	update(surface);
 }

@@ -106,7 +106,8 @@ public:
 	RectF size() const { return RectF(width, height); }
 
 	virtual void update(const Graphics::Surface *surface) = 0;
-	virtual void updatePartial(const Graphics::Surface *surface, const Rect &rect) = 0;
+	virtual void updatePartial(const Graphics::Surface *surface, const RectF &rect) = 0;
+	//void updatePartial(const Graphics::Surface *surface, const Common::Rect &rect);
 
 	static const Graphics::PixelFormat getRGBAPixelFormat();
 };

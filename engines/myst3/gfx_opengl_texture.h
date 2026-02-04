@@ -47,7 +47,7 @@ public:
 	OpenGLTexture(float w, float h, GLuint internalFmt, const byte *data, uint dataSize);
 
 	void update(const Graphics::Surface *surface) override;
-	void updatePartial(const Graphics::Surface *surface, const Rect &rect) override;
+	void updatePartial(const Graphics::Surface *surface, const RectF &rect) override;
 
 	void copyFromFramebuffer(const RectF &screen);
 
@@ -60,7 +60,7 @@ public:
 	bool isCompressed;
 
 private:
-	void updateTexture(const Graphics::Surface *surface, const Rect &rect);
+	void updateTexture(const Graphics::Surface *surface, const RectF &rect);
 };
 
 } // End of namespace Myst3

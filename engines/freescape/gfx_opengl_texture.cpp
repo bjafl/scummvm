@@ -95,17 +95,20 @@ OpenGLTexture::~OpenGLTexture() {
 }
 
 void OpenGLTexture::update(const Graphics::Surface *surface) {
-	updatePartial(surface, Common::Rect(surface->w, surface->h));
+	updatePartial(surface, Myst3::RectF(surface->w, surface->h));
 }
 
-void OpenGLTexture::updateTexture(const Graphics::Surface *surface, const Common::Rect &rect) {
+void OpenGLTexture::updateTexture(const Graphics::Surface *surface, const Myst3::RectF &rect) {
 	assert(surface->format == _format);
-
+	
 	glBindTexture(GL_TEXTURE_2D, _id);
 	glTexImage2D(GL_TEXTURE_2D, 0, _internalFormat, surface->w, surface->h, 0, _internalFormat, _sourceFormat, const_cast<void *>(surface->getPixels()));
 }
 
 void OpenGLTexture::updatePartial(const Graphics::Surface *surface, const Common::Rect &rect) {
+	error("Use RectF..");
+}
+void OpenGLTexture::updatePartial(const Graphics::Surface *surface, const Myst3::RectF &rect) {
 	updateTexture(surface, rect);
 }
 

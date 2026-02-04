@@ -48,14 +48,14 @@ public:
 
 	void setTextureFromBitmap(const ResourceDescription *jpegDesc);
 
-	void addTextureDirtyRect(const Rect &rect);
+	void addTextureDirtyRect(const RectF &rect);
 	bool isTextureDirty() { return _textureDirty; }
 
 	void uploadTexture();
 
 private:
 	bool _textureDirty;
-	Rect _textureDirtyRect;
+	RectF _textureDirtyRect;
 
 	Myst3Engine *_vm;
 	bool _is3D;
@@ -63,10 +63,10 @@ private:
 
 class SpotItemFace {
 public:
-	SpotItemFace(Face *face, uint16 posX, uint16 posY);
+	SpotItemFace(Face *face, float posX, float posY);
 	~SpotItemFace();
 
-	void initBlack(uint16 width, uint16 height);
+	void initBlack(float width, float height);
 	void loadData(const Graphics::Surface *bitmap);
 	void updateData(const Graphics::Surface *surface);
 	void clear();
@@ -80,19 +80,19 @@ public:
 	uint16 getFadeValue() { return _fadeValue; }
 	void setFadeValue(uint16 value) { _fadeValue = value; }
 
-	Rect getFaceRect() const;
+	RectF getFaceRect() const;
 
 private:
 	Face *_face;
 	bool _drawn;
 	uint16 _fadeValue;
-	uint16 _posX;
-	uint16 _posY;
+	float _posX;
+	float _posY;
 
 	Graphics::Surface *_bitmap;
 	Graphics::Surface *_notDrawnBitmap;
 
-	void initNotDrawn(uint16 width, uint16 height);
+	void initNotDrawn(float width, float height);
 };
 
 class SpotItem {
@@ -119,8 +119,8 @@ private:
 
 class SunSpot {
 public:
-	uint16 pitch;
-	uint16 heading;
+	float pitch;
+	float heading;
 	float intensity;
 	uint32 color;
 	uint16 var;
@@ -140,7 +140,7 @@ public:
 	void drawOverlay() override;
 
 	void loadSpotItem(const Common::String &room, uint16 id, int16 condition, bool fade);
-	SpotItemFace *loadMenuSpotItem(int16 condition, const Rect &rect);
+	SpotItemFace *loadMenuSpotItem(int16 condition, const RectF &rect);
 
 	void loadSubtitles(const Common::String &room, uint32 id);
 	bool hasSubtitlesToDraw();

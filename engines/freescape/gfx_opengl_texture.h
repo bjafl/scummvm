@@ -22,6 +22,8 @@
 #ifndef FREESCAPE_GFX_OPENGL_TEXTURE_H
 #define FREESCAPE_GFX_OPENGL_TEXTURE_H
 
+#include "engines/myst3/rect.h"
+
 #include "graphics/opengl/system_headers.h"
 #include "graphics/surface.h"
 
@@ -37,8 +39,9 @@ public:
 
 	void update(const Graphics::Surface *surface) override;
 	void updatePartial(const Graphics::Surface *surface, const Common::Rect &rect) override;
+	void updatePartial(const Graphics::Surface *surface, const Myst3::RectF &rect);
 
-	void copyFromFramebuffer(const Common::Rect &screen);
+	void copyFromFramebuffer(const Myst3::RectF &screen);
 
 	GLuint _id;
 	GLuint _internalFormat;
@@ -48,7 +51,7 @@ public:
 	bool _upsideDown;
 
 private:
-	void updateTexture(const Graphics::Surface *surface, const Common::Rect &rect);
+	void updateTexture(const Graphics::Surface *surface, const Myst3::RectF &rect);
 };
 
 } // End of namespace Freescape

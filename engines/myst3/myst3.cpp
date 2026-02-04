@@ -1378,7 +1378,10 @@ void Myst3Engine::addSpotItem(uint16 id, int16 condition, bool fade) {
 SpotItemFace *Myst3Engine::addMenuSpotItem(uint16 id, int16 condition, const Rect &rect) {
 	assert(_node);
 
-	SpotItemFace *face = _node->loadMenuSpotItem(condition, rect);
+	// Scale position from original game coords
+	float scale = _gfx->getScale();
+	RectF rectScaled(rect.left * scale, rect.top * scale, rect.right * scale, rect.bottom * scale);
+	SpotItemFace *face = _node->loadMenuSpotItem(condition, rectScaled);
 
 	_menu->setSaveLoadSpotItem(id, face);
 

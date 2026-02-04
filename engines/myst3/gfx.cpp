@@ -190,6 +190,9 @@ RectF Renderer::bottomBorder() const {
 }
 
 RectF Renderer::frameViewport() const {
+	if (ConfMan.getBool("widescreen_mod")){
+		return RectF(_screenViewport);
+	}
 	float topBorder = _screenViewport.height() * kTopBorderHeightRelative;
 	float bottomBorder = _screenViewport.height() * kBottomBorderHeightRelative;
 	return RectF(
