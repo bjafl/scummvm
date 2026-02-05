@@ -140,15 +140,10 @@ void Scene::updateMouseSpeed() {
 RectF Scene::getPosition() const {
 	ViewType viewType = _vm->_state->getViewType();
 	RectF frame = viewType == kMenu ? _vm->_gfx->origAspectRatioViewport() : _vm->_gfx->frameViewport();
-	debugC(kDebugGraphics, "Scene (type: %d) frame x1,y1,x2,y2: %d,%d,%d,%d (WxH: %dx%d)", viewType, frame.top, frame.left, frame.bottom, frame.right, frame.width(), frame.height());
+	debugC(kDebugGraphics, "Scene (type: %d) frame x1,y1,x2,y2: %.2f,%.2f,%.2f,%.2f (WxH: %.2fx%.2f)", viewType, frame.top, frame.left, frame.bottom, frame.right, frame.width(), frame.height());
 	return frame;
 }
-// RectF Scene::getRelativePosition() const {
-// 	ViewType viewType = _vm->_state->getViewType();
-// 	RectF frame = viewType == kMenu ? RectF(1.0f, 1.0f) : _vm->_gfx->frameViewport();
-// 	debugC(kDebugGraphics, "Scene (type: %d) frame x1,y1,x2,y2: %d,%d,%d,%d (WxH: %dx%d)", viewType, frame.top, frame.left, frame.bottom, frame.right, frame.width(), frame.height());
-// 	return frame;
-// }
+
 
 RectF Scene::getOriginalPosition() const {
 	// Return the original game resolution for the current view type

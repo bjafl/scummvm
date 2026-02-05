@@ -203,22 +203,6 @@ RectF Renderer::frameViewport() const {
 	);
 }
 
-// RectF Renderer::origAspectRatioViewportRelative() const {
-// 	float currentAspectRatio = _screenViewport.width() / _screenViewport.height();
-// 	float width = CLIP<float>(currentAspectRatio / kOriginalAspectRatio, 0.0f, 1.0f);
-// 	float height = CLIP<float>(kOriginalAspectRatio / currentAspectRatio, 0.0f, 1.0f);
-// 	float left = (1.0f - width) / 2;
-// 	float top = (1.0f - height) / 2;
-// 	return RectF(left, top, left + width, top + height);
-// }
-
-// Rect Renderer::origAspectRatioViewport() const {
-// 	Rect screen(_system->getWidth(), _system->getHeight());
-// 	Rect origFrame(kOriginalWidth, kOriginalHeight);
-// 	Rect scaledFrame = origFrame.fitInside(screen);
-// 	debugC(kDebugGraphics, "OrigAspectRatioViewport - screen (%dx%d), orig (%dx%d), scaled (%dx%d)", screen.width(), screen.height(), origFrame.width(), origFrame.height(), scaledFrame.width(), scaledFrame.height());
-// 	return scaledFrame;
-// }
 RectF Renderer::origAspectRatioViewport() const {
 	return RectF(kOriginalWidth, kOriginalHeight).fitInside(_screenViewport);
 }

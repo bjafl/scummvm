@@ -89,7 +89,7 @@ protected:
 
 	int32 adjustFrameForRate(int32 frame, bool dataToBink);
 	void loadPosition(const ResourceDescription::VideoData &videoData);
-	void drawNextFrameToTexture();
+	const Graphics::Surface *drawNextFrameToTexture();
 
 	void draw2d();
 	void draw3d();
@@ -149,7 +149,16 @@ protected:
 
 	uint16 _transparencyVar;
 
+	// Cached loop start frame (decoded RGBA surface) to avoid expensive seek+decode on loop restart
+	Graphics::Surface *_loopStartFrame;
+	bool _loopStartFrameCached;
+	int32 _loopStartFrameNum;  // The frame number that was cached
+	bool _pendingLoopSeek;     // True if we need to seek after using cached frame
+	int32 _pendingSeekFrame;   // Frame to seek to
+	uint32 _pendingSeekTime;   // Time when we deferred the seek (for delayed seek)
+
 	void updateVolume();
+	void cacheLoopStartFrame(const Graphics::Surface *frame, int32 frameNum);
 };
 
 class SimpleMovie : public Movie {

@@ -489,7 +489,7 @@ void Subtitles::drawOverlay() {
 		                      windowPos.height() - _texture->height);
 
 		_vm->_gfx->drawTexturedRect2D(textureRect, RectF(_texture->width, _texture->height), _texture);
-		debugC(kDebugGraphics, "Subtitles drawTexturedRect2D - screen [%dx%d], texture [%dx%d]", textureRect.width(), textureRect.height(), _texture->width, _texture->height);
+		debugC(kDebugGraphics, "Subtitles drawTexturedRect2D - screen [%.2fx%.2f], texture [%.2fx%.2f]", textureRect.width(), textureRect.height(), _texture->width, _texture->height);
 	} else {
 		// Center subtitles in the window
 		RectF textureRect(_texture->width, _texture->height);
@@ -497,7 +497,7 @@ void Subtitles::drawOverlay() {
 		                      (windowPos.height() - _texture->height) / 2);
 
 		_vm->_gfx->drawTexturedRect2D(textureRect, RectF(_texture->width, _texture->height), _texture);
-		debugC(kDebugGraphics, "Subtitles drawTexturedRect2D - screen [%dx%d], texture [%dx%d]", textureRect.width(), textureRect.height(), _texture->width, _texture->height);
+		debugC(kDebugGraphics, "Subtitles drawTexturedRect2D - screen [%.2fx%.2f], texture [%.2fx%.2f]", textureRect.width(), textureRect.height(), _texture->width, _texture->height);
 	}
 }
 

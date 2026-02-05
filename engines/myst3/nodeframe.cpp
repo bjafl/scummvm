@@ -53,7 +53,7 @@ void NodeFrame::draw() {
 
 	// Draw
 	_vm->_gfx->drawTexturedRect2D(screenRect, textureRect, _faces[0]->_texture);
-	debugC(kDebugGraphics, "NodeFrame drawTexturedRect2D - screen [%dx%d], texture [%dx%d]", screenRect.width(), screenRect.height(), textureRect.width(), textureRect.height());
+	debugC(kDebugGraphics, "NodeFrame drawTexturedRect2D - screen [%.2fx%.2f], texture [%.2fx%.2f]", screenRect.width(), screenRect.height(), textureRect.width(), textureRect.height());
 }
 
 } // End of namespace Myst3

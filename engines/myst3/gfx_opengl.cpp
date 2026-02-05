@@ -138,7 +138,6 @@ void OpenGLRenderer::drawRect2D(const RectF &screenRect, uint8 a, uint8 r, uint8
 void OpenGLRenderer::drawTexturedRect2D(const RectF &screenRect, const RectF &textureRect, Texture *texture,
 	                        			float transparency, bool additiveBlending) {
 
-	//debugC(kDebugGraphics, "OpenGL drawTexturedRect2D - screen [%dx%d], texture [%dx%d]", screenRect.width(), screenRect.height(), textureRect.width(), textureRect.height());
 	OpenGLTexture *glTexture = static_cast<OpenGLTexture *>(texture);
 
 	// Normalize texture coordinates to [0, 1] range

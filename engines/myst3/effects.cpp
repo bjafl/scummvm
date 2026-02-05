@@ -169,11 +169,6 @@ Rect Effect::getUpdateRectForFace(uint face) {
 		}
 	}
 
-		/*debugC(kDebugModding, "Effect::getUpdateRectForFace: face=%d, mask=%dx%d, face=%dx%d, scale=%.2fx%.2f, rect=[%d,%d,%d,%d]->[%d,%d,%d,%d]",
-		       face, mask->surface->w, mask->surface->h, faceWidth, faceHeight, scaleX, scaleY,
-		       originalRect.left, originalRect.top, originalRect.right, originalRect.bottom,
-		       rect.left, rect.top, rect.right, rect.bottom);*/
-
 	return rect;
 }
 

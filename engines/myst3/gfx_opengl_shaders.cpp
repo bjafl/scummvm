@@ -218,7 +218,7 @@ void ShaderRenderer::selectTargetWindow(Window *window, bool is3D, bool scaled) 
 		// With a window: draw inside the window's screen position
 		vp = window->getPosition();
 	}
-	debugC(kDebugGraphics, "glViewport - (%d, %d) [%dx%d]", vp.left, _system->getHeight() - vp.top - vp.height(), vp.width(), vp.height());
+	debugC(kDebugGraphics, "glViewport - (%.2f, %.2f) [%.2fx%.2f]", vp.left, _system->getHeight() - vp.top - vp.height(), vp.width(), vp.height());
 	glViewport(vp.left, _system->getHeight() - vp.top - vp.height(), vp.width(), vp.height());
 
 	// Enable/disable depth testing based on 2D vs 3D rendering

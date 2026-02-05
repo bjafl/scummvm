@@ -285,7 +285,7 @@ SpotItemFace *Node::loadMenuSpotItem(int16 condition, const RectF &rect) {
 	RectF scaledRect(rect.left * scaleX, rect.top * scaleY,
 	                 rect.right * scaleX, rect.bottom * scaleY);
 
-	debugC(kDebugNode, "Node::loadMenuSpotItem: condition=%d, origRect=[%d,%d,%d,%d], scaledRect=[%d,%d,%d,%d], face0 bitmap=%dx%d, scale=%.2fx%.2f",
+	debugC(kDebugNode, "Node::loadMenuSpotItem: condition=%d, origRect=[%.2f,%.2f,%.2f,%.2f], scaledRect=[%.2f,%.2f,%.2f,%.2f], face0 bitmap=%dx%d, scale=%.2fx%.2f",
 	       condition, rect.left, rect.top, rect.right, rect.bottom,
 	       scaledRect.left, scaledRect.top, scaledRect.right, scaledRect.bottom,
 	       _faces[0]->_bitmap->w, _faces[0]->_bitmap->h, scaleX, scaleY);

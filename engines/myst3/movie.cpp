@@ -158,51 +158,14 @@ void Movie::draw2d() {
 	
 	RectF screenRect(newPosTopLeft, relPosWidth * sceneSize.x, relPosHeight * sceneSize.y);
 	RectF videoRect(_bink.getWidth(), _bink.getHeight());
-	 debugC(kDebugVideo, "Movie drawTexturedRect2D - sceneViewport [%dx%d], originalViewport [%dx%d], ", sceneViewport.width(), sceneViewport.height(), originalSize.width(), originalSize.height());
-	 debugC(kDebugVideo, "Movie drawTexturedRect2D - origPos (%d, %d)[%dx%d]", _posU, _posV, _posWidth, _posHeight);
-	 debugC(kDebugVideo, "Movie drawTexturedRect2D - screen (%d, %d) [%dx%d], video (%d, %d) [%dx%d]", screenRect.left, screenRect.top, screenRect.width(), screenRect.height(), videoRect.left, videoRect.top, videoRect.width(), videoRect.height());
+	 debugC(kDebugVideo, "Movie drawTexturedRect2D - sceneViewport [%.2fx%.2f], originalViewport [%.2fx%.2f], ", sceneViewport.width(), sceneViewport.height(), originalSize.width(), originalSize.height());
+	 debugC(kDebugVideo, "Movie drawTexturedRect2D - origPos (%.2f, %.2f)[%.2fx%.2f]", _posU, _posV, _posWidth, _posHeight);
+	 debugC(kDebugVideo, "Movie drawTexturedRect2D - screen (%.2f, %.2f) [%.2fx%.2f], video (%.2f, %.2f) [%.2fx%.2f]", screenRect.left, screenRect.top, screenRect.width(), screenRect.height(), videoRect.left, videoRect.top, videoRect.width(), videoRect.height());
     if (_forceOpaque)
 		_vm->_gfx->drawTexturedRect2D(screenRect, videoRect, _texture);
 	else
 		_vm->_gfx->drawTexturedRect2D(screenRect, videoRect, _texture, (float) _transparency / 100, _additiveBlending);
 
-	// // Scale factor from original coords to viewport coords
-	// PointF scale(sceneViewport.width() / (float)originalSize.width(),
-	// sceneViewport.height() / (float)originalSize.height());
-
-	// // Upscaling ratio for modded movies (texture may be higher res than original)
-	// float textureScaleRatio;
-	// if (_resourceType == Archive::kModdedMovie) {
-	// 	assert(_posWidth > 0 && "Movie::draw2d: _posWidth is zero for modded movie");
-	// 	assert(_posHeight > 0 && "Movie::draw2d: _posHeight is zero for modded movie");
-	// 	textureScaleRatio = _bink.getWidth() / (float)_posWidth;
-	// 	debugC(kDebugModding, "Movie::draw2d: modded movie id=%d, bink=%dx%d, pos=%dx%d, scaleRatio=%.3f",
-	// 	       _id, _bink.getWidth(), _bink.getHeight(), _posWidth, _posHeight, textureScaleRatio);
-	// } else {
-	// 	textureScaleRatio = 1.f;
-	// }
-
-	// assert(textureScaleRatio > 0 && "Movie::draw2d: textureScaleRatio must be positive");
-
-	// // Texture rect (portion of texture to use)
-	// Point textureSize(_bink.getWidth(), _bink.getHeight());
-	// textureSize = textureSize * (1 / textureScaleRatio);
-	// Rect textureRect(textureSize.x, textureSize.y);
-
-	// // Screen rect in viewport coords (scaled from original coords)
-	// Rect screenRect((int16)(textureSize.x * scale.x), (int16)(textureSize.y * scale.y));
-	// screenRect.translate((int16)(_posU * scale.x), (int16)(_posV * scale.y));
-
-	// if (_resourceType == Archive::kModdedMovie) {
-	// 	debugC(kDebugModding, "  screenRect=[%d,%d,%d,%d]",
-	// 	       screenRect.left, screenRect.top, screenRect.right, screenRect.bottom);
-	// }
-
-	// debugC(kDebugVideo, "Movie drawTexturedRect2D - screen [%dx%d], texture [%dx%d]", screenRect.width(), screenRect.height(), textureRect.width(), textureRect.height());
-	// if (_forceOpaque)
-	// 	_vm->_gfx->drawTexturedRect2D(screenRect, textureRect, _texture);
-	// else
-	// 	_vm->_gfx->drawTexturedRect2D(screenRect, textureRect, _texture, (float) _transparency / 100, _additiveBlending);
 }
 
 void Movie::draw3d() {
@@ -230,7 +193,7 @@ void Movie::drawOverlay() {
 	}
 }
 
-void Movie::drawNextFrameToTexture() {
+const Graphics::Surface *Movie::drawNextFrameToTexture() {
 	const Graphics::Surface *frame = _bink.decodeNextFrame();
 
 	if (frame) {
@@ -241,6 +204,8 @@ void Movie::drawNextFrameToTexture() {
 		else
 			_texture = _vm->_gfx->createTexture2D(frame);
 	}
+
+	return frame;
 }
 
 int32 Movie::adjustFrameForRate(int32 frame, bool dataToBink) {
@@ -305,7 +270,13 @@ ScriptedMovie::ScriptedMovie(Myst3Engine *vm, const Common::String &room, uint16
 		_soundAttenuation(0),
 		_volumeVar(0),
 		_loop(false),
-		_transparencyVar(0) {
+		_transparencyVar(0),
+		_loopStartFrame(nullptr),
+		_loopStartFrameCached(false),
+		_loopStartFrameNum(-1),
+		_pendingLoopSeek(false),
+		_pendingSeekFrame(-1),
+		_pendingSeekTime(0) {
 	_bink.start();
 }
 
@@ -371,7 +342,12 @@ void ScriptedMovie::update() {
 			if (!_scriptDriven)
 				_bink.pauseVideo(false);
 
-			drawNextFrameToTexture();
+			const Graphics::Surface *frame = drawNextFrameToTexture();
+
+			// Cache the loop start frame on first decode for smoother looping
+			if (_loop && !_loopStartFrameCached && frame && _bink.getCurFrame() == _startFrame - 1) {
+				cacheLoopStartFrame(frame, _startFrame);
+			}
 
 		} else {
 			// Make sure not to pause the video twice. VideoDecoder handles pause levels.
@@ -404,7 +380,7 @@ void ScriptedMovie::update() {
 			}
 		}
 
-		if (!_scriptDriven && (_bink.needsUpdate() || _isLastFrame)) {
+		if (!_scriptDriven && (_bink.needsUpdate() || _isLastFrame || _pendingLoopSeek)) {
 			bool complete = false;
 
 			if (_isLastFrame) {
@@ -413,14 +389,52 @@ void ScriptedMovie::update() {
 				if (_loop) {
 					debugC(kDebugVideo, "Looping video %d to frame %d", _id, _startFrame);
 
-					_bink.seekToFrame(_startFrame - 1);
-					drawNextFrameToTexture();
+					// Use cached frame if available and valid (skip expensive seek+decode)
+					if (_loopStartFrameCached && _loopStartFrame && _texture &&
+					    _loopStartFrameNum == _startFrame) {
+						_texture->update(_loopStartFrame);
+						// Defer the expensive seek operation - set flag to seek on next frame request
+						// This allows the cached frame to be displayed immediately without blocking
+						_pendingLoopSeek = true;
+						_pendingSeekFrame = _startFrame - 1;
+						_pendingSeekTime = _vm->_state->getTickCount();
+						debugC(kDebugVideo, "Using cached loop start frame for video %d, deferring seek to %d", _id, _pendingSeekFrame);
+					} else {
+						// Fallback: normal seek and decode (cache may be invalid if startFrame changed)
+						_bink.seekToFrame(_startFrame - 1);
+						const Graphics::Surface *frame = drawNextFrameToTexture();
+						// Update cache if needed
+						if (_loop && frame && _bink.getCurFrame() == _startFrame - 1) {
+							cacheLoopStartFrame(frame, _startFrame);
+						}
+					}
 				} else {
 					complete = true;
 				}
 			} else {
-				drawNextFrameToTexture();
+				// Handle pending seek from deferred loop restart
+				if (_pendingLoopSeek) {
+					// Wait a few frames (show cached frame) before doing the blocking seek
+					// This gives at least one render cycle of smooth display
+					uint32 elapsed = _vm->_state->getTickCount() - _pendingSeekTime;
+					if (elapsed < 2) {
+						// Still waiting - keep showing cached frame
+						// (texture was already updated with cached frame)
+						return;
+					}
+					debugC(kDebugVideo, "Performing deferred seek for video %d to frame %d (after %d ticks)", _id, _pendingSeekFrame, elapsed);
+					_bink.seekToFrame(_pendingSeekFrame);
+					_pendingLoopSeek = false;
+					_pendingSeekFrame = -1;
+				}
+
+				const Graphics::Surface *frame = drawNextFrameToTexture();
 				_isLastFrame = _bink.getCurFrame() == (_endFrame - 1);
+
+				// Cache the loop start frame if we haven't yet
+				if (_loop && !_loopStartFrameCached && frame && _bink.getCurFrame() == _startFrame - 1) {
+					cacheLoopStartFrame(frame, _startFrame);
+				}
 			}
 
 			if (_nextFrameWriteVar) {
@@ -456,6 +470,29 @@ void ScriptedMovie::updateVolume() {
 }
 
 ScriptedMovie::~ScriptedMovie() {
+	if (_loopStartFrame) {
+		_loopStartFrame->free();
+		delete _loopStartFrame;
+	}
+}
+
+void ScriptedMovie::cacheLoopStartFrame(const Graphics::Surface *frame, int32 frameNum) {
+	if (!frame)
+		return;
+
+	// Free any previously cached frame
+	if (_loopStartFrame) {
+		_loopStartFrame->free();
+		delete _loopStartFrame;
+	}
+
+	// Copy the frame to our cache
+	_loopStartFrame = new Graphics::Surface();
+	_loopStartFrame->copyFrom(*frame);
+	_loopStartFrameCached = true;
+	_loopStartFrameNum = frameNum;
+
+	debugC(kDebugVideo, "Cached loop start frame %d for video %d (%dx%d)", frameNum, _id, frame->w, frame->h);
 }
 
 SimpleMovie::SimpleMovie(Myst3Engine *vm, const Common::String &room, uint16 id) :

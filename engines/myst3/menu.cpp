@@ -71,12 +71,16 @@ Dialog::Dialog(Myst3Engine *vm, uint id):
 	// For modded resources, the screen size is that from the original file
 	if (movieDesc.getType() == Archive::kModdedMovie) {
 		ResourceDescription::VideoData videoData = movieDesc.getVideoData();
-		_screenSize = Rect(videoData.width, videoData.height);
-		debugC(kDebugModding, "Dialog::Dialog: modded dialog id=%d, texture=%dx%d, screenSize=%.0fx%.0f (from metadata)",
-		       id, _texture->width, _texture->height, _screenSize.width(), _screenSize.height());
+		RectF viewportRect = _vm->_gfx->viewport();
+		float scale = (viewportRect.width() / Renderer::kOriginalWidth) * 0.8f; // Last factor just to scale it down a notch as the original dialog is very large.
+		_screenSize = Rect(videoData.width * scale, videoData.height * scale);
+		_origScreenSize = Rect(videoData.width, videoData.height);
+		debugC(kDebugModding, "Dialog::Dialog: modded dialog id=%d, texture=%dx%d, videoSize=%.0fx%.0f (from metadata), scaledScreenSize=%.0fx%0.f",
+		       id, _texture->width, _texture->height, videoData.width, videoData.height, _screenSize.width(), _screenSize.height());
 	} else {
 		_screenSize = _texture->size();
-		debugC(kDebugModding, "Dialog::Dialog: dialog id=%d, screenSize=%.0fx%.0f",
+		_origScreenSize = _texture->size();
+		debugC(kDebugModding, "Dialog::Dialog: dialog id=%d, screenSize=%.2fx%.2f",
 		       id, _screenSize.width(), _screenSize.height());
 	}
 
@@ -90,15 +94,17 @@ Dialog::~Dialog() {
 void Dialog::draw() {
 	RectF textureRect(_texture->width, _texture->height);
 	// Use viewport-relative coordinates (0,0 to width,height)
-	RectF screenRect(getPosition().width(), getPosition().height());
+	RectF screenRect(getPosition());
 	_vm->_gfx->drawTexturedRect2D(screenRect, textureRect, _texture);
-	debugC(kDebugGraphics, "Dialog drawTexturedRect2D - screen [%dx%d], texture [%dx%d]", screenRect.width(), screenRect.height(), textureRect.width(), textureRect.height());
+	debugC(kDebugGraphics, "Dialog drawTexturedRect2D - screen [%.2fx%.2f], texture [%.2fx%.2f]", screenRect.width(), screenRect.height(), textureRect.width(), textureRect.height());
 }
 
 RectF Dialog::getPosition() const {
 	//TODO?: _scaled check (orig game width height)
 	RectF screenRect = _vm->_gfx->origAspectRatioViewport();
-	return screenRect;
+	// return screenRect;
+
+	return _screenSize.centerIn(screenRect);
 }
 
 ButtonsDialog::ButtonsDialog(Myst3Engine *vm, uint id):
@@ -153,23 +159,24 @@ int16 ButtonsDialog::update() {
 		if (event.type == Common::EVENT_MOUSEMOVE) {
 			// Compute local mouse coordinates
 			_vm->_cursor->updatePosition(event.mouse);
-			PointF localMouse = getRelativeMousePosition();
+			PointF localMouseNorm = getRelativeMousePosition(true);
+			PointF localMouseOrig(localMouseNorm.x * _origScreenSize.width(), localMouseNorm.y * _origScreenSize.height());
 
 			// No hovered button
 			_frameToDisplay = 0;
 
 			// Scale button positions from original coords (640x480) to dialog viewport coords
 			RectF dialogPos = getPosition();
-			float scaleX = dialogPos.width() / (float)Renderer::kOriginalWidth;
-			float scaleY = dialogPos.height() / (float)Renderer::kOriginalHeight;
+			float scaleX = dialogPos.width() / Renderer::kOriginalWidth;
+			float scaleY = dialogPos.height() / Renderer::kOriginalHeight;
 
 			// Display the frame corresponding to the hovered button
 			for (uint i = 0; i < _buttonCount; i++) {
 				RectF button = _buttons[i];
-				RectF buttonRect(button.left * scaleX, button.top * scaleY,
-				                 button.right * scaleX, button.bottom * scaleY);
+				// RectF buttonRect(button.left * scaleX, button.top * scaleY,
+				//                  button.right * scaleX, button.bottom * scaleY);
 
-				if (buttonRect.contains(localMouse)) {
+				if (button.contains(localMouseOrig)) {
 					_frameToDisplay = i + 1;
 					debugC(kDebugModding, "Hovering button#%d", i);
 					break;
@@ -194,17 +201,21 @@ int16 ButtonsDialog::update() {
 	return -2;
 }
 
-PointF ButtonsDialog::getRelativeMousePosition() const {
+PointF ButtonsDialog::getRelativeMousePosition(bool normalize) const {
 	// cursor->getScreenPosition() returns position relative to _screenViewport
 	// dialogPos is in absolute screen coords - convert to screenViewport-relative first
-	RectF screenViewport = _vm->_gfx->viewport();
+	// RectF screenViewport = _vm->_gfx->viewport();
 	RectF dialogPos = getPosition();
 
 	PointF cursorPos = _vm->_cursor->getScreenPosition();
 
 	// Convert dialogPos from absolute to screenViewport-relative, then get cursor relative to dialog
-	PointF dialogOffset(dialogPos.left - screenViewport.left, dialogPos.top - screenViewport.top);
-	return cursorPos - dialogOffset;
+	// PointF dialogOffset(dialogPos.left - screenViewport.left, dialogPos.top - screenViewport.top);
+	PointF relMouse = cursorPos - dialogPos.origin();
+	if (normalize) {
+		return PointF(relMouse.x / _screenSize.width(), relMouse.y / _screenSize.height());
+	}
+	return PointF(relMouse);
 }
 
 GamepadDialog::GamepadDialog(Myst3Engine *vm, uint id):

@@ -183,6 +183,7 @@ protected:
 	Video::BinkDecoder _bink;
 	Texture *_texture;
 	RectF _screenSize;
+	RectF _origScreenSize;
 
 	uint _buttonCount;
 };
@@ -196,7 +197,7 @@ public:
 	int16 update() override;
 
 private:
-	PointF getRelativeMousePosition() const;
+	PointF getRelativeMousePosition(bool normalize = false) const;
 
 	uint16 _previousframe;
 	uint16 _frameToDisplay;
