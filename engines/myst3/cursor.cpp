@@ -185,12 +185,14 @@ void Cursor::draw() {
 
 		float transparency = 1.0f;
 		int32 varTransparency = _vm->_state->getCursorTransparency();
-		if (varTransparency == 0) {
-			if (varTransparency >= 0)
-				transparency = varTransparency / 100.0f;
-			else
-				transparency = getTransparencyForId(_currentCursorID);
+		if (varTransparency > 0) {
+			// Game script sets transparency 0-100
+			transparency = varTransparency / 100.0f;
+		} else if (varTransparency == 0) {
+			// Use default transparency for this cursor type
+			transparency = getTransparencyForId(_currentCursorID);
 		}
+		// varTransparency < 0 means use full opacity (transparency = 1.0f)
 
 		Rect textureRect(texture->width, texture->height);
 		_vm->_gfx->drawTexturedRect2D(cursorRect, textureRect, texture, transparency);
@@ -233,9 +235,36 @@ PointF Cursor::getScreenPosition() const {
 	
 	return _position - screen.origin();
 }
-Point Cursor::getOriginalGamePosition() const { //TODO
-	PointF p = getScreenPosition(); 
-	return Point(p.x, p.y);
+Point Cursor::getOriginalGamePosition() const {
+	// Convert from screen/window coordinates to original game coordinates
+	// For menu: 640x480 full screen coordinates
+	// For frame: 640x360 frame-relative coordinates (hotspots use 0-360 Y range)
+	RectF scenePos = _vm->_scene->getPosition();
+
+	// Get position relative to the scene viewport (accounts for pillarboxing)
+	PointF sceneRelative = _position - scenePos.origin();
+	sceneRelative.x = CLIP<float>(sceneRelative.x, 0, scenePos.width());
+	sceneRelative.y = CLIP<float>(sceneRelative.y, 0, scenePos.height());
+
+	// Scale from scene viewport dimensions to original game dimensions
+	float origW, origH;
+	if (_vm->_state->getViewType() == kMenu) {
+		origW = Renderer::kOriginalWidth;
+		origH = Renderer::kOriginalHeight;
+	} else {
+		// Frame view: hotspots use frame-relative coords (0-360 Y range, not 30-390)
+		origW = Renderer::kOriginalWidth;
+		origH = Renderer::kFrameHeight;
+	}
+
+	float scaleX = origW / scenePos.width();
+	float scaleY = origH / scenePos.height();
+
+	Point result;
+	result.x = (int16)(sceneRelative.x * scaleX);
+	result.y = (int16)(sceneRelative.y * scaleY);
+
+	return result;
 }
 
 } // End of namespace Myst3

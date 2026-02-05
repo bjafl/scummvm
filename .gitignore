@@ -305,3 +305,7 @@ scummvm.prg
 
 #Ignore Python generated files
 __pycache__/
+
+####
+Debugx64/
+packages/

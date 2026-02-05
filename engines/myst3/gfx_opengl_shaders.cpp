@@ -63,11 +63,11 @@ Renderer *CreateGfxOpenGLShader(OSystem *system) {
 }
 
 static const GLfloat boxVertices[] = {
-	// XS   YT
+	// XY (also used as ST texture coords) - normalized [0, 1] range
 	0.0f, 0.0f,
-	320.0f, 0.0f,
-	0.0, 320.0f,
-	320.0f, 320.0f,
+	1.0f, 0.0f,
+	0.0f, 1.0f,
+	1.0f, 1.0f,
 };
 
 void ShaderRenderer::setupQuadEBO() {

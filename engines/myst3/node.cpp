@@ -18,8 +18,6 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
-#include <utility>
-
 #include "engines/myst3/database.h"
 #include "engines/myst3/effects.h"
 #include "engines/myst3/node.h"
@@ -196,12 +194,25 @@ void Node::loadSpotItem(const Common::String &room, uint16 id, int16 condition, 
 	debugC(kDebugNode, "Node::loadSpotItem: room=%s, id=%d, condition=%d, fade=%d",
 	       room.c_str(), id, condition, fade);
 
-	// Common::String roomName = _vm->getCurrentRoomName();
 	ResourceDescriptionArray resources = _vm->_resourceLoader->listSpotItemImages(room, id);
 	TextureLoader textureLoader(*_vm->_gfx);
-	//float scale = _vm->_gfx->getScale();
-	float scaleX = g_system->getWidth() / Renderer::kOriginalWidth;
-	float scaleY = g_system->getHeight() / Renderer::kOriginalHeight;
+
+	// Determine original face dimensions based on view type for position scaling
+	// SpotItem metadata positions (u, v) are in original game coordinates,
+	// but face bitmaps may be upscaled (modded textures), so we need to scale
+	float origFaceW, origFaceH;
+	ViewType viewType = _vm->_state->getViewType();
+	if (viewType == kCube) {
+		origFaceW = 640.0f;
+		origFaceH = 640.0f;
+	} else if (viewType == kFrame) {
+		origFaceW = Renderer::kOriginalWidth;
+		origFaceH = Renderer::kFrameHeight;
+	} else {
+		origFaceW = Renderer::kOriginalWidth;
+		origFaceH = Renderer::kOriginalHeight;
+	}
+
 	for (uint i = 0; i < resources.size(); i++) {
 		const ResourceDescription &image = resources[i];
 		ResourceDescription::SpotItemData spotItemData = image.getSpotItemData();
@@ -212,11 +223,17 @@ void Node::loadSpotItem(const Common::String &room, uint16 id, int16 condition, 
 		assert(i < 6 && "Node::loadSpotItem: face index out of bounds");
 		assert(_faces[i] && "Node::loadSpotItem: face is null");
 		assert(_faces[i]->_bitmap && "Node::loadSpotItem: face bitmap is null");
-		
-		float scaledX = spotItemData.u * scaleX;
-		float scaledY = spotItemData.v * scaleY;
-		debugC(kDebugNode, "  Scaled pos (%f, %f)", scaledX, scaledY);
-		SpotItemFace *spotItemFace = new SpotItemFace(_faces[i], spotItemData.u, spotItemData.v);
+
+		// Scale positions from original face coordinates to actual face bitmap coordinates
+		float scaleX = _faces[i]->_bitmap->w / origFaceW;
+		float scaleY = _faces[i]->_bitmap->h / origFaceH;
+		float scaledU = spotItemData.u * scaleX;
+		float scaledV = spotItemData.v * scaleY;
+
+		debugC(kDebugNode, "    Scale: %.2fx%.2f, scaled pos (%.1f, %.1f)",
+		       scaleX, scaleY, scaledU, scaledV);
+
+		SpotItemFace *spotItemFace = new SpotItemFace(_faces[i], scaledU, scaledV);
 
 		Graphics::Surface *bitmapSurface = textureLoader.loadSurface(image, TextureLoader::kImageFormatJPEG);
 		assert(bitmapSurface && "Node::loadSpotItem: failed to load bitmap surface");
@@ -226,10 +243,10 @@ void Node::loadSpotItem(const Common::String &room, uint16 id, int16 condition, 
 		       bitmapSurface->w, bitmapSurface->h,
 		       _faces[i]->_bitmap->w, _faces[i]->_bitmap->h);
 
-		// Verify spot item fits within face
-		assert(std::_Cmp_less_equal(spotItemData.u + bitmapSurface->w, _faces[i]->_bitmap->w) &&
+		// Verify spot item fits within face (using scaled positions)
+		assert(scaledU + bitmapSurface->w <= _faces[i]->_bitmap->w &&
 		       "Node::loadSpotItem: spot item exceeds face width");
-		assert(std::_Cmp_less_equal(spotItemData.v + bitmapSurface->h, _faces[i]->_bitmap->h) &&
+		assert(scaledV + bitmapSurface->h <= _faces[i]->_bitmap->h &&
 		       "Node::loadSpotItem: spot item exceeds face height");
 
 		bitmapSurface->free();
@@ -257,17 +274,29 @@ SpotItemFace *Node::loadMenuSpotItem(int16 condition, const RectF &rect) {
 	assert(_faces[0] && "Node::loadMenuSpotItem: face 0 is null");
 	assert(_faces[0]->_bitmap && "Node::loadMenuSpotItem: face 0 bitmap is null");
 
-	debugC(kDebugNode, "Node::loadMenuSpotItem: condition=%d, rect=[%d,%d,%d,%d], face0 bitmap=%dx%d",
-	       condition, rect.left, rect.top, rect.right, rect.bottom,
-	       _faces[0]->_bitmap->w, _faces[0]->_bitmap->h);
+	// rect is in original game coordinates
+	// Scale to face bitmap coordinates (face may be upscaled for modded textures)
+	float origW = (_vm->_state->getViewType() == kMenu)
+	              ? Renderer::kOriginalWidth : Renderer::kOriginalWidth;
+	float origH = (_vm->_state->getViewType() == kMenu)
+	              ? Renderer::kOriginalHeight : Renderer::kFrameHeight;
+	float scaleX = _faces[0]->_bitmap->w / origW;
+	float scaleY = _faces[0]->_bitmap->h / origH;
+	RectF scaledRect(rect.left * scaleX, rect.top * scaleY,
+	                 rect.right * scaleX, rect.bottom * scaleY);
 
-	assert(rect.left >= 0 && rect.top >= 0 && "Node::loadMenuSpotItem: rect has negative coordinates");
-	assert(rect.width() > 0 && rect.height() > 0 && "Node::loadMenuSpotItem: rect has zero dimensions");
-	assert(rect.right <= _faces[0]->_bitmap->w && rect.bottom <= _faces[0]->_bitmap->h &&
+	debugC(kDebugNode, "Node::loadMenuSpotItem: condition=%d, origRect=[%d,%d,%d,%d], scaledRect=[%d,%d,%d,%d], face0 bitmap=%dx%d, scale=%.2fx%.2f",
+	       condition, rect.left, rect.top, rect.right, rect.bottom,
+	       scaledRect.left, scaledRect.top, scaledRect.right, scaledRect.bottom,
+	       _faces[0]->_bitmap->w, _faces[0]->_bitmap->h, scaleX, scaleY);
+
+	assert(scaledRect.left >= 0 && scaledRect.top >= 0 && "Node::loadMenuSpotItem: rect has negative coordinates");
+	assert(scaledRect.width() > 0 && scaledRect.height() > 0 && "Node::loadMenuSpotItem: rect has zero dimensions");
+	assert(scaledRect.right <= _faces[0]->_bitmap->w && scaledRect.bottom <= _faces[0]->_bitmap->h &&
 	       "Node::loadMenuSpotItem: rect exceeds face dimensions");
 
-	SpotItemFace *spotItemFace = new SpotItemFace(_faces[0], rect.left, rect.top);
-	spotItemFace->initBlack(rect.width(), rect.height());
+	SpotItemFace *spotItemFace = new SpotItemFace(_faces[0], scaledRect.left, scaledRect.top);
+	spotItemFace->initBlack(scaledRect.width(), scaledRect.height());
 
 	spotItem->addFace(spotItemFace);
 

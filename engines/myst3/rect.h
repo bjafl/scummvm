@@ -62,7 +62,7 @@ struct Rect : public Common::RectBase<int16, Rect, Point> {
 	}
 };
 static inline Rect operator*(const Rect &r, const PointF &p) {
-	return Rect(Point(r.left * p.x, r.right * p.y), r.width() * p.x, r.height() * p.y);
+	return Rect(Point(r.left * p.x, r.top * p.y), r.width() * p.x, r.height() * p.y);
 }
 struct RectF  : public Common::RectBase<float, RectF , PointF> {
 	constexpr RectF () : RectBase() {}
@@ -101,7 +101,7 @@ struct RectF  : public Common::RectBase<float, RectF , PointF> {
 	}
 };
 static inline RectF operator/(const RectF &r, const PointF &p) {
-	return RectF(PointF(r.left / p.x, r.right / p.y), r.width() / p.x, r.height() / p.y);
+	return RectF(PointF(r.left / p.x, r.top / p.y), r.width() / p.x, r.height() / p.y);
 }
 } // namespace Myst3
 
