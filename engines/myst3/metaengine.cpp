@@ -128,6 +128,7 @@ public:
 
 		// Read and resize the thumbnail
 		Graphics::Surface *saveThumb = GameState::readThumbnail(saveFile);
+		// TODO: correct resize scale
 		Graphics::Surface *guiThumb = GameState::resizeThumbnail(saveThumb, kThumbnailWidth, kThumbnailHeight1);
 		saveThumb->free();
 		delete saveThumb;

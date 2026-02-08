@@ -391,8 +391,12 @@ public:
 
 	static const uint kThumbnailWidth = 240;
 	static const uint kThumbnailHeight = 135;
+	static constexpr float kThumbnailWidthNorm = 0.375f;
+	static constexpr float kThumbnailHeightNorm = 0.28125f;
+	static const uint kHighResThumbnailWidth = 720;
+	static const uint kHighResThumbnailHeight = 305;
 
-private:
+ private:
 	const Common::Platform _platform;
 	Database *_db;
 

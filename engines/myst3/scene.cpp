@@ -140,7 +140,7 @@ void Scene::updateMouseSpeed() {
 RectF Scene::getPosition() const {
 	ViewType viewType = _vm->_state->getViewType();
 	RectF frame = viewType == kMenu ? _vm->_gfx->origAspectRatioViewport() : _vm->_gfx->frameViewport();
-	debugC(kDebugGraphics, "Scene (type: %d) frame x1,y1,x2,y2: %.2f,%.2f,%.2f,%.2f (WxH: %.2fx%.2f)", viewType, frame.top, frame.left, frame.bottom, frame.right, frame.width(), frame.height());
+	//debugC(kDebugGraphics, "Scene (type: %d) frame x1,y1,x2,y2: %.2f,%.2f,%.2f,%.2f (WxH: %.2fx%.2f)", viewType, frame.top, frame.left, frame.bottom, frame.right, frame.width(), frame.height());
 	return frame;
 }
 
@@ -189,29 +189,5 @@ void Scene::screenPosToDirection(const PointF &screen, float &pitch, float &head
 	if (horizontalProjection.getX() > 0.0)
 		heading = 360 - heading;
 }
-
-// TODO: below ported from residualvm. Check if it may / should be used, or remove. Compare with func in base class..
-// PointF Scene::scalePoint(const Point &screen) const {
-// 	Rect viewport;
-// 	Rect originalSize;
-// 	if (_vm->_state->getViewType() == kMenu) {
-// 		viewport = _vm->_gfx->origAspectRatioViewport(); // TODO?viewport();
-// 		originalSize = Rect(Renderer::kOriginalWidth, Renderer::kOriginalHeight);
-// 	} else {
-// 		viewport = _vm->_gfx->frameViewport();
-// 		originalSize = Rect(Renderer::kOriginalWidth, Renderer::kFrameHeight);
-// 	}
-
-// 	Point scaledPosition = screen;
-// 	scaledPosition.x -= viewport.left;
-// 	scaledPosition.y -= viewport.top;
-// 	scaledPosition.x = CLIP<int16>(scaledPosition.x, 0, viewport.width());
-// 	scaledPosition.y = CLIP<int16>(scaledPosition.y, 0, viewport.height());
-
-// 	scaledPosition.x *= originalSize.width() / (float)viewport.width();
-// 	scaledPosition.y *= originalSize.height() / (float)viewport.height();
-
-// 	return scaledPosition;
-// }
 
 } // end of namespace Myst3

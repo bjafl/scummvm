@@ -484,12 +484,13 @@ const Graphics::PixelFormat GameState::getThumbnailSavePixelFormat() {
 
 Graphics::Surface *GameState::readThumbnail(Common::ReadStream *inStream) {
 	Graphics::Surface *thumbnail = new Graphics::Surface();
+	// TODO: scale thumbnail
 	thumbnail->create(kThumbnailWidth, kThumbnailHeight, getThumbnailSavePixelFormat());
 
 	inStream->read((byte *)thumbnail->getPixels(), kThumbnailWidth * kThumbnailHeight * 4);
 
 	thumbnail->convertToInPlace(Texture::getRGBAPixelFormat());
-
+	
 	return thumbnail;
 }
 

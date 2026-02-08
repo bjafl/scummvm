@@ -24,6 +24,7 @@
 #include "engines/myst3/rect.h"
 #include "engines/myst3/resource_loader.h"
 
+#include "engines/myst3/state.h"
 #include "engines/util.h"
 
 #include "common/config-manager.h"
@@ -176,6 +177,10 @@ float Renderer::getScale() const { // TODO!
 	return g_system->getWidth() / kOriginalWidth;
 }
 
+PointF Renderer::thumbnailSize() const {
+	RectF menuViewport = origAspectRatioViewport();
+	return PointF(menuViewport.width() * GameState::kThumbnailWidthNorm, menuViewport.height() * GameState::kThumbnailHeightNorm);
+}
 
 // Rect Renderer::topBorder() const {
 // 	PointF scale = getScale();

@@ -461,7 +461,8 @@ Graphics::Surface *Menu::createThumbnail(Graphics::Surface *big) {
 	assert(big->format == Texture::getRGBAPixelFormat());
 
 	Graphics::Surface *small = new Graphics::Surface();
-	small->create(GameState::kThumbnailWidth, GameState::kThumbnailHeight, Texture::getRGBAPixelFormat());
+	PointF thumbSize = _vm->_gfx->thumbnailSize();
+	small->create(thumbSize.x, thumbSize.y, Texture::getRGBAPixelFormat());
 
 	// The portion of the screenshot to keep
 	RectF frame = _vm->_scene->getPosition();
@@ -485,6 +486,8 @@ Graphics::Surface *Menu::createThumbnail(Graphics::Surface *big) {
 void Menu::setSaveLoadSpotItem(uint16 id, SpotItemFace *spotItem) {
 	if (id == 1) {
 		_saveLoadSpotItem = spotItem;
+		PointF thumbnailSize = _vm->_gfx->thumbnailSize();
+		_saveLoadSpotItem->setSize(thumbnailSize.x, thumbnailSize.y);
 	}
 }
 
@@ -608,6 +611,12 @@ void PagingMenu::loadMenuSelect(uint16 item) {
 	// Update the save thumbnail
 	if (_saveLoadSpotItem) {
 		Graphics::Surface *thumbnail = GameState::readThumbnail(saveFile);
+		//TODO: scaling
+		PointF thumbSize = _vm->_gfx->thumbnailSize();
+		_saveLoadSpotItem->setSize(thumbSize.x, thumbSize.y);
+		//_saveLoadSpotItem->undraw();
+		//delete _saveLoadSpotItem;
+		//_saveLoadSpotItem = new
 		_saveLoadSpotItem->updateData(thumbnail);
 		thumbnail->free();
 		delete thumbnail;
@@ -752,7 +761,7 @@ void PagingMenu::draw() {
 
 	if (!_saveLoadAgeName.empty()) {
 		PolarRect rect = nodeData->hotspots[8].rects[0];
-PointF posNorm(rect.centerPitch / Renderer::kOriginalWidth, rect.centerHeading / Renderer::kOriginalHeight);
+		PointF posNorm(rect.centerPitch / Renderer::kOriginalWidth, rect.centerHeading / Renderer::kOriginalHeight);
 		_vm->_gfx->draw2DText(_saveLoadAgeName, posNorm, true);
 	}
 
@@ -774,7 +783,7 @@ PointF posNorm(rect.centerPitch / Renderer::kOriginalWidth, rect.centerHeading /
 		}
 
 		PolarRect rect = nodeData->hotspots[9].rects[0];
-PointF posNorm(rect.centerPitch / Renderer::kOriginalWidth, rect.centerHeading / Renderer::kOriginalHeight);
+		PointF posNorm(rect.centerPitch / Renderer::kOriginalWidth, rect.centerHeading / Renderer::kOriginalHeight);
 		_vm->_gfx->draw2DText(display, posNorm, true);
 	}
 }
@@ -972,7 +981,8 @@ void AlbumMenu::loadMenuSelect() {
 		// No save in the selected slot
 		_saveLoadAgeName = "";
 		_saveLoadTime = "";
-		_saveLoadSpotItem->initBlack(GameState::kThumbnailWidth, GameState::kThumbnailHeight);
+		PointF thumbSize = _vm->_gfx->thumbnailSize();
+		_saveLoadSpotItem->initBlack(thumbSize.x, thumbSize.y);
 		return;
 	}
 

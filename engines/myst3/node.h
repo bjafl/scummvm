@@ -67,7 +67,7 @@ public:
 	~SpotItemFace();
 
 	void initBlack(float width, float height);
-	void loadData(const Graphics::Surface *bitmap);
+	void loadData(const Graphics::Surface *bitmap, float width = 0, float height = 0);
 	void updateData(const Graphics::Surface *surface);
 	void clear();
 
@@ -75,12 +75,13 @@ public:
 	void undraw();
 	void fadeDraw();
 
-	bool isDrawn() { return _drawn; }
+	bool isDrawn() const { return _drawn; }
 	void setDrawn(bool drawn) { _drawn = drawn; }
-	uint16 getFadeValue() { return _fadeValue; }
+	uint16 getFadeValue() const { return _fadeValue; }
 	void setFadeValue(uint16 value) { _fadeValue = value; }
 
 	RectF getFaceRect() const;
+	void setSize(float width, float height);
 
 private:
 	Face *_face;
@@ -88,6 +89,8 @@ private:
 	uint16 _fadeValue;
 	float _posX;
 	float _posY;
+	float _width;
+	float _height;
 
 	Graphics::Surface *_bitmap;
 	Graphics::Surface *_notDrawnBitmap;

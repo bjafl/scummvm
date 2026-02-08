@@ -184,7 +184,7 @@ public:
 	// RectF origAspectRatioViewportRelative() const;
 	RectF topBorder() const;
 	RectF bottomBorder() const;
-
+	PointF thumbnailSize() const;
 	/**
 	 * Select the window where to render
 	 *

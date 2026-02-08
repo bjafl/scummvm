@@ -276,8 +276,9 @@ SpotItemFace *Node::loadMenuSpotItem(int16 condition, const RectF &rect) {
 
 	// rect is in original game coordinates
 	// Scale to face bitmap coordinates (face may be upscaled for modded textures)
-	float origW = (_vm->_state->getViewType() == kMenu)
-	              ? Renderer::kOriginalWidth : Renderer::kOriginalWidth;
+	float origW = Renderer::kOriginalWidth;
+		//(_vm->_state->getViewType() == kMenu)
+	    //          ? Renderer::kOriginalWidth : Renderer::kOriginalWidth;
 	float origH = (_vm->_state->getViewType() == kMenu)
 	              ? Renderer::kOriginalHeight : Renderer::kFrameHeight;
 	float scaleX = _faces[0]->_bitmap->w / origW;
@@ -441,10 +442,12 @@ void SpotItem::updateDraw() {
 	}
 }
 
-SpotItemFace::SpotItemFace(Face *face, float posX, float posY):
+SpotItemFace::SpotItemFace(Face *face, float posX, float posY) :
 		_face(face),
 		_posX(posX),
 		_posY(posY),
+		_width(-1),
+		_height(-1),
 		_drawn(false),
 		_bitmap(nullptr),
 		_notDrawnBitmap(nullptr),
@@ -472,13 +475,16 @@ void SpotItemFace::initBlack(float width, float height) {
 
 	_bitmap = new Graphics::Surface();
 	_bitmap->create(width, height, Texture::getRGBAPixelFormat());
-
+	//DBUG
+	//_bitmap->fillRect(Rect(width, height), 16711680);
+	//_bitmap->convertToInPlace(Texture::getRGBAPixelFormat());
+	//
 	initNotDrawn(width, height);
 
 	_drawn = false;
 }
 
-void SpotItemFace::loadData(const Graphics::Surface *bitmap) {
+void SpotItemFace::loadData(const Graphics::Surface *bitmap, float width, float height) {
 	assert(bitmap->format == Texture::getRGBAPixelFormat());
 	// Convert active SpotItem image to raw data
 	if (_bitmap) {
@@ -487,8 +493,11 @@ void SpotItemFace::loadData(const Graphics::Surface *bitmap) {
 	}
 	_bitmap = new Graphics::Surface();
 	_bitmap->copyFrom(*bitmap);
-
-	initNotDrawn(_bitmap->w, _bitmap->h);
+	if (width > 0 && height > 0) {
+		initNotDrawn(width, height);
+	} else {
+		initNotDrawn(_bitmap->w, _bitmap->h);
+	}
 }
 
 void SpotItemFace::updateData(const Graphics::Surface *surface) {
@@ -520,12 +529,24 @@ void SpotItemFace::initNotDrawn(float width, float height) {
 RectF SpotItemFace::getFaceRect() const {
 	assert(_bitmap);
 
-	RectF r = RectF(_bitmap->w, _bitmap->h);
+	float width = _bitmap->w;
+	float height = _bitmap->h;
+	if (_width > 0 && _height > 0) {
+		width = _width;
+		height = _height;
+	}
+	RectF r = RectF(width, height);
 
 	// Scale from original game coordinates
 	
 	r.translate(_posX, _posY);
 	return r;
+}
+
+void SpotItemFace::setSize(float width, float height) {
+	_width = width;
+	_height = height;
+	_face->addTextureDirtyRect(getFaceRect());
 }
 
 void SpotItemFace::draw() {
