@@ -61,7 +61,7 @@ public:
 	void drawCube(Texture **textures) override;
 	void drawCubeWithEffects(Texture **textures, Texture **effectMasks, Texture *shieldPattern,
 	                         const Common::Array<Effect *> &effects, GameState *state);
-	void draw2DText(const Common::String &text, const PointF &position) override;
+	void draw2DText(const Common::String &text, const PointF &position, bool posIsNormalized = false) override;
 
 	Graphics::Surface *getScreenshot() override;
 	Texture *copyScreenshotToTexture() override;

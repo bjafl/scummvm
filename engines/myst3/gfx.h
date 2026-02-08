@@ -158,7 +158,7 @@ public:
 	virtual void drawCube(Texture **textures) = 0;
 	virtual void drawCubeWithEffects(Texture **textures, Texture **effectMasks, Texture *shieldPattern,
 	                                 const Common::Array<Effect *> &effects, GameState *state) {}
-	virtual void draw2DText(const Common::String &text, const PointF &position) = 0;
+	virtual void draw2DText(const Common::String &text, const PointF &position, bool posIsNormalized = false) = 0;
 
 	/** Check if GPU-based effects are supported */
 	virtual bool supportsShaderEffects() const { return false; }

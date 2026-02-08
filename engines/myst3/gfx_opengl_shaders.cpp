@@ -218,7 +218,7 @@ void ShaderRenderer::selectTargetWindow(Window *window, bool is3D, bool scaled) 
 		// With a window: draw inside the window's screen position
 		vp = window->getPosition();
 	}
-	debugC(kDebugGraphics, "glViewport - (%.2f, %.2f) [%.2fx%.2f]", vp.left, _system->getHeight() - vp.top - vp.height(), vp.width(), vp.height());
+	//debugC(kDebugGraphics, "glViewport - (%.2f, %.2f) [%.2fx%.2f]", vp.left, _system->getHeight() - vp.top - vp.height(), vp.width(), vp.height());
 	glViewport(vp.left, _system->getHeight() - vp.top - vp.height(), vp.width(), vp.height());
 
 	// Enable/disable depth testing based on 2D vs 3D rendering
@@ -301,7 +301,7 @@ void ShaderRenderer::drawTexturedRect2D(const RectF &screenRect, const RectF &te
 	glDepthMask(GL_TRUE);
 }
 
-void ShaderRenderer::draw2DText(const Common::String &text, const PointF &position) {
+void ShaderRenderer::draw2DText(const Common::String &text, const PointF &position, bool posIsNormalized) {
 	OpenGLTexture *glFont = static_cast<OpenGLTexture *>(_font);
 
 	// The font only has uppercase letters
@@ -318,8 +318,8 @@ void ShaderRenderer::draw2DText(const Common::String &text, const PointF &positi
 		_prevText = textToDraw;
 		_prevTextPosition = position;
 
-		float x = position.x / (float) _currentViewport.width();
-		float y = position.y / (float) _currentViewport.height();
+		float x = posIsNormalized ? position.x : position.x / (float) _currentViewport.width();
+		float y = posIsNormalized ? position.y : position.y / (float)_currentViewport.height();
 
 		float *bufData = new float[16 * textToDraw.size()];
 		float *cur = bufData;

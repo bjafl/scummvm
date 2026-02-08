@@ -50,14 +50,14 @@ public:
 	// void drawRect2D(const Rect &rect, uint8 a, uint8 r, uint8 g, uint8 b) override;
 	void drawRect2D(const RectF &screenRect, uint8 a, uint8 r, uint8 g, uint8 b) override;
 	
-	virtual void TinyGLRenderer::drawTexturedRect2D(const RectF &screenRect, const RectF &textureRect,
+	virtual void drawTexturedRect2D(const RectF &screenRect, const RectF &textureRect,
                                         Texture *texture, float transparency, bool additiveBlending) override;
 	virtual void drawTexturedRect3D(const Math::Vector3d &topLeft, const Math::Vector3d &bottomLeft,
 	                                const Math::Vector3d &topRight, const Math::Vector3d &bottomRight,
 	                                Texture *texture) override;
 
 	void drawCube(Texture **textures) override;
-	void draw2DText(const Common::String &text, const PointF &position) override;
+	void draw2DText(const Common::String &text, const PointF &position, bool posIsNormalized = false) override;
 
 	Graphics::Surface *getScreenshot() override;
 

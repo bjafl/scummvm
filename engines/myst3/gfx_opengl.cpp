@@ -191,7 +191,7 @@ void OpenGLRenderer::drawTexturedRect2D(const RectF &screenRect, const RectF &te
 	glDepthMask(GL_TRUE);
 }
 
-void OpenGLRenderer::draw2DText(const Common::String &text, const PointF &position) {
+void OpenGLRenderer::draw2DText(const Common::String &text, const PointF &position, bool posIsNormalized) {
 	OpenGLTexture *glFont = static_cast<OpenGLTexture *>(_font);
 
 	// The font only has uppercase letters
@@ -207,8 +207,8 @@ void OpenGLRenderer::draw2DText(const Common::String &text, const PointF &positi
 	glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
 	glBindTexture(GL_TEXTURE_2D, glFont->id);
 
-	int x = position.x;
-	int y = position.y;
+	int x = position.x; //TODO
+	int y = position.y; //TODO
 
 	for (uint i = 0; i < textToDraw.size(); i++) {
 		Rect textureRect = getFontCharacterRect(textToDraw[i]);

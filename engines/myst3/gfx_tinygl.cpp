@@ -200,7 +200,7 @@ void TinyGLRenderer::drawTexturedRect2D(const RectF &screenRect, const RectF &te
 	tglDepthMask(TGL_TRUE);
 }
 
-void TinyGLRenderer::draw2DText(const Common::String &text, const PointF &position) {
+void TinyGLRenderer::draw2DText(const Common::String &text, const PointF &position, bool posIsNormalized) {
 	TinyGLTexture2D *glFont = static_cast<TinyGLTexture2D *>(_font);
 
 	// The font only has uppercase letters
@@ -215,8 +215,8 @@ void TinyGLRenderer::draw2DText(const Common::String &text, const PointF &positi
 
 	tglColor4f(1.0f, 1.0f, 1.0f, 1.0f);
 
-	int x = position.x;
-	int y = position.y;
+	int x = position.x; //TODO
+	int y = position.y; //TODO
 
 	for (uint i = 0; i < textToDraw.size(); i++) {
 		Rect textureRect = getFontCharacterRect(textToDraw[i]);

@@ -742,15 +742,18 @@ void PagingMenu::draw() {
 		if (itemToDisplay >= _saveLoadFiles.size())
 			break;
 
-		PolarRect rect = nodeData->hotspots[i + 1].rects[0];
+		PolarRect rect = nodeData->hotspots[i + 1].rects[0]; //TODO: Why polar rect here?
+		PointF posNorm(rect.centerPitch / Renderer::kOriginalWidth, rect.centerHeading / Renderer::kOriginalHeight);
+
 
 		Common::String display = prepareSaveNameForDisplay(_saveLoadFiles[itemToDisplay]);
-		_vm->_gfx->draw2DText(display, PointF(rect.centerPitch, rect.centerHeading));
+		_vm->_gfx->draw2DText(display, posNorm, true);
 	}
 
 	if (!_saveLoadAgeName.empty()) {
 		PolarRect rect = nodeData->hotspots[8].rects[0];
-		_vm->_gfx->draw2DText(_saveLoadAgeName, PointF(rect.centerPitch, rect.centerHeading));
+PointF posNorm(rect.centerPitch / Renderer::kOriginalWidth, rect.centerHeading / Renderer::kOriginalHeight);
+		_vm->_gfx->draw2DText(_saveLoadAgeName, posNorm, true);
 	}
 
 	// Save screen specific
@@ -771,7 +774,8 @@ void PagingMenu::draw() {
 		}
 
 		PolarRect rect = nodeData->hotspots[9].rects[0];
-		_vm->_gfx->draw2DText(display, PointF(rect.centerPitch, rect.centerHeading));
+PointF posNorm(rect.centerPitch / Renderer::kOriginalWidth, rect.centerHeading / Renderer::kOriginalHeight);
+		_vm->_gfx->draw2DText(display, posNorm, true);
 	}
 }
 

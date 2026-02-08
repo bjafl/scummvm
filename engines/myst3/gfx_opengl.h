@@ -51,7 +51,7 @@ public:
 	                                Texture *texture) override;
 
 	void drawCube(Texture **textures) override;
-	void draw2DText(const Common::String &text, const PointF &position) override;
+	void draw2DText(const Common::String &text, const PointF &position, bool posIsNormalized = false) override;
 
 	Graphics::Surface *getScreenshot() override;
 	Texture *copyScreenshotToTexture() override;
